@@ -227,12 +227,22 @@ export const pageRegistry: PageRegistryItem[] = [
   ),
   page(
     "bureau-student-growth-portrait",
-    "学生成长画像",
+    "区域学生发展画像",
     "/bureau/education-governance/student-growth-portrait",
     bureau,
     () => import("@/views/bureau/education-governance/StudentGrowthPortraitView.vue"),
     {
-      description: "面向教育局的区域学生成长画像，覆盖五育、学业、荣誉、健康、行为与实践等发展专题。",
+      description: "面向教育局的区域学生群体发展画像，通过单页锚点观察区域、学校、年级、学科和群体的结构、差异与数据边界。",
+    },
+  ),
+  page(
+    "bureau-new-student-growth-portrait",
+    "新学生成长画像",
+    "/bureau/education-governance/new-student-growth-portrait",
+    bureau,
+    () => import("@/views/bureau/education-governance/NewStudentGrowthPortraitView.vue"),
+    {
+      description: "面向区域教育管理者的连续分析页面，通过同页锚点串联区域总览、群体结构、学校发展、区域均衡、成长支持与专题报告。",
     },
   ),
 

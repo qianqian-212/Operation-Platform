@@ -13,7 +13,8 @@
 - 教育局“区域教育总览”独立页：通过区域业务适配器使用共享租户地图构建器、行政区状态机、主题变量和动效，独立拥有区域菜单、状态栏与学业分析。地图渲染链路统一使用 GCJ-02，DataV 边界直接使用，OSM 点位和遗留边界只在数据源入口转换一次。`bureau-74b5bcaf-69af-4cf2-8c63-11f9270d4676` 使用内置的榕城区现行 16 街镇 GCJ-02 边界与学校网络，其他组织通过公共边界 Provider 按可用数据下钻。
 - 教育局“智慧体育数据驾驶舱”独立页：与区域教育共用数字孪生页面壳、地图工作区、会话能力、地图引擎和主题变量，但使用独立业务壳，依赖链不包含区域菜单与学业分析。选择广东省时使用内置 21 地市首屏优化，其他省、市或区县按当前分支懒加载并缓存。行政区导航由通用可变深度状态机驱动：根范围内支持父子下钻、同级切换和外部轮廓回切，智慧体育默认在区县终止；榕城区教育局复用内置 16 镇街 GCJ-02 边界并可继续聚焦到镇街。两套驾驶舱的下钻、同级切换、返回、面包屑和自动巡航共用同一导航事务，用户操作可立即抢占未完成的请求、预构建和相机过渡。体育 HUD 以 JSON 模拟数据驱动，提供全局时间范围、数据类型、地市/学段、指标和趋势切换，并使用共享主题变量与 ECharts 图表；领域层始终分离排行榜数值、精度和单位，所有 HUD 数字统一通过共享 `AnimatedNumber` 呈现。智慧体育通过独立屏幕构图偏移避让底部卡片，但不改变共享地图的行政区中心点和旋转轴。区县及以下按可用数据启用学校网格，学校搜索始终保留，省、市、区县和镇街名称统一默认隐藏并在移入对应区域时显示。能量锥峰的行政区拓扑由地图状态维护，时间范围或体育指标切换只向既有塔实例发送数值帧并插值更新高度、标签和颜色，不重建 Geometry、Material 或地图状态。稳定活动层直接复用；同一几何带聚焦子级时保留父级锥峰、学校点位和连接网络，返回时直接恢复，避免同步重建阻塞首帧。数据请求、相机预览和图层预构建并行，厚度、颜色和轮廓连续过渡。边界请求支持抢占取消、8 秒超时且只缓存成功结果。智慧体育能量锥峰使用覆盖人数原型数据，下级以千人为单位稳定分配且父级等于下级合计，并通过分层倍率适配省、市、区县尺度。
 - 可视化页内已接入“学业质量监测”驾驶舱基础结构、通用图表面板和 ECharts 学业趋势图。
-- 教育局“学生成长画像”SaaS 页面：区域总览、学校差异、趋势跟进及五育、学业、运动、荣誉等专题；当前使用结构化模拟数据，心理健康仅展示安全接入规划。
+- 教育局“区域学生发展画像”SaaS 页面：以同一页面的十个一级锚点组织区域总览、学业、学生群体、学校、均衡、综合素质、支持成效、专题、AI 分析和区域报告；底层使用学生原始事实参与计算，区域端只展示区域、学校、年级、学科和群体聚合。当前使用结构化虚拟数据，未具备正式来源的能力明确标记为待接入。
+- 教育局“新学生成长画像”SaaS 页面：作为独立页面保留区域治理原型的五段分析结构，将区域总览、学生群体、学校发展、区域均衡和成长支持在同一内容流中连续展示，左侧仅作为页内锚点导航。
 
 项目默认使用 Supabase Auth、Postgres 和 RLS。`localStorage` 只用于显式本地演示、E2E 与旧数据迁移，不是生产数据源。
 
@@ -61,6 +62,7 @@ VITE_AUTH_PROVIDER=local
 /system/roles
 /system/menu-config
 /bureau/education-governance/student-growth-portrait
+/bureau/education-governance/new-student-growth-portrait
 /bureau/visualization/regional-education-overview?tenantId=bureau-001
 /bureau/ai-precision-teaching/smart-sports/cockpit?tenantId=bureau-001
 ```
@@ -77,7 +79,8 @@ VITE_AUTH_PROVIDER=local
 | `src/features/persistence/` | 应用持久化契约及 Supabase/localStorage Adapter |
 | `src/features/tenant-config/` | 菜单、工作台入口和角色的租户聚合配置 |
 | `src/features/workbench/workbench-templates.ts` | 固定工作台组件清单与默认布局 |
-| `src/features/student-growth-portrait/` | 区域学生成长画像的数据契约、模拟数据、图表和专题组件 |
+| `src/features/student-growth-portrait/` | 区域学生发展画像的数据契约、指标字典、锚点能力矩阵、虚拟原始数据与专题组件 |
+| `src/features/new-student-growth-portrait/` | 新学生成长画像的演示数据、图表配置与局部图表运行组件 |
 | `src/features/digital-twin/` | 共享地图引擎、状态机、Provider、主题、动效、通用图表、页面壳和会话能力 |
 | `src/features/regional-education-overview/` | 区域菜单、区域 HUD、状态栏、学业分析和区域地图适配器 |
 | `src/features/smart-sports-dashboard/` | 体育 HUD、模拟数据、覆盖人数及体育地图适配器 |
@@ -106,7 +109,7 @@ Supabase 主要表：
 
 所有浏览器可访问表必须启用 RLS。当前未启用 Realtime，另一个已打开页面需要刷新后读取普通业务数据变更。
 
-学生成长画像目前通过 `student-growth-portrait/mock-data.ts` 提供可替换的结构化模拟数据。后续接入外部后端时应保持页面只依赖领域类型与聚合结果；心理健康数据需单独授权、脱敏和审计，不参与综合评分或公开排名。
+区域学生发展画像当前通过 `virtual-portrait-raw-data-source.ts` 提供明确标记的虚拟学生原始记录，并由 `data-contract.ts`、`student-growth-portrait-repository.ts` 与 `portrait-aggregation.ts` 聚合为 `PortraitDataset`。`metric-registry.ts` 是指标字典，`page-capability-matrix.ts` 约束数据领域与内容组件，`regional-portrait-anchor-matrix.ts` 是同一页面左侧十个一级锚点及其发布边界的唯一事实源；锚点不是路由或独立页面。统考原始记录必须带考试类型、组织范围、考试计划、试卷版本、年级、学科、成绩、满分、排名与参考人数；同批次可计算区域平均得分率、学校标准分、优秀率、良好及以上率、及格率、低分率、分数段分布、学科结构与描述性得分率变化。知识模块、正式增值、三期以上稳定性、同类学校和城乡分析必须等相应来源与模型就绪后发布。可识别子群体少于 10 人时隐藏学校及考试子群体指标。接入真实后端时只替换原始数据源适配器；指标必须携带分子、分母、覆盖率、规则版本和可比性，不得把展示常量当作可追溯结论。心理健康、医疗与消费数据需独立授权、脱敏和审计，不参与综合评分或公开排名。
 
 ## 新增页面
 
@@ -115,6 +118,8 @@ Supabase 主要表：
 3. 在菜单配置中创建内部页面入口并关联该资源。
 
 尚未开发的菜单统一使用 `developing-placeholder`。
+
+部署传播或回滚期间，旧前端可能读取到新版本写入的 `pageKey`。持久化配置校验会保留结构合法但当前版本未知的页面记录，运行时导航自动忽略这些入口；未知页面不得导致整份租户配置加载失败。
 
 ## 验证
 

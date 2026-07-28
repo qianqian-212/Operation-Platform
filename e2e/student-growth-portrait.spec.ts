@@ -14,80 +14,89 @@ async function expectStandardTable(table: Locator) {
   await expect(table).toHaveClass(/el-table--striped/);
 }
 
-test("学生成长画像表格统一样式并按业务决定分页", async ({ page }) => {
+test("区域学生发展画像以单页锚点组织群体聚合，并只展示可追溯能力", async ({ page }) => {
   await switchToBureauTenant(page);
   await page.goto("/bureau/education-governance/student-growth-portrait");
 
-  const topicNavigation = page.getByRole("navigation", { name: "学生成长画像专题" });
-  await expect(topicNavigation).toHaveCSS("position", "sticky");
-  await expect(topicNavigation).toHaveCSS("top", "0px");
-  const topicNavigationHeight = await topicNavigation.evaluate((element) => {
-    const view = element.ownerDocument.defaultView!;
-    const rootStyle = view.getComputedStyle(element.ownerDocument.documentElement);
-    const style = view.getComputedStyle(element);
-    return {
-      minHeight: Number.parseFloat(style.minHeight),
-      maxHeight: Number.parseFloat(style.maxHeight),
-      viewportHeight: view.innerHeight,
-      headerHeight: Number.parseFloat(rootStyle.getPropertyValue("--header-height")),
-      contentPadding: Number.parseFloat(rootStyle.getPropertyValue("--content-padding")),
-    };
-  });
-  expect(topicNavigationHeight.minHeight).toBe(topicNavigationHeight.maxHeight);
-  expect(topicNavigationHeight.minHeight).toBe(
-    topicNavigationHeight.viewportHeight
-      - topicNavigationHeight.headerHeight
-      - topicNavigationHeight.contentPadding * 2,
-  );
-  await expect(page.getByRole("button", { name: "更多筛选" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "查询" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "重置" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "数据说明" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "年级" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "学段" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "教育阶段" })).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "镇街" })).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "数据状态" })).toHaveCount(0);
-  await expect(page.getByText("综合发展指数", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("进步质量指数", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("当前为虚拟数据源", { exact: false })).toBeVisible();
+  await expect(page.getByText("不得用于业务决策", { exact: false })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "学年", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "学期", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "学段", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "年级", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "学校范围" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "成长培育", exact: true })).toHaveCount(0);
+  await expect(page.getByText("五育均衡指数", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("学业进步指数", { exact: true })).toHaveCount(0);
 
-  const overviewSegmented = page.locator(".student-growth-portrait__view-switch .el-segmented");
-  await expect(overviewSegmented).toHaveCSS("border-radius", "4px");
+  const anchorNavigation = page.getByRole("navigation", { name: "区域学生发展画像内容锚点" });
+  await expect(anchorNavigation).toHaveCSS("position", "sticky");
+  await expect(anchorNavigation.getByRole("link")).toHaveCount(10);
+  await expect(anchorNavigation.getByRole("link").filter({ hasText: "学业发展画像" })).toContainText("部分可用");
+  await expect(anchorNavigation.getByRole("link").filter({ hasText: "学生群体画像" })).toContainText("待接入");
+  await expect(anchorNavigation.getByRole("link", { name: "区域发展总览", exact: true })).toBeVisible();
+  await expect(anchorNavigation.getByRole("link", { name: "学校发展画像", exact: true })).toBeVisible();
+  await expect(anchorNavigation.getByRole("link").filter({ hasText: "AI 分析助手" })).toContainText("待接入");
 
-  await page.getByText("学校差异", { exact: true }).click();
-  const schoolComparison = page.getByLabel("学校发展差异比较");
+  await page.getByRole("button", { name: "数据说明", exact: true }).click();
+  const dataDrawer = page.getByRole("dialog", { name: "数据与指标说明" });
+  await expect(dataDrawer.getByText("单页锚点能力范围", { exact: true })).toBeVisible();
+  await expect(dataDrawer.getByText("部分可用", { exact: true }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dataDrawer).toBeHidden();
+
+  await anchorNavigation.getByRole("link", { name: "学校发展画像", exact: true }).click();
+  const schoolComparison = page.getByLabel("学校聚合指标对照");
   await expectStandardTable(schoolComparison.locator(".el-table"));
-  const schoolPagination = schoolComparison.locator(".el-pagination");
-  await expect(schoolComparison.getByText("数据完整度", { exact: true })).toHaveCount(0);
-  await expect(schoolPagination).toBeVisible();
-  await expect(schoolPagination).toContainText("共 12 条");
-  await expect(schoolPagination.locator(".el-pagination__sizes")).toBeVisible();
-  await expect(schoolPagination.locator(".el-pagination__jump")).toBeVisible();
+  await expect(schoolComparison.getByText("成长目标完成率", { exact: true })).toBeVisible();
+  await expect(schoolComparison.getByText("AI 体锻参与", { exact: true })).toBeVisible();
+  await expect(schoolComparison.getByText("五育均衡", { exact: true })).toHaveCount(0);
 
-  await page.getByText("趋势与跟进", { exact: true }).click();
-  const followUp = page.getByLabel("区域发展趋势与跟进");
-  await expectStandardTable(followUp.locator(".el-table"));
-  await expect(followUp.locator(".el-pagination")).toHaveCount(0);
-  await expect(followUp.getByText("建议动作", { exact: true })).toHaveCount(0);
-  const trendExplanation = followUp.getByRole("button", { name: "查看区域发展趋势说明" });
-  await trendExplanation.hover();
-  await expect(page.getByRole("tooltip")).toContainText("五育均衡指数 79.6");
-  const contentOverflow = await page.locator(".student-growth-portrait__content").evaluate(
-    (element) => element.scrollWidth - element.clientWidth,
-  );
-  expect(contentOverflow).toBeLessThanOrEqual(1);
+  await anchorNavigation.getByRole("link", { name: "区域发展总览", exact: true }).click();
+  const dataOverview = page.getByLabel("数据总览");
+  await expectStandardTable(dataOverview.locator(".el-table").first());
+  await expect(dataOverview.getByText("实践活动参与率", { exact: true })).toBeVisible();
+  await expect(dataOverview.getByText("统考成绩记录覆盖率", { exact: true })).toBeVisible();
+  await expect(dataOverview.getByText("统考数据", { exact: true })).toBeVisible();
+  await expectStandardTable(dataOverview.locator(".el-table").nth(1));
+  await expect(dataOverview.getByText("期末统考", { exact: false }).first()).toBeVisible();
 
-  await page.getByRole("menuitem", { name: "五育评价", exact: true }).click();
-  const topic = page.getByLabel("五育评价专题分析");
-  await expectStandardTable(topic.locator(".el-table"));
-  await expect(topic.locator(".el-pagination")).toHaveCount(0);
-  await expect(topic.locator(".topic-analysis__header")).toHaveCount(0);
-  const topicExplanation = topic.getByRole("button", { name: "查看五育发展结构说明" });
-  await topicExplanation.hover();
-  await expect(page.getByRole("tooltip")).toContainText("体育与智育表现稳定");
+  const attention = page.getByLabel("区域数据关注");
+  await expectStandardTable(attention.locator(".el-table"));
+  await expect(attention.getByText("数据覆盖率", { exact: false })).toBeVisible();
+  await expect(attention.getByText("跟进中", { exact: true })).toHaveCount(0);
 
-  await page.getByRole("menuitem", { name: /心理健康/ }).click();
-  const mentalHealth = page.getByLabel("心理健康模块规划占位");
-  await expectStandardTable(mentalHealth.locator(".el-table"));
-  await expect(mentalHealth.locator(".el-pagination")).toHaveCount(0);
+  await anchorNavigation.getByRole("link").filter({ hasText: "综合素质画像" }).click();
+  const fiveEducation = page.getByLabel("五育评价专题分析");
+  await expectStandardTable(fiveEducation.locator(".el-table"));
+  await expect(fiveEducation.locator("dt", { hasText: "成长目标完成率" })).toBeVisible();
+  const explanation = fiveEducation.getByRole("button", { name: "查看评价记录分布说明" });
+  await explanation.hover();
+  await expect(page.getByRole("tooltip")).toContainText("不构成学生或学校的综合评分");
+
+  await anchorNavigation.getByRole("link").filter({ hasText: "学业发展画像" }).click();
+  const academic = page.getByLabel("区域学业质量分析");
+  await expect(academic.getByRole("combobox", { name: "学业分析学段" })).toBeVisible();
+  await expect(academic.getByRole("combobox", { name: "学业分析学科" })).toBeVisible();
+  await expect(academic.getByRole("combobox", { name: "学业分析考试类型" })).toBeVisible();
+  await expect(academic.locator("dt", { hasText: "平均得分率" })).toBeVisible();
+  await expect(academic.locator("dt", { hasText: "标准分" })).toBeVisible();
+  await expect(academic.locator("dt", { hasText: "优秀率" })).toBeVisible();
+  await expect(academic.locator("dt", { hasText: "及格率" })).toBeVisible();
+  await expect(academic.locator("dt", { hasText: "低分率" })).toBeVisible();
+  await expect(academic.getByText("分数段分布", { exact: true })).toBeVisible();
+  await expect(academic.getByText("各学科质量水平", { exact: true })).toBeVisible();
+  await expect(academic.getByText("期中—期末得分率变化", { exact: true })).toBeVisible();
+  await expect(academic.getByText("校际质量结构", { exact: true })).toBeVisible();
+  await expectStandardTable(academic.locator(".el-table"));
+  await expect(academic.getByText("学校类型、城乡片区：待学校主数据", { exact: true })).toBeVisible();
+
+  await anchorNavigation.getByRole("link").filter({ hasText: "学生群体画像" }).click();
+  const cohort = page.getByLabel("学生群体画像能力边界");
+  await expect(cohort.getByText("当前不发布业务结论", { exact: true })).toBeVisible();
+  await expect(cohort.getByText("群体定义与阈值版本", { exact: true })).toBeVisible();
+
+  await anchorNavigation.getByRole("link").filter({ hasText: "AI 分析助手" }).click();
+  const aiAnalysis = page.getByLabel("AI 分析助手能力边界");
+  await expect(aiAnalysis.getByText("禁止查询学生姓名", { exact: false })).toBeVisible();
 });

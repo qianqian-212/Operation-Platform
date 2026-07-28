@@ -141,6 +141,25 @@ describe("menu validation", () => {
     expect(validateMenuRecord(candidate, records, context)).toContain("page-not-available");
   });
 
+  it("accepts unknown page keys only when reading a newer persisted configuration", () => {
+    const records = [menu({ id: "module", type: "module", name: "校园安全" })];
+    const candidate = menu({
+      id: "new",
+      type: "page",
+      name: "新版本页面",
+      parentId: "module",
+      pageKey: "future-page",
+    });
+
+    expect(validateMenuRecord(candidate, records, context)).toContain("page-not-available");
+    expect(
+      validateMenuRecord(candidate, records, {
+        ...context,
+        allowUnknownPageKeys: true,
+      }),
+    ).toEqual([]);
+  });
+
   it("rejects external protocols other than http and https", () => {
     const records = [menu({ id: "module", type: "module", name: "校园安全" })];
     const candidate = menu({ id: "external", type: "external", name: "危险链接", parentId: "module", externalUrl: "javascript:alert(1)", externalOpenMode: "current" });

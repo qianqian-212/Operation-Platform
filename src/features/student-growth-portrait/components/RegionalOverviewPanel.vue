@@ -1,110 +1,131 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { ArrowRight, Warning } from "@element-plus/icons-vue";
 import type { EChartsCoreOption } from "echarts/core";
-import { createFiveEducationOption, createRegionalTrendOption } from "../chart-options";
-import { followUpRecords, mockDataMeta, schoolRecords } from "../mock-data";
+import type {
+  PortraitDataset,
+  PortraitDistribution,
+  PortraitMetric,
+} from "../data-contract";
 import StudentGrowthChart from "./StudentGrowthChart.vue";
 
-const emit = defineEmits<{
-  changeView: [view: "schools" | "follow-up"];
+const props = defineProps<{
+  dataset: PortraitDataset;
+  schoolNames: Readonly<Record<string, string>>;
 }>();
 
-const fiveEducationOption = createFiveEducationOption();
-const trendOption = createRegionalTrendOption();
-const chartMode = defineModel<"structure" | "trend">({ default: "structure" });
-const chartOption = computed<EChartsCoreOption>(() => (
-  chartMode.value === "structure" ? fiveEducationOption : trendOption
-));
-const attentionSchools = schoolRecords
-  .filter((school) => school.trend === "下降" || school.fiveEducation < 70)
-  .slice(0, 4);
-const activeFollowUpCount = followUpRecords.filter((record) => record.status !== "已改善").length;
-
-function statusType(score: number) {
-  if (score < 65) return "danger";
-  if (score < 72) return "warning";
-  return "info";
+function findMetric(key: string) {
+  return props.dataset.metrics.find((item) => item.key === key);
 }
+
+function isObserved(metric?: PortraitMetric) {
+  return Boolean(metric && metric.quality.observedStudentCount > 0);
+}
+
+function formatMetric(metric?: PortraitMetric) {
+  if (!metric || !isObserved(metric)) return "—";
+  return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 }).format(metric.value);
+}
+
+function coverageLabel(metric?: PortraitMetric) {
+  if (!metric) return "未接入";
+  if (metric.quality.observedStudentCount === 0) return "暂无有效记录";
+  return `已覆盖 ${formatMetric(metric)}${metric.unit}`;
+}
+
+function evaluationDistribution() {
+  return props.dataset.distributions.find((item) => item.key === "five-education-evaluation-level-distribution");
+}
+
+function createEvaluationOption(distribution?: PortraitDistribution): EChartsCoreOption {
+  const labels: Record<string, string> = {
+    excellent: "很好",
+    average: "一般",
+    "needs-effort": "需努力",
+  };
+  const items = distribution?.items ?? [];
+  return {
+    color: ["#36d187", "#558bf0", "#ff9c00"],
+    animationDuration: 240,
+    tooltip: {
+      trigger: "item",
+      valueFormatter: (value: number | string) => `${value}%`,
+    },
+    legend: {
+      bottom: 0,
+      itemWidth: 16,
+      itemHeight: 8,
+      textStyle: { color: "#575859" },
+    },
+    graphic: items.length
+      ? undefined
+      : [{
+        type: "text",
+        left: "center",
+        top: "middle",
+        style: { text: "暂无有效成长评价记录", fill: "#898a8c", fontSize: 14 },
+      }],
+    series: [{
+      name: "评价记录构成",
+      type: "pie",
+      radius: ["46%", "68%"],
+      center: ["50%", "46%"],
+      avoidLabelOverlap: true,
+      label: { formatter: "{b} {c}%", color: "#575859" },
+      data: items.map((item) => ({ name: labels[item.key] ?? item.key, value: item.value })),
+    }],
+  };
+}
+
+const enrolledStudents = computed(() => findMetric("enrolled-student-count"));
+const evaluationCoverage = computed(() => findMetric("five-education-evaluation-coverage-rate"));
+const examCoverage = computed(() => findMetric("academic-exam-coverage-rate"));
+const fitnessCoverage = computed(() => findMetric("fitness-test-record-coverage-rate"));
+const distribution = computed(evaluationDistribution);
+const evaluationOption = computed(() => createEvaluationOption(distribution.value));
+const schoolCount = computed(() => props.dataset.schools.length);
+const namedSchoolCount = computed(() => props.dataset.schools.filter((school) => props.schoolNames[school.schoolId]).length);
+const overviewMetrics = computed(() => [
+  { label: "纳入学校", value: schoolCount.value.toLocaleString("zh-CN"), unit: "所", description: `已匹配 ${namedSchoolCount.value} 所学校名称` },
+  { label: "在籍学生", value: formatMetric(enrolledStudents.value), unit: "人", description: "有效学籍去重人数" },
+  { label: "成长评价覆盖", value: formatMetric(evaluationCoverage.value), unit: "%", description: coverageLabel(evaluationCoverage.value) },
+  { label: "考试记录覆盖", value: formatMetric(examCoverage.value), unit: "%", description: coverageLabel(examCoverage.value) },
+  { label: "体测记录覆盖", value: formatMetric(fitnessCoverage.value), unit: "%", description: coverageLabel(fitnessCoverage.value) },
+]);
 </script>
 
 <template>
-  <section class="regional-overview" aria-label="区域学生成长画像总览">
+  <section class="regional-overview" aria-label="区域学生发展画像总览">
     <div class="regional-overview__summary">
       <div class="regional-overview__reading">
-        <span class="regional-overview__eyebrow">区域总体判读</span>
-        <h2>本学期已覆盖 {{ mockDataMeta.schoolCount }} 所学校，{{ activeFollowUpCount }} 项事项待研判或跟进</h2>
-        <p>五育与运动健康整体改善，学校差异仍需结合学段、学生规模和统一统计口径进一步研判。</p>
+        <span class="regional-overview__eyebrow">区域数据观察</span>
+        <h2>先确认统计范围与数据覆盖，再解读区域发展事实</h2>
+        <p>学校差异和专题分析均使用下方同一筛选范围；覆盖不足时只生成待核查信号，不生成综合评分或原因判断。</p>
       </div>
       <dl class="regional-overview__metrics">
-        <div>
-          <dt>覆盖学校</dt>
-          <dd>{{ mockDataMeta.schoolCount }}<small>所</small></dd>
-          <span>本区域学校范围</span>
-        </div>
-        <div>
-          <dt>覆盖学生</dt>
-          <dd>{{ mockDataMeta.studentCount.toLocaleString() }}<small>人</small></dd>
-          <span>仅展示匿名聚合结果</span>
-        </div>
-        <div>
-          <dt>待跟进事项</dt>
-          <dd>{{ activeFollowUpCount }}<small>项</small></dd>
-          <span>待研判或跟进中</span>
+        <div v-for="metric in overviewMetrics" :key="metric.label">
+          <dt>{{ metric.label }}</dt>
+          <dd>{{ metric.value }}<small>{{ metric.unit }}</small></dd>
+          <span>{{ metric.description }}</span>
         </div>
       </dl>
-      <ElButton type="primary" :icon="ArrowRight" @click="emit('changeView', 'schools')">
-        查看学校差异
-      </ElButton>
     </div>
 
     <div class="regional-overview__main">
-      <section class="portrait-panel regional-overview__chart-panel">
+      <section class="portrait-panel regional-overview__chart-panel" aria-labelledby="evaluation-distribution-title">
         <header class="portrait-panel__header">
           <div>
-            <h3>五育发展结构与趋势</h3>
-            <p>得分基于模拟评价数据标准化，满分 100 分</p>
+            <h3 id="evaluation-distribution-title">成长评价等级构成</h3>
+            <p>按有效评价记录统计；评价覆盖 {{ distribution?.quality.coverageRate ?? 0 }}%，不作为综合发展得分。</p>
           </div>
-          <ElSegmented
-            v-model="chartMode"
-            :options="[
-              { label: '五育结构', value: 'structure' },
-              { label: '发展趋势', value: 'trend' },
-            ]"
-          />
         </header>
         <div class="regional-overview__chart">
           <StudentGrowthChart
-            :option="chartOption"
-            :ariaLabelText="chartMode === 'structure' ? '区域五育发展结构雷达图' : '区域学生发展趋势折线图'"
+            :option="evaluationOption"
+            ariaLabelText="区域成长评价等级构成图"
           />
         </div>
       </section>
 
-      <aside class="portrait-panel regional-overview__attention">
-        <header class="portrait-panel__header">
-          <div>
-            <h3>学校关注提示</h3>
-            <p>依据当前规则筛选，仅展示学校聚合数据</p>
-          </div>
-          <ElButton link type="primary" @click="emit('changeView', 'follow-up')">查看跟进事项</ElButton>
-        </header>
-        <ul>
-          <li v-for="school in attentionSchools" :key="school.id">
-            <div class="regional-overview__school-title">
-              <strong>{{ school.name }}</strong>
-              <ElTag :type="statusType(school.fiveEducation)" effect="light" size="small">
-                {{ school.trend === "下降" ? "趋势下降" : "均衡不足" }}
-              </ElTag>
-            </div>
-            <p>{{ school.attention }}</p>
-            <span>{{ school.stage }} · {{ school.students.toLocaleString() }} 名学生</span>
-          </li>
-        </ul>
-        <ElButton class="regional-overview__attention-action" :icon="Warning" @click="emit('changeView', 'follow-up')">
-          查看待跟进事项
-        </ElButton>
-      </aside>
     </div>
   </section>
 </template>
@@ -119,7 +140,7 @@ function statusType(score: number) {
   display: grid;
   min-width: 0;
   align-items: center;
-  grid-template-columns: minmax(300px, 1.35fr) minmax(420px, 1fr) auto;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.8fr);
   gap: var(--spacing-24);
   padding: var(--spacing-24);
   border-radius: var(--radius-md);
@@ -140,8 +161,7 @@ function statusType(score: number) {
 }
 
 .regional-overview__reading p,
-.portrait-panel__header p,
-.regional-overview__attention li p {
+.portrait-panel__header p {
   margin-top: var(--spacing-6);
   color: var(--color-secondary);
   line-height: var(--line-height-md);
@@ -149,7 +169,7 @@ function statusType(score: number) {
 
 .regional-overview__metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .regional-overview__metrics > div {
@@ -177,14 +197,10 @@ function statusType(score: number) {
   font-weight: var(--font-weight-regular);
 }
 
-.regional-overview__metrics strong {
-  color: var(--color-success-dark-text);
-}
-
 .regional-overview__main {
   display: grid;
   min-height: 440px;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-16);
 }
 
@@ -216,39 +232,6 @@ function statusType(score: number) {
   margin-top: var(--spacing-16);
 }
 
-.regional-overview__attention {
-  display: flex;
-  flex-direction: column;
-}
-
-.regional-overview__attention ul {
-  display: grid;
-  margin-top: var(--spacing-8);
-  list-style: none;
-}
-
-.regional-overview__attention li {
-  padding: var(--spacing-14) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.regional-overview__school-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-8);
-}
-
-.regional-overview__attention li > span {
-  color: var(--color-placeholder);
-  font-size: var(--font-size-xs);
-}
-
-.regional-overview__attention-action {
-  width: 100%;
-  margin-top: auto;
-}
-
 @media (max-width: 1180px) {
   .regional-overview__summary {
     grid-template-columns: 1fr;
@@ -259,6 +242,21 @@ function statusType(score: number) {
   }
 
   .regional-overview__metrics > div:first-child {
+    border-left: 0;
+  }
+
+  .regional-overview__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .regional-overview__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .regional-overview__metrics > div:nth-child(4) {
+    border-top: 1px solid var(--color-border);
     border-left: 0;
   }
 }
@@ -272,5 +270,4 @@ function statusType(score: number) {
     grid-column: 1 / -1;
   }
 }
-
 </style>

@@ -1,33 +1,95 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { InfoFilled } from "@element-plus/icons-vue";
-import { schoolRecords } from "../mock-data";
-import type { SchoolGrowthRecord } from "../types";
+import type { MetricQuality, PortraitDataset, PortraitMetric, SchoolPortraitSummary } from "../data-contract";
+import { portraitMetricDefinitionByKey } from "../metric-registry";
 
-const selectedSchool = ref<SchoolGrowthRecord | null>(null);
+type QualityTagType = "success" | "warning" | "danger" | "info";
+
+interface SchoolComparisonRow {
+  schoolId: string;
+  name: string;
+  studentCount: number;
+  goalCompletion: number | null;
+  evaluationCoverage: number | null;
+  exerciseParticipation: number | null;
+  practiceParticipation: number | null;
+  metrics: SchoolPortraitSummary["metrics"];
+}
+
+const props = defineProps<{
+  dataset: PortraitDataset;
+  schoolNames: Readonly<Record<string, string>>;
+}>();
+
+const selectedSchool = ref<SchoolComparisonRow | null>(null);
 const drawerVisible = ref(false);
 const currentPage = ref(1);
 const pageSize = ref(10);
 
-const pagedRecords = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  return schoolRecords.slice(start, start + pageSize.value);
-});
-
-function trendType(trend: SchoolGrowthRecord["trend"]): "success" | "warning" | "danger" {
-  if (trend === "上升") return "success";
-  if (trend === "下降") return "danger";
-  return "warning";
+function metricFor(metrics: readonly PortraitMetric[], key: string) {
+  return metrics.find((metric) => metric.key === key);
 }
 
-function scoreType(score: number): "success" | "warning" | "danger" | "primary" {
-  if (score >= 80) return "success";
-  if (score >= 70) return "primary";
-  if (score >= 60) return "warning";
+function observedMetricValue(metrics: readonly PortraitMetric[], key: string) {
+  const metric = metricFor(metrics, key);
+  return metric && metric.quality.observedStudentCount > 0 ? metric.value : null;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 }).format(value);
+}
+
+function formatPercent(value: number | null) {
+  return value === null ? "—" : `${formatNumber(value)}%`;
+}
+
+function qualityType(quality?: MetricQuality): QualityTagType {
+  if (!quality || quality.status === "unavailable") return "info";
+  if (quality.status === "ready") return "success";
+  if (quality.status === "partial") return "warning";
   return "danger";
 }
 
-function openSchool(record: SchoolGrowthRecord) {
+function qualityLabel(quality?: MetricQuality) {
+  if (!quality || quality.status === "unavailable") return "未接入";
+  if (quality.status === "ready") return "覆盖完整";
+  if (quality.status === "partial") return `覆盖 ${formatNumber(quality.coverageRate)}%`;
+  return "有效记录不足";
+}
+
+function metricLabel(key: string) {
+  return portraitMetricDefinitionByKey.get(key)?.label ?? key;
+}
+
+const schoolRows = computed<SchoolComparisonRow[]>(() => props.dataset.schools.map((school) => ({
+  schoolId: school.schoolId,
+  name: props.schoolNames[school.schoolId] ?? "未匹配学校名称",
+  studentCount: school.studentCount,
+  goalCompletion: observedMetricValue(school.metrics, "five-education-goal-completion-rate"),
+  evaluationCoverage: observedMetricValue(school.metrics, "five-education-evaluation-coverage-rate"),
+  exerciseParticipation: observedMetricValue(school.metrics, "ai-exercise-participation-rate"),
+  practiceParticipation: observedMetricValue(school.metrics, "practice-participation-rate"),
+  metrics: school.metrics,
+})));
+
+const enrolledStudentCount = computed(() => {
+  const metric = props.dataset.metrics.find((item) => item.key === "enrolled-student-count");
+  return metric?.value ?? 0;
+});
+
+const pagedRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return schoolRows.value.slice(start, start + pageSize.value);
+});
+
+watch(() => props.dataset.generatedAt, () => {
+  currentPage.value = 1;
+  drawerVisible.value = false;
+  selectedSchool.value = null;
+});
+
+function openSchool(record: SchoolComparisonRow) {
   selectedSchool.value = record;
   drawerVisible.value = true;
 }
@@ -38,16 +100,16 @@ function handleSizeChange() {
 </script>
 
 <template>
-  <section class="school-comparison" aria-label="学校发展差异比较">
+  <section class="school-comparison" aria-label="学校聚合指标对照">
     <header class="school-comparison__header">
       <div>
-        <h2>学校差异</h2>
-        <p>基于同学段、同学期的标准化指标比较；点击学校查看聚合画像。</p>
+        <h2>学校聚合指标对照</h2>
+        <p>仅展示有明确分子、分母且支持区域比较的已接入指标；不生成学校综合排名或趋势判断。</p>
       </div>
-      <div class="school-comparison__benchmark">
-        <span>区域基准</span>
-        <span><strong>48</strong><small>所学校</small></span>
-        <span><strong>28,643</strong><small>名学生</small></span>
+      <div class="school-comparison__benchmark" aria-label="当前筛选范围">
+        <span>当前范围</span>
+        <span><strong>{{ schoolRows.length }}</strong><small>所学校</small></span>
+        <span><strong>{{ formatNumber(enrolledStudentCount) }}</strong><small>名在籍学生</small></span>
       </div>
     </header>
 
@@ -59,107 +121,61 @@ function handleSizeChange() {
           stripe
           border
           highlight-current-row
-          row-key="id"
+          row-key="schoolId"
+          empty-text="当前筛选范围内暂无学校聚合数据"
           @row-click="openSchool"
         >
-          <ElTableColumn
-            column-key="index"
-            label="序号"
-            width="60"
-            align="center"
-            fixed="left"
-          >
+          <ElTableColumn column-key="index" label="序号" width="60" align="center" fixed="left">
             <template #default="{ $index }">
-              {{
-                String((currentPage - 1) * pageSize + $index + 1).padStart(2, "0")
-              }}
+              {{ String((currentPage - 1) * pageSize + $index + 1).padStart(2, "0") }}
             </template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="name"
-            column-key="name"
-            label="学校"
-            min-width="190"
-            fixed="left"
-            show-overflow-tooltip
-          >
+          <ElTableColumn prop="name" column-key="name" label="学校" min-width="190" fixed="left" show-overflow-tooltip>
             <template #default="{ row }">
               <button
                 class="school-comparison__school-button"
                 type="button"
+                :aria-label="`查看${row.name}的聚合指标详情`"
                 @click.stop="openSchool(row)"
               >
                 {{ row.name }}
               </button>
             </template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="students"
-            column-key="students"
-            label="学生规模"
-            width="110"
-            sortable
-          >
-            <template #default="{ row }">{{ row.students.toLocaleString() }}</template>
+          <ElTableColumn prop="studentCount" column-key="studentCount" label="在籍学生" width="112" sortable>
+            <template #default="{ row }">{{ formatNumber(row.studentCount) }}</template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="fiveEducation"
-            column-key="fiveEducation"
-            min-width="132"
-            sortable
-          >
+          <ElTableColumn prop="goalCompletion" column-key="goalCompletion" min-width="154" sortable>
             <template #header>
               <span>
-                五育均衡
-                <ElTooltip content="评价量表标准化后支持区域比较">
+                成长目标完成率
+                <ElTooltip content="有效记录的已获学分总和 ÷ 目标学分总和">
                   <ElIcon><InfoFilled /></ElIcon>
                 </ElTooltip>
               </span>
             </template>
             <template #default="{ row }">
-              <strong>{{ row.fiveEducation }}</strong>
-              <ElTag :type="scoreType(row.fiveEducation)" size="small" effect="light">
-                {{
-                  row.fiveEducation >= 80
-                    ? "优秀"
-                    : row.fiveEducation >= 70
-                      ? "良好"
-                      : "需关注"
-                }}
-              </ElTag>
+              <span>{{ formatPercent(row.goalCompletion) }}</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="academicProgress"
-            column-key="academicProgress"
-            label="学业进步"
-            min-width="120"
-            sortable
-          />
-          <ElTableColumn
-            prop="physicalHealth"
-            column-key="physicalHealth"
-            label="体质健康"
-            min-width="120"
-            sortable
-          >
-            <template #default="{ row }">{{ row.physicalHealth }}%</template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="activityParticipation"
-            column-key="activityParticipation"
-            label="活动参与"
-            min-width="120"
-            sortable
-          >
-            <template #default="{ row }">{{ row.activityParticipation }}%</template>
-          </ElTableColumn>
-          <ElTableColumn prop="trend" column-key="trend" label="趋势" width="96">
+          <ElTableColumn prop="evaluationCoverage" column-key="evaluationCoverage" min-width="154" sortable>
+            <template #header>
+              <span>
+                成长评价覆盖
+                <ElTooltip content="至少有一条有效成长评价的学生数 ÷ 在籍学生数">
+                  <ElIcon><InfoFilled /></ElIcon>
+                </ElTooltip>
+              </span>
+            </template>
             <template #default="{ row }">
-              <ElTag :type="trendType(row.trend)" size="small" effect="light">
-                {{ row.trend }}
-              </ElTag>
+              <span>{{ formatPercent(row.evaluationCoverage) }}</span>
             </template>
+          </ElTableColumn>
+          <ElTableColumn prop="exerciseParticipation" column-key="exerciseParticipation" label="AI 体锻参与" min-width="134" sortable>
+            <template #default="{ row }">{{ formatPercent(row.exerciseParticipation) }}</template>
+          </ElTableColumn>
+          <ElTableColumn prop="practiceParticipation" column-key="practiceParticipation" label="实践活动参与" min-width="138" sortable>
+            <template #default="{ row }">{{ formatPercent(row.practiceParticipation) }}</template>
           </ElTableColumn>
           <ElTableColumn column-key="actions" label="操作" width="96" fixed="right">
             <template #default="{ row }">
@@ -178,7 +194,7 @@ function handleSizeChange() {
         <ElPagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="schoolRecords.length"
+          :total="schoolRows.length"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           background
@@ -188,24 +204,28 @@ function handleSizeChange() {
     </div>
   </section>
 
-  <ElDrawer v-model="drawerVisible" :title="selectedSchool?.name ?? '学校聚合画像'" size="420px">
+  <ElDrawer v-model="drawerVisible" :title="selectedSchool?.name ?? '学校聚合指标'" size="420px">
     <template v-if="selectedSchool">
-      <ElAlert title="仅展示学校聚合数据，不包含个人学生信息" type="info" :closable="false" show-icon />
+      <ElAlert title="仅展示学校匿名聚合数据，不包含个人学生信息" type="info" :closable="false" show-icon />
       <div class="school-drawer__meta">
-        <span>{{ selectedSchool.stage }}</span>
-        <span>在校生 {{ selectedSchool.students.toLocaleString() }} 人</span>
-        <ElTag :type="trendType(selectedSchool.trend)" effect="light">{{ selectedSchool.trend }}</ElTag>
+        <span>在籍学生 {{ formatNumber(selectedSchool.studentCount) }} 人</span>
+        <span>统计规则 {{ dataset.metrics[0]?.calculationVersion ?? "—" }}</span>
       </div>
       <dl class="school-drawer__metrics">
-        <div><dt>五育均衡指数</dt><dd>{{ selectedSchool.fiveEducation }}</dd></div>
-        <div><dt>学业进步指数</dt><dd>{{ selectedSchool.academicProgress }}</dd></div>
-        <div><dt>体质健康优良率</dt><dd>{{ selectedSchool.physicalHealth }}%</dd></div>
-        <div><dt>活动参与率</dt><dd>{{ selectedSchool.activityParticipation }}%</dd></div>
+        <div v-for="metric in selectedSchool.metrics" :key="metric.key">
+          <dt>
+            <span>{{ metricLabel(metric.key) }}</span>
+            <small>覆盖 {{ formatNumber(metric.quality.coverageRate) }}%</small>
+          </dt>
+          <dd>
+            <span v-if="metric.quality.observedStudentCount > 0">{{ formatNumber(metric.value) }}{{ metric.unit }}</span>
+            <span v-else>—</span>
+            <ElTag :type="qualityType(metric.quality)" size="small" effect="light">
+              {{ qualityLabel(metric.quality) }}
+            </ElTag>
+          </dd>
+        </div>
       </dl>
-      <section class="school-drawer__attention">
-        <h3>发展提示</h3>
-        <p>{{ selectedSchool.attention }}</p>
-      </section>
     </template>
   </ElDrawer>
 </template>
@@ -315,6 +335,7 @@ function handleSizeChange() {
 
 .school-drawer__meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-12);
   margin: var(--spacing-20) 0;
@@ -329,31 +350,32 @@ function handleSizeChange() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--spacing-12);
   padding: var(--spacing-16) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 .school-drawer__metrics dt {
+  display: grid;
+  gap: var(--spacing-4);
   color: var(--color-body);
+}
+
+.school-drawer__metrics dt small {
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
 }
 
 .school-drawer__metrics dd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
   color: var(--color-title);
   font-size: 18px;
   font-weight: var(--font-weight-semibold);
-}
-
-.school-drawer__attention {
-  margin-top: var(--spacing-24);
-  padding: var(--spacing-16);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-muted);
-}
-
-.school-drawer__attention p {
-  margin-top: var(--spacing-8);
-  color: var(--color-body);
-  line-height: var(--line-height-lg);
+  text-align: right;
 }
 
 :deep(.el-table__row) {

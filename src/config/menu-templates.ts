@@ -71,7 +71,8 @@ const bureauModuleIcons: Record<string, MenuIconKey> = {
 
 const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI精准教学/智慧体育/智慧体育数据驾驶舱": "bureau-smart-sports-cockpit",
-  "AI教育治理/学生发展评价/学生成长画像": "bureau-student-growth-portrait",
+  "AI教育治理/学生发展评价/区域学生发展画像": "bureau-student-growth-portrait",
+  "AI教育治理/学生发展评价/新学生成长画像": "bureau-new-student-growth-portrait",
   "智慧大脑/数据驾驶舱/区域教育总览": "bureau-regional-education-overview",
 };
 

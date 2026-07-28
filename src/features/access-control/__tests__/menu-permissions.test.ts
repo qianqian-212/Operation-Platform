@@ -105,6 +105,23 @@ describe("menu permissions", () => {
     expect(isRecordPermittedWithAncestors(records.find((record) => record.id === "page-hidden"), records, role(["page-hidden"]))).toBe(false);
   });
 
+  it("omits pages that are unknown to the running frontend", () => {
+    const futurePage: MenuConfigRecord = {
+      ...records[3]!,
+      id: "future-page",
+      parentId: "module-a",
+      name: "新版本页面",
+      pageKey: "future-page",
+    };
+
+    expect(
+      filterMenuTreeByRole(
+        buildMenuTree([records[0]!, futurePage]),
+        role(["future-page"]),
+      ),
+    ).toEqual([]);
+  });
+
   it("resolves the first accessible route from role-filtered menus", () => {
     expect(resolveFirstPermittedInternalPath(records, role(["page-d"]))).toBe("/developing/page-d");
   });

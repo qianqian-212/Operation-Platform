@@ -43,6 +43,62 @@ final result: passed
 
 ---
 
+# 新学生成长画像设计 QA
+
+- source visual truth path: `/Users/liuxiao/Downloads/region-growth-demo/index.html`
+- source screenshot path: `output/design-qa/new-student-growth-portrait/source.png`
+- implementation URL: `http://127.0.0.1:4175/bureau/education-governance/new-student-growth-portrait`
+- implementation screenshot path: `output/design-qa/new-student-growth-portrait/implementation.png`
+- viewport: 1280 × 720 CSS px
+- source pixels: 1280 × 720
+- implementation pixels: 1280 × 720
+- device pixel ratio: source 2 / implementation 2；浏览器截图均归一化为 CSS 视口尺寸
+- state: 本地演示认证、体验区教育局、区域发展总览首屏
+
+## Full-view comparison evidence
+
+- 原型的五段区域分析结构、蓝色功能强调、紧凑筛选、指标卡、图表和智能摘要语义均被保留；专题报告不再作为页面模块。
+- 实现没有复制原型的独立深色应用壳，而是按需求接入现有 SaaS Shell；原型左侧六项切换被转换为页面内容区内的六个连续锚点。
+- 原型每次只展示一个模块；实现将六个模块全部展开，因此首屏保留五项核心指标，不隐藏第二行指标。这是本次“同页连续罗列”的预期差异。
+- 实现沿用仓库的字体栈、品牌色、状态色、间距与圆角变量，并使用 Element Plus 与现有 Lucide 图标体系。
+
+## Focused region comparison evidence
+
+- 首屏筛选区、锚点导航、指标卡和标题区在 1280 × 720 同视口下文字均可辨认，足以检查字体、间距、颜色、图标和文案；没有依赖图片素材或需要单独放大的品牌图形，因此未增加局部裁切对照。
+
+## Fidelity surfaces
+
+- 字体与层级：使用现有 `PingFang SC / Microsoft YaHei` 字体栈，标题、正文、注释和数值保持 SaaS 既有字号与字重层级。
+- 间距与布局：内容区使用 188px 锚点列和自适应主列；卡片、筛选和区块间距全部复用现有 spacing/radius token。
+- 色彩与变量：主色、浅选中背景、边框、正文、辅助文字与状态色均来自现有 `--color-*` 变量。
+- 图片与素材：原型没有内容图片；实现图标使用项目既有图标库，图表使用 ECharts Canvas，无占位图片或手绘替代资产。
+- 文案与内容：保留区域总览、群体、学校、均衡、支持和报告的原型语义，并补全原型中仅预留的专题报告操作。
+
+## Findings
+
+- 无遗留 P0 / P1 / P2 问题。
+- P3：SaaS Shell 占用的水平空间比原型独立壳更多，因此指标卡在 1280px 下采用 3 + 2 排列；该变化确保数值不被隐藏，并符合连续长页的信息完整性目标。
+
+## Comparison history
+
+1. 第一轮发现 1280px 下筛选区“重置”按钮被换到第二行，学期选项随后因压缩发生截断，判定为 P2。
+2. 调整中等宽度下四个选择器与更新时间宽度后，查询、重置、完整学期和更新时间恢复为同一行。
+3. 最终同视口复检确认筛选区无裁切，锚点、指标卡与页面标题对齐；新开标签页的 console error 与 ECharts warning 均为 0。
+4. 后续按原始文件复核全部图表类型：将群体阶段迁移恢复为 ECharts Sankey，将片区矩阵恢复为 ECharts Heatmap，并把学校发展分布从总览四象限改为独立的多学校散点分布。
+5. 按 `design.md` 的非数据源规范复核后，筛选区改为复用 `PageFilterBar`，补齐表格 `row-key` / 稳定列标识、品牌色焦点轮廓和 `prefers-reduced-motion` 行为；运行态再次确认无 console error 与 ECharts warning。
+
+## Primary interactions tested
+
+- 六个锚点定位与滚动后 `aria-current` 高亮。
+- 学校搜索筛选。
+- 学生群体选择与图表更新。
+- 趋势模式切换、查询/重置、锚点定位、群体切换与学校检索。
+- 教育局菜单入口、路由权限与页面刷新。
+
+final result: passed
+
+---
+
 # 智慧体育 HUD 设计 QA
 
 - 视觉来源：`/private/tmp/figma-smart-sports-reference.png`

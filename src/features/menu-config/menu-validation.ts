@@ -28,6 +28,7 @@ interface ValidationPageReference {
 interface ValidationContext {
   tenantType: TenantType;
   pages: ReadonlyMap<string, ValidationPageReference>;
+  allowUnknownPageKeys?: boolean;
 }
 
 export class MenuValidationError extends Error {
@@ -168,11 +169,18 @@ export function validateMenuRecord(
       errors.push("page-required");
     } else {
       const page = context.pages.get(candidate.pageKey);
-      if (!page || !page.tenantTypes.includes(context.tenantType)) {
+      if (!page && !context.allowUnknownPageKeys) {
         errors.push("page-not-available");
       }
       if (
-        !page?.allowDuplicateMenuBinding &&
+        page &&
+        !page.tenantTypes.includes(context.tenantType)
+      ) {
+        errors.push("page-not-available");
+      }
+      if (
+        page &&
+        !page.allowDuplicateMenuBinding &&
         otherRecords.some((record) => record.pageKey === candidate.pageKey)
       ) {
         errors.push("duplicate-page-key");

@@ -41,6 +41,10 @@ function isValidMenuRecords(value: unknown, tenant: TenantInfo): value is MenuCo
     const errors = validateMenuRecord(record, value, {
       tenantType: tenant.type,
       pages: pageRegistryByKey,
+      // A persisted configuration can be newer than the running frontend during
+      // deployment propagation or rollback. Unknown page keys stay in storage
+      // and are omitted by runtime navigation until this build registers them.
+      allowUnknownPageKeys: true,
     });
     return errors.length === 0;
   });

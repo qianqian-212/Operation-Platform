@@ -11,13 +11,11 @@ const emit = defineEmits<{
 const academicYear = defineModel<string>("academicYear", { required: true });
 const semester = defineModel<string>("semester", { required: true });
 const stage = defineModel<string>("stage", { required: true });
-const schoolScope = defineModel<string>("schoolScope", { required: true });
 const grade = defineModel<string>("grade", { required: true });
 
 const yearOptions = ["2025-2026学年", "2024-2025学年", "2023-2024学年"];
 const semesterOptions = ["第二学期", "第一学期"];
 const stageOptions = ["全部学段", "小学", "初中", "高中"];
-const scopeOptions = ["区域内全部学校", "直属学校"];
 const gradeOptionsByStage: Record<string, string[]> = {
   小学: ["一年级", "二年级", "三年级", "四年级", "五年级", "六年级"],
   初中: ["七年级", "八年级", "九年级"],
@@ -34,16 +32,15 @@ watch(stage, () => {
 
 function reset() {
   academicYear.value = "2025-2026学年";
-  semester.value = "第二学期";
+  semester.value = "第一学期";
   stage.value = "全部学段";
-  schoolScope.value = "区域内全部学校";
   grade.value = "全部年级";
   emit("query");
 }
 </script>
 
 <template>
-  <PageFilterBar aria-label="学生成长画像筛选条件">
+  <PageFilterBar aria-label="区域学生发展画像筛选条件">
     <label class="portrait-filter-field">
       <span>学年：</span>
       <ElSelect v-model="academicYear" aria-label="学年" class="portrait-filter-field__control">
@@ -66,12 +63,6 @@ function reset() {
       <span>年级：</span>
       <ElSelect v-model="grade" aria-label="年级" class="portrait-filter-field__control">
         <ElOption v-for="item in gradeOptions" :key="item" :label="item" :value="item" />
-      </ElSelect>
-    </label>
-    <label class="portrait-filter-field">
-      <span>学校范围：</span>
-      <ElSelect v-model="schoolScope" aria-label="学校范围" class="portrait-filter-field__control">
-        <ElOption v-for="item in scopeOptions" :key="item" :label="item" :value="item" />
       </ElSelect>
     </label>
     <template #actions>
