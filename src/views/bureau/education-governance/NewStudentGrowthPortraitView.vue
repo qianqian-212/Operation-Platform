@@ -705,6 +705,8 @@ onBeforeUnmount(() => {
 
 .portrait-panel {
   display: grid;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   gap: var(--spacing-16);
   padding: var(--spacing-16);
@@ -713,12 +715,22 @@ onBeforeUnmount(() => {
 }
 .portrait-panel__header {
   display: flex;
+  width: 100%;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-16);
 }
+.portrait-panel__header > div:first-child { min-width: 0; flex: 1; }
 .portrait-panel__header h3 { font-size: var(--font-size-lg); line-height: var(--line-height-lg); font-weight: 600; }
-.portrait-panel__chart { height: 300px; }
+.portrait-panel__chart {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 300px;
+  min-height: 0;
+  overflow: hidden;
+}
 .portrait-panel__chart--tall { height: 340px; }
 
 .portrait-summary {
