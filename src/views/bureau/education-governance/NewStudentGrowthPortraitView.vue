@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import {
   Award,
   BookOpenCheck,
@@ -9,11 +10,11 @@ import {
   LayoutDashboard,
   Search,
   Sparkles,
-  TrendingUp,
   Users,
 } from "@lucide/vue";
 import { ElMessage } from "element-plus";
 import PageFilterBar from "@/components/PageFilterBar.vue";
+import { pageRegistryByKey } from "@/config/page-registry";
 import MetricDefinitionPopover from "@/features/new-student-growth-portrait/MetricDefinitionPopover.vue";
 import NewPortraitChart from "@/features/new-student-growth-portrait/NewPortraitChart.vue";
 import RegionalQualityDomainSection from "@/features/new-student-growth-portrait/RegionalQualityDomainSection.vue";
@@ -23,14 +24,15 @@ import {
 } from "@/features/new-student-growth-portrait/national-standard-alignment";
 import {
   createCoverageOption,
+  createUnifiedExamGradeComparisonOption,
   createUnifiedExamSubjectOption,
 } from "@/features/new-student-growth-portrait/chart-options";
 import { portraitAnchors } from "@/features/new-student-growth-portrait/data";
 import type {
   EducationStage,
   PortraitDataset,
+  PortraitMetric,
   PortraitQuery,
-  UnifiedExamSummary,
 } from "@/features/student-growth-portrait/data-contract";
 import {
   portraitMetricDefinitionByKey,
@@ -38,8 +40,12 @@ import {
 import { runtimeStudentGrowthPortraitRepository } from "@/features/student-growth-portrait/runtime-student-growth-portrait-repository";
 import {
   virtualPortraitDataMetadata,
+  virtualPortraitSchoolNames,
 } from "@/features/student-growth-portrait/virtual-portrait-raw-data-source";
+import { useUserStore } from "@/stores/user";
 
+const router = useRouter();
+const userStore = useUserStore();
 const activeAnchor = ref<(typeof portraitAnchors)[number]["key"]>("regional-overview");
 const stage = ref("全部学段");
 const grade = ref("全部年级");
@@ -48,9 +54,20 @@ const academicSubject = ref("");
 const nationalAlignmentPanels = ref<string[]>([]);
 const comprehensiveDataset = ref<PortraitDataset>();
 const yearOverYearDataset = ref<PortraitDataset>();
+const regionalPopulationDataset = ref<PortraitDataset>();
 const comprehensiveLoading = ref(false);
 const comprehensiveError = ref("");
 let comprehensiveRequestController: AbortController | null = null;
+const smartSportsPage = pageRegistryByKey.get("bureau-smart-sports-cockpit");
+
+function openSmartSportsCockpit() {
+  if (!smartSportsPage) return;
+  const href = router.resolve({
+    path: smartSportsPage.path,
+    query: { tenantId: userStore.currentTenant.id },
+  }).href;
+  window.open(href, "_blank", "noopener,noreferrer");
+}
 
 const termPeriods = {
   "2025—2026下学期": {
@@ -67,6 +84,18 @@ const termPeriods = {
   },
 } as const;
 
+type PortraitFilterScope = {
+  stage: string;
+  grade: string;
+  term: keyof typeof termPeriods;
+};
+
+const appliedScope = ref<PortraitFilterScope>({
+  stage: stage.value,
+  grade: grade.value,
+  term: term.value as keyof typeof termPeriods,
+});
+
 const anchorIcons = {
   "regional-overview": LayoutDashboard,
   "five-education": Sparkles,
@@ -82,13 +111,13 @@ const regionalQualityTopics = [
   {
     key: "five-education",
     title: "五育评价",
-    description: "观察区域成长目标完成、评价覆盖及“很好、一般、需努力”的结构，不合成为学生综合总分。",
-    primaryMetricKey: "five-education-goal-completion-rate",
+    description: "不同学校可使用不同评价维度与等级，本页统一观察有效评价记录覆盖率，不合成跨校评价等级。",
+    primaryMetricKey: "five-education-evaluation-coverage-rate",
   },
   {
     key: "sports-health",
     title: "运动健康",
-    description: "汇总规范体测、AI 体锻与阳光长跑的覆盖和参与，不依据有限记录推断健康诊断。",
+    description: "",
     primaryMetricKey: "ai-exercise-participation-rate",
   },
   {
@@ -113,7 +142,7 @@ const regionalQualityTopics = [
     key: "daily-evaluation",
     title: "日常评价",
     description: "观察表扬与待改进记录结构；未接入整改闭环前不计算改进完成率。",
-    primaryMetricKey: "daily-evaluation-positive-rate",
+    primaryMetricKey: "daily-evaluation-record-coverage-rate",
   },
 ] as const;
 
@@ -124,7 +153,7 @@ const coverageDefinitions = [
   { key: "honor-student-coverage-rate", label: "荣誉记录" },
   { key: "library-borrower-coverage-rate", label: "图书借阅记录" },
   { key: "practice-participation-rate", label: "实践活动记录" },
-  { key: "daily-evaluation-positive-rate", label: "日常评价记录" },
+  { key: "daily-evaluation-record-coverage-rate", label: "日常评价记录" },
 ] as const;
 
 const metricMap = computed(() => new Map(
@@ -132,6 +161,9 @@ const metricMap = computed(() => new Map(
 ));
 const yearOverYearMetricMap = computed(() => new Map(
   yearOverYearDataset.value?.metrics.map((metric) => [metric.key, metric]) ?? [],
+));
+const regionalPopulationMetricMap = computed(() => new Map(
+  regionalPopulationDataset.value?.metrics.map((metric) => [metric.key, metric]) ?? [],
 ));
 const coverageRows = computed(() => coverageDefinitions.map((definition) => {
   const metric = metricMap.value.get(definition.key);
@@ -154,8 +186,6 @@ const gradeOptions = computed(() => ({
 
 const metricIcons = [
   Users,
-  TrendingUp,
-  ChartNoAxesCombined,
   Sparkles,
   Dumbbell,
   Award,
@@ -170,66 +200,16 @@ const trendSummaries = computed(() => (
   (comprehensiveDataset.value?.unifiedExamSummaries ?? [])
     .filter((summary) => summary.subject === academicSubject.value)
 ));
+const gradeComparisonOption = computed(() => createUnifiedExamGradeComparisonOption(
+  trendSummaries.value,
+  academicSubject.value,
+));
 const trendOption = computed(() => createUnifiedExamSubjectOption(
   trendSummaries.value,
   academicSubject.value,
 ));
-const currentSubjectExamWave = computed(() => (
-  subjectExamWave(comprehensiveDataset.value, academicSubject.value)
-));
-const yearOverYearSubjectExamWave = computed(() => (
-  subjectExamWave(yearOverYearDataset.value, academicSubject.value)
-));
-const currentSubjectExamStats = computed(() => aggregateExamWave(currentSubjectExamWave.value));
-const yearOverYearSubjectExamStats = computed(() => aggregateExamWave(yearOverYearSubjectExamWave.value));
-const academicReady = computed(() => Boolean(academicSubject.value && currentSubjectExamStats.value));
 
 type ChangeTone = "up" | "down" | "flat" | "unavailable";
-type SubjectExamStats = {
-  scoreRate: number;
-  coverageRate: number;
-  observedStudentCount: number;
-  eligibleStudentCount: number;
-  examLabel: string;
-};
-
-function subjectExamWave(dataset: PortraitDataset | undefined, subject: string) {
-  if (!subject) return [] as UnifiedExamSummary[];
-  const selected = (dataset?.unifiedExamSummaries ?? []).filter((summary) => (
-    summary.subject === subject
-    && (summary.examType === "midterm" || summary.examType === "final")
-  ));
-  if (!selected.length) return [];
-  const latest = selected.reduce((current, summary) => (
-    summary.examAt > current.examAt ? summary : current
-  ));
-  return selected.filter((summary) => summary.examType === latest.examType);
-}
-
-function aggregateExamWave(summaries: readonly UnifiedExamSummary[]): SubjectExamStats | undefined {
-  if (!summaries.length) return undefined;
-  const scoreNumerator = summaries.reduce((total, summary) => total + summary.scoreNumerator, 0);
-  const scoreDenominator = summaries.reduce((total, summary) => total + summary.scoreDenominator, 0);
-  const observedStudentCount = summaries.reduce(
-    (total, summary) => total + summary.quality.observedStudentCount,
-    0,
-  );
-  const eligibleStudentCount = summaries.reduce(
-    (total, summary) => total + summary.quality.eligibleStudentCount,
-    0,
-  );
-  return {
-    scoreRate: scoreDenominator > 0
-      ? Number(((scoreNumerator / scoreDenominator) * 100).toFixed(2))
-      : 0,
-    coverageRate: eligibleStudentCount > 0
-      ? Number(((observedStudentCount / eligibleStudentCount) * 100).toFixed(2))
-      : 0,
-    observedStudentCount,
-    eligibleStudentCount,
-    examLabel: summaries[0]?.examType === "final" ? "期末统考" : "期中统考",
-  };
-}
 
 function percentagePointChange(
   current: number | undefined,
@@ -240,11 +220,11 @@ function percentagePointChange(
   }
   const difference = Number((current - previous).toFixed(2));
   if (difference === 0) {
-    return { text: "持平 0.00%", tone: "flat" };
+    return { text: "持平 0.00 个百分点", tone: "flat" };
   }
   const prefix = difference > 0 ? "+" : "";
   return {
-    text: `${prefix}${difference.toFixed(2)}%`,
+    text: `${prefix}${difference.toFixed(2)} 个百分点`,
     tone: difference > 0 ? "up" : "down",
   };
 }
@@ -253,27 +233,45 @@ function unavailableChange(text: string): { text: string; tone: ChangeTone } {
   return { text, tone: "unavailable" };
 }
 
-const filterScopeLabel = computed(() => `${stage.value} · ${grade.value}`);
+function metricYearOverYearChange(
+  current: PortraitMetric | undefined,
+  previous: PortraitMetric | undefined,
+) {
+  if (
+    !current
+    || !previous
+    || current.quality.status === "insufficient"
+    || current.quality.status === "unavailable"
+    || previous.quality.status === "insufficient"
+    || previous.quality.status === "unavailable"
+  ) {
+    return unavailableChange("暂无可比");
+  }
+  return percentagePointChange(current.value, previous.value);
+}
+
+const filterScopeLabel = computed(() => (
+  `${appliedScope.value.stage} · ${appliedScope.value.grade} · ${appliedScope.value.term}`
+));
 const academicScopeMessage = computed(() => {
   if (!academicSubject.value) return "当前数据源没有可用统考科目。";
-  if (!currentSubjectExamStats.value) {
+  if (!trendSummaries.value.length) {
     return `上方筛选范围（${filterScopeLabel.value}）内暂无${academicSubject.value}统考数据。`;
   }
-  return `学段/年级由上方筛选栏控制；当前按${filterScopeLabel.value}统计${academicSubject.value}${currentSubjectExamStats.value.examLabel}，多年级按成绩分子分母加权。`;
+  if (appliedScope.value.grade === "全部年级") {
+    return `当前按${filterScopeLabel.value}展示${academicSubject.value}；各年级分别统计，不跨年级合并。`;
+  }
+  return `当前按${filterScopeLabel.value}展示${academicSubject.value}，仅比较同年级、同考试类型的区域记录。`;
 });
 const overviewMetrics = computed(() => {
-  const studentMetric = metricMap.value.get("enrolled-student-count");
-  const latest = academicReady.value ? currentSubjectExamStats.value : undefined;
-  const yearOverYearLatest = academicReady.value ? yearOverYearSubjectExamStats.value : undefined;
-  const examCoverage = latest?.coverageRate;
-  const subjectLabel = academicSubject.value || "单科";
+  const studentMetric = regionalPopulationMetricMap.value.get("enrolled-student-count");
   const metricItem = (label: string, key: string) => {
     const metric = metricMap.value.get(key);
     return {
       label,
       value: metric ? metric.value.toFixed(2) : "—",
       unit: metric ? metric.unit : "",
-      yearOverYear: percentagePointChange(metric?.value, yearOverYearMetricMap.value.get(key)?.value),
+      yearOverYear: metricYearOverYearChange(metric, yearOverYearMetricMap.value.get(key)),
       explanationKey: "period-comparison" as const,
     };
   };
@@ -285,32 +283,12 @@ const overviewMetrics = computed(() => {
       yearOverYear: unavailableChange("缺少历史学籍快照"),
       explanationKey: "period-comparison" as const,
     },
-    {
-      label: `${subjectLabel}平均得分率（统考）`,
-      value: latest ? latest.scoreRate.toFixed(2) : "—",
-      unit: latest ? "%" : "",
-      yearOverYear: latest
-        ? percentagePointChange(latest.scoreRate, yearOverYearLatest?.scoreRate)
-        : unavailableChange("选择科目后可比较"),
-      explanationKey: "academic-quality-rate" as const,
-    },
-    {
-      label: latest
-        ? `${subjectLabel}统考成绩覆盖率（${latest.observedStudentCount}/${latest.eligibleStudentCount}人）`
-        : `${subjectLabel}统考成绩覆盖率`,
-      value: examCoverage === undefined ? "—" : examCoverage.toFixed(2),
-      unit: examCoverage === undefined ? "" : "%",
-      yearOverYear: latest
-        ? percentagePointChange(examCoverage, yearOverYearLatest?.coverageRate)
-        : unavailableChange("选择科目后可比较"),
-      explanationKey: "period-comparison" as const,
-    },
     metricItem("五育评价覆盖率", "five-education-evaluation-coverage-rate"),
     metricItem("体测记录覆盖率", "fitness-test-record-coverage-rate"),
     metricItem("荣誉学生覆盖率", "honor-student-coverage-rate"),
     metricItem("图书借阅覆盖率", "library-borrower-coverage-rate"),
     metricItem("有效活动参与率", "practice-participation-rate"),
-    metricItem("日常评价表扬占比", "daily-evaluation-positive-rate"),
+    metricItem("日常评价记录覆盖率", "daily-evaluation-record-coverage-rate"),
   ];
 });
 
@@ -329,22 +307,34 @@ function goToAnchor(anchor: (typeof portraitAnchors)[number]["key"]) {
   });
 }
 
-function applyFilters() {
-  ElMessage.success(`已更新统计范围：${stage.value} · ${grade.value}`);
-  void loadComprehensiveDataset();
+async function applyFilters() {
+  const nextScope: PortraitFilterScope = {
+    stage: stage.value,
+    grade: grade.value,
+    term: term.value as keyof typeof termPeriods,
+  };
+  if (await loadComprehensiveDataset(nextScope)) {
+    ElMessage.success(`已更新统计范围：${nextScope.stage} · ${nextScope.grade}`);
+  }
 }
 
-function resetFilters() {
+async function resetFilters() {
   stage.value = "全部学段";
   grade.value = "全部年级";
   term.value = "2025—2026上学期";
-  academicSubject.value = academicSubjects.value[0] ?? "";
+  academicSubject.value = "";
   ElMessage.info("已恢复默认统计范围");
-  void loadComprehensiveDataset();
+  await loadComprehensiveDataset({
+    stage: stage.value,
+    grade: grade.value,
+    term: term.value as keyof typeof termPeriods,
+  });
 }
 
 function comprehensiveQuery(
   period: { academicYear: string; term: "first" | "second" },
+  scope: PortraitFilterScope,
+  includeStudentScope = true,
 ): PortraitQuery {
   const stageMap: Record<string, EducationStage> = {
     小学: "primary",
@@ -357,35 +347,43 @@ function comprehensiveQuery(
     terms: [period.term],
     domains: ["academic", ...regionalQualityTopics.map((topic) => topic.key)],
   };
-  const selectedStage = stageMap[stage.value];
-  if (selectedStage) query.educationStages = [selectedStage];
-  if (grade.value !== "全部年级") query.grades = [grade.value];
+  const selectedStage = stageMap[scope.stage];
+  if (includeStudentScope && selectedStage) query.educationStages = [selectedStage];
+  if (includeStudentScope && scope.grade !== "全部年级") query.grades = [scope.grade];
   return query;
 }
 
-async function loadComprehensiveDataset() {
+async function loadComprehensiveDataset(scope: PortraitFilterScope): Promise<boolean> {
   comprehensiveRequestController?.abort();
   const controller = new AbortController();
   comprehensiveRequestController = controller;
   comprehensiveLoading.value = true;
   comprehensiveError.value = "";
   try {
-    const selectedPeriod = termPeriods[term.value as keyof typeof termPeriods];
-    const [currentDataset, yearAgoDataset] = await Promise.all([
+    const selectedPeriod = termPeriods[scope.term];
+    const [currentDataset, yearAgoDataset, populationDataset] = await Promise.all([
       runtimeStudentGrowthPortraitRepository.query(
-        comprehensiveQuery(selectedPeriod.current),
+        comprehensiveQuery(selectedPeriod.current, scope),
         controller.signal,
       ),
       runtimeStudentGrowthPortraitRepository.query(
-        comprehensiveQuery(selectedPeriod.yearOverYear),
+        comprehensiveQuery(selectedPeriod.yearOverYear, scope),
+        controller.signal,
+      ),
+      runtimeStudentGrowthPortraitRepository.query(
+        comprehensiveQuery(selectedPeriod.current, scope, false),
         controller.signal,
       ),
     ]);
     comprehensiveDataset.value = currentDataset;
     yearOverYearDataset.value = yearAgoDataset;
+    regionalPopulationDataset.value = populationDataset;
+    appliedScope.value = { ...scope };
+    return true;
   } catch (error) {
-    if (controller.signal.aborted) return;
+    if (controller.signal.aborted) return false;
     comprehensiveError.value = error instanceof Error ? error.message : "学生发展数据加载失败";
+    return false;
   } finally {
     if (comprehensiveRequestController === controller) {
       comprehensiveLoading.value = false;
@@ -408,7 +406,7 @@ function coverageStatusType(status: string) {
 }
 
 onMounted(() => {
-  void loadComprehensiveDataset();
+  void loadComprehensiveDataset(appliedScope.value);
   observer = new IntersectionObserver((entries) => {
     const visibleEntry = entries
       .filter((entry) => entry.isIntersecting)
@@ -483,9 +481,15 @@ onBeforeUnmount(() => {
         </ElSelect>
       </label>
       <template #actions>
-        <ElButton type="primary" :icon="Search" @click="applyFilters">查询</ElButton>
-        <ElButton @click="resetFilters">重置</ElButton>
-        <span class="portrait-filter__updated">数据更新至 2026-07-26 23:30</span>
+        <ElButton
+          type="primary"
+          :icon="Search"
+          :loading="comprehensiveLoading"
+          @click="applyFilters"
+        >
+          查询
+        </ElButton>
+        <ElButton :disabled="comprehensiveLoading" @click="resetFilters">重置</ElButton>
       </template>
     </PageFilterBar>
 
@@ -513,31 +517,8 @@ onBeforeUnmount(() => {
           <div class="portrait-section__heading">
             <div>
               <h2 id="regional-overview-title">区域发展总览</h2>
-              <p>学段与年级由上方筛选栏控制；此处只切换统考科目。得分率、覆盖率与趋势均按筛选范围统计，不跨科合并。</p>
+              <p>先看区域学生与各类数据覆盖，再进入统考质量、综合素质与数据完整度的结构对比。</p>
             </div>
-            <div class="portrait-academic-scope" aria-label="统考学业口径">
-              <label class="portrait-academic-scope__field">
-                <span>科目</span>
-                <ElSelect
-                  v-model="academicSubject"
-                  aria-label="统考分析科目"
-                  style="width: 120px"
-                  :disabled="academicSubjects.length === 0"
-                >
-                  <ElOption
-                    v-for="subject in academicSubjects"
-                    :key="subject"
-                    :label="subject"
-                    :value="subject"
-                  />
-                </ElSelect>
-              </label>
-            </div>
-          </div>
-
-          <div class="portrait-scope-notice" :class="{ 'is-ready': academicReady }">
-            <strong>{{ academicSubject || "科目" }}</strong>
-            <span>{{ academicScopeMessage }}</span>
             <MetricDefinitionPopover metric-key="period-comparison" label="同比说明" />
           </div>
 
@@ -558,11 +539,6 @@ onBeforeUnmount(() => {
                 <span class="portrait-metric__changes" :class="`is-${metric.yearOverYear.tone}`">
                   同比 {{ metric.yearOverYear.text }}
                 </span>
-                <MetricDefinitionPopover
-                  v-if="metric.explanationKey === 'academic-quality-rate'"
-                  metric-key="academic-quality-rate"
-                  label="计算说明"
-                />
               </div>
             </article>
           </div>
@@ -608,15 +584,53 @@ onBeforeUnmount(() => {
           <article class="portrait-panel">
             <header class="portrait-panel__header">
               <div>
-                <h3>统考学业质量趋势</h3>
-                <p>随上方筛选栏的学段/年级/学期与本区科目同步；展示期中、期末得分率，多年级按成绩分子分母加权，不跨科合并。</p>
+                <h3>统考学业质量对比</h3>
+                <p>柱形为各年级最新一场统考平均得分率，折线为同场考试成绩覆盖率；两者同为百分比，但不互相推导。</p>
+              </div>
+              <div class="portrait-panel__actions">
+                <label class="portrait-academic-scope__field">
+                  <span>科目</span>
+                  <ElSelect
+                    v-model="academicSubject"
+                    aria-label="统考分析科目"
+                    style="width: 120px"
+                    :disabled="academicSubjects.length === 0"
+                  >
+                    <ElOption
+                      v-for="subject in academicSubjects"
+                      :key="subject"
+                      :label="subject"
+                      :value="subject"
+                    />
+                  </ElSelect>
+                </label>
+                <MetricDefinitionPopover metric-key="academic-quality-rate" label="得分率口径" />
+              </div>
+            </header>
+            <div class="portrait-scope-notice" :class="{ 'is-ready': trendSummaries.length > 0 }">
+              <strong>{{ academicSubject || "科目" }}</strong>
+              <span>{{ academicScopeMessage }}</span>
+            </div>
+            <div class="portrait-panel__chart">
+              <NewPortraitChart
+                :option="gradeComparisonOption"
+                :ariaLabelText="`${academicSubject}统考年级质量对比`"
+              />
+            </div>
+          </article>
+
+          <article class="portrait-panel">
+            <header class="portrait-panel__header">
+              <div>
+                <h3>统考学业质量阶段对比</h3>
+                <p>横轴按年级排列，每个年级并列展示期中、期末得分率；期末柱同时标注相对期中的变化百分点。</p>
               </div>
               <div class="portrait-panel__actions">
                 <MetricDefinitionPopover metric-key="academic-quality-rate" label="得分率口径" />
               </div>
             </header>
             <div class="portrait-panel__chart">
-              <NewPortraitChart :option="trendOption" :ariaLabelText="`${academicSubject}统考学业质量趋势`" />
+              <NewPortraitChart :option="trendOption" :ariaLabelText="`${academicSubject}统考学业质量阶段对比`" />
             </div>
           </article>
         </section>
@@ -631,8 +645,16 @@ onBeforeUnmount(() => {
           <div class="portrait-section__heading">
             <div>
               <h2 :id="`${topic.key}-title`">{{ topic.title }}</h2>
-              <p>{{ topic.description }}</p>
+              <p v-if="topic.key !== 'sports-health'">{{ topic.description }}</p>
             </div>
+            <ElButton
+              v-if="topic.key === 'sports-health'"
+              type="primary"
+              plain
+              @click="openSmartSportsCockpit"
+            >
+              查看更多
+            </ElButton>
           </div>
           <ElSkeleton v-if="comprehensiveLoading && !comprehensiveDataset" :rows="5" animated />
           <ElEmpty
@@ -643,7 +665,9 @@ onBeforeUnmount(() => {
           <RegionalQualityDomainSection
             v-else
             :dataset="comprehensiveDataset"
+            :school-names="virtualPortraitSchoolNames"
             :topic-key="topic.key"
+            :year-over-year-dataset="yearOverYearDataset"
           />
         </section>
 
@@ -760,8 +784,7 @@ onBeforeUnmount(() => {
   padding-left: var(--spacing-24);
 }
 
-.new-student-portrait__coverage-label,
-.portrait-filter__updated {
+.new-student-portrait__coverage-label {
   display: block;
   color: var(--color-secondary);
   font-size: var(--font-size-xs);
@@ -942,7 +965,7 @@ onBeforeUnmount(() => {
 .portrait-metrics {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--spacing-12);
+  gap: var(--spacing-16);
 }
 
 .portrait-metric {
@@ -1209,7 +1232,6 @@ onBeforeUnmount(() => {
   .portrait-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .portrait-national-alignment__body { grid-template-columns: 1fr; }
   .portrait-grid--2-1 { grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
-  .portrait-filter__updated { max-width: 156px; line-height: 18px; text-align: right; }
 }
 
 @media (max-width: 1120px) {
@@ -1237,7 +1259,6 @@ onBeforeUnmount(() => {
   .portrait-panel__header,
   .portrait-panel__actions { align-items: flex-start; flex-direction: column; }
   .new-student-portrait__coverage { width: 100%; padding: var(--spacing-16) 0 0; }
-  .portrait-filter__updated { margin-top: var(--spacing-8); }
   .portrait-metrics,
   .portrait-national-dimensions { grid-template-columns: 1fr; }
   .portrait-national-alignment__title { align-items: flex-start; flex-direction: column; }

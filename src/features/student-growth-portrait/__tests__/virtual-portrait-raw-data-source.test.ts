@@ -84,9 +84,44 @@ describe("virtualPortraitRawDataSource", () => {
     expect(grades).toEqual(new Set(["四年级", "五年级", "七年级", "八年级", "高一", "高二"]));
     expect(scienceExams.length).toBeGreaterThan(0);
     expect(honorRecords.length).toBeGreaterThan(36);
+    expect(new Set(honorRecords.map((event) => event.awardType)).size).toBeGreaterThanOrEqual(8);
+    expect(new Set(honorRecords.map((event) => event.level)).size).toBeGreaterThanOrEqual(6);
+    expect(new Set(honorRecords.map((event) => event.awardGrade)).size).toBeGreaterThanOrEqual(5);
     expect(sunshineRuns.length).toBeGreaterThan(72);
     expect(dailyEvaluations.length).toBeGreaterThan(144);
     expect(new Set(dailyEvaluations.map((event) => event.theme)).size).toBeGreaterThanOrEqual(6);
+  });
+
+  it("keeps school comparison metrics visibly differentiated without hard-coded chart results", async () => {
+    const dataset = await runtimeStudentGrowthPortraitRepository.query(fullQuery);
+    for (const metricKey of [
+      "five-education-evaluation-coverage-rate",
+      "fitness-test-record-coverage-rate",
+      "honor-student-coverage-rate",
+      "library-borrower-coverage-rate",
+      "practice-participation-rate",
+    ]) {
+      const values = dataset.schools
+        .map((school) => school.metrics.find((metric) => metric.key === metricKey)?.value)
+        .filter((value): value is number => value !== undefined);
+      expect(new Set(values).size, metricKey).toBeGreaterThan(1);
+    }
+  });
+
+  it("derives the sports overview and sunshine-run summary from raw student records", async () => {
+    const dataset = await runtimeStudentGrowthPortraitRepository.query(fullQuery);
+    for (const metricKey of [
+      "sports-goal-completion-rate",
+      "fitness-standard-pass-rate",
+      "sunshine-run-total-distance",
+      "sunshine-run-session-count",
+      "sunshine-run-distance-per-participant",
+      "sunshine-run-duration-per-participant",
+    ]) {
+      const metric = dataset.metrics.find((item) => item.key === metricKey);
+      expect(metric, metricKey).toBeDefined();
+      expect(metric?.value, metricKey).toBeGreaterThan(0);
+    }
   });
 
   it("provides traceable prior-period facts for real period-over-period comparisons", async () => {
@@ -125,7 +160,7 @@ describe("virtualPortraitRawDataSource", () => {
       && record.assessmentProgramId.includes("2024-2025-second")
     ))).toBe(true);
     expect(previousEvaluationCoverage?.quality).toMatchObject({
-      observedStudentCount: 60,
+      observedStudentCount: 57,
       eligibleStudentCount: 72,
     });
     expect(previousEvaluationCoverage?.value).toBeLessThan(currentEvaluationCoverage?.value ?? 0);

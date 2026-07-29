@@ -102,12 +102,36 @@ export interface AcademicExamRecord extends SourceRecord {
 }
 
 export type HonorKind = "medal" | "title" | "award";
-export type HonorLevel = "international" | "national" | "provincial" | "city" | "district" | "school";
+export type HonorLevel =
+  | "international"
+  | "national"
+  | "provincial"
+  | "city"
+  | "district"
+  | "school"
+  | "other";
+export type HonorAwardType =
+  | "outstanding-student"
+  | "subject-competition"
+  | "academic-innovation"
+  | "social-practice"
+  | "student-leader"
+  | "sports-competition"
+  | "artistic-performance"
+  | "art-work"
+  | "student-scholarship"
+  | "campus-culture-art"
+  | "financial-aid"
+  | "work-study"
+  | "other";
+export type HonorAwardGrade = "special" | "first" | "second" | "third" | "other";
 
 export interface HonorRecord extends SourceRecord {
   kind: HonorKind;
   name: string;
   level?: HonorLevel;
+  awardType?: HonorAwardType;
+  awardGrade?: HonorAwardGrade;
   category?: string;
   organizer?: string;
   competitionName?: string;
@@ -399,6 +423,13 @@ export interface SchoolPortraitSummary {
   metrics: PortraitMetric[];
 }
 
+export interface GradePortraitSummary {
+  educationStage: EducationStage;
+  grade: string;
+  studentCount: number;
+  metrics: PortraitMetric[];
+}
+
 /**
  * 信号只能陈述异常或变化事实及其证据；它不是对学生、教师或学校的原因诊断。
  */
@@ -446,6 +477,7 @@ export interface PortraitDataset {
   trends: PortraitTrend[];
   unifiedExamSummaries: UnifiedExamSummary[];
   unifiedExamTrends: UnifiedExamTrend[];
+  grades: GradePortraitSummary[];
   schools: SchoolPortraitSummary[];
   attentionSignals: AttentionSignal[];
 }

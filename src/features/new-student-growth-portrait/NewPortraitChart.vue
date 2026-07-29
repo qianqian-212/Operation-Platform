@@ -10,9 +10,11 @@ import {
   ScatterChart,
 } from "echarts/charts";
 import {
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
   MarkLineComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
 } from "echarts/components";
@@ -27,9 +29,11 @@ use([
   PieChart,
   SankeyChart,
   ScatterChart,
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
   MarkLineComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
   CanvasRenderer,

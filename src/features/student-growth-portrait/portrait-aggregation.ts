@@ -5,6 +5,7 @@ import type {
   AttentionSignal,
   BookBorrowRecord,
   ConsumptionRecord,
+  GradePortraitSummary,
   GrowthEvaluationRecord,
   GrowthGoalRecord,
   HonorRecord,
@@ -222,6 +223,35 @@ function evaluationDistribution(
   };
 }
 
+function honorDistribution(
+  records: readonly HonorRecord[],
+  population: PortraitPopulation,
+  dimension: "award-type" | "award-level" | "award-grade",
+  keys: readonly string[],
+): PortraitDistribution {
+  const quality = qualityFor(population.eligibleStudentCount, records);
+  const valueFor = (record: HonorRecord) => {
+    if (dimension === "award-type") return record.awardType ?? "other";
+    if (dimension === "award-level") return record.level ?? "other";
+    return record.awardGrade ?? "other";
+  };
+  return {
+    key: `honor-${dimension}-distribution`,
+    domain: "honor",
+    population,
+    quality,
+    calculationVersion: defaultPortraitAggregationRules.version,
+    items: keys.map((key) => {
+      const recordCount = records.filter((record) => valueFor(record) === key).length;
+      return {
+        key,
+        value: percent(recordCount, records.length),
+        studentCount: recordCount,
+      };
+    }),
+  };
+}
+
 function scoreRateFor(record: AcademicExamRecord) {
   return record.fullScore > 0 ? (record.score / record.fullScore) * 100 : 0;
 }
@@ -397,6 +427,7 @@ function buildMetrics(
   population: PortraitPopulation,
 ) {
   const goals = events.filter(isGrowthGoal);
+  const physicalGoals = goals.filter((record) => record.goalCategory === "physical");
   const evaluations = events.filter(isGrowthEvaluation);
   const exams = events.filter(isAcademicExam);
   const unifiedExams = exams.filter(isDistrictUnifiedExam);
@@ -411,7 +442,10 @@ function buildMetrics(
   const dailyEvaluations = events.filter((record) => "type" in record && "evaluatedAt" in record);
   const targetCredits = goals.reduce((total, record) => total + record.targetCredits, 0);
   const earnedCredits = goals.reduce((total, record) => total + record.earnedCredits, 0);
+  const physicalTargetCredits = physicalGoals.reduce((total, record) => total + record.targetCredits, 0);
+  const physicalEarnedCredits = physicalGoals.reduce((total, record) => total + record.earnedCredits, 0);
   const goalQuality = qualityFor(population.eligibleStudentCount, goals);
+  const physicalGoalQuality = qualityFor(population.eligibleStudentCount, physicalGoals);
   const evaluationQuality = qualityFor(population.eligibleStudentCount, evaluations);
   const examQuality = qualityFor(population.eligibleStudentCount, exams);
   const unifiedExamQuality = qualityFor(population.eligibleStudentCount, unifiedExams);
@@ -425,9 +459,17 @@ function buildMetrics(
   const practiceQuality = qualityFor(population.eligibleStudentCount, practice);
   const dailyQuality = qualityFor(population.eligibleStudentCount, dailyEvaluations);
   const praised = dailyEvaluations.filter((record) => record.type === "praise").length;
+  const improvements = dailyEvaluations.filter((record) => record.type === "improvement").length;
   const standardPasses = fitnessTests.filter((record) => record.standardStatus !== "fail").length;
+  const fitnessStudentIds = [...new Set(fitnessTests.map((record) => record.studentId))];
+  const fitnessPassedStudentCount = fitnessStudentIds.filter((studentId) => (
+    fitnessTests
+      .filter((record) => record.studentId === studentId)
+      .every((record) => record.standardStatus !== "fail")
+  )).length;
   const totalExerciseSessions = exercises.reduce((total, record) => total + record.sessionCount, 0);
   const totalRunDistance = runs.reduce((total, record) => total + record.distanceKilometers, 0);
+  const totalRunDurationSeconds = runs.reduce((total, record) => total + record.durationSeconds, 0);
 
   return {
     evaluations,
@@ -459,14 +501,21 @@ function buildMetrics(
       metric("ai-exercise-participation-rate", "sports-health", exerciseQuality.coverageRate, "%", population, exerciseQuality, exerciseQuality.observedStudentCount, population.eligibleStudentCount),
       metric("ai-exercise-sessions-per-participant", "sports-health", exerciseQuality.observedStudentCount > 0 ? Number((totalExerciseSessions / exerciseQuality.observedStudentCount).toFixed(2)) : 0, "次/人", population, exerciseQuality, totalExerciseSessions, exerciseQuality.observedStudentCount),
       metric("sunshine-run-participation-rate", "sports-health", runQuality.coverageRate, "%", population, runQuality, runQuality.observedStudentCount, population.eligibleStudentCount),
+      metric("sunshine-run-total-distance", "sports-health", Number(totalRunDistance.toFixed(2)), "km", population, runQuality, totalRunDistance),
       metric("sunshine-run-distance-per-participant", "sports-health", runQuality.observedStudentCount > 0 ? Number((totalRunDistance / runQuality.observedStudentCount).toFixed(2)) : 0, "km/人", population, runQuality, totalRunDistance, runQuality.observedStudentCount),
+      metric("sunshine-run-session-count", "sports-health", runs.length, "人次", population, runQuality, runs.length),
+      metric("sunshine-run-duration-per-participant", "sports-health", runQuality.observedStudentCount > 0 ? Number((totalRunDurationSeconds / 3600 / runQuality.observedStudentCount).toFixed(2)) : 0, "h/人", population, runQuality, totalRunDurationSeconds, runQuality.observedStudentCount),
       metric("fitness-test-record-coverage-rate", "sports-health", fitnessQuality.coverageRate, "%", population, fitnessQuality, fitnessQuality.observedStudentCount, population.eligibleStudentCount),
       metric("fitness-test-item-pass-rate", "sports-health", percent(standardPasses, fitnessTests.length), "%", population, fitnessQuality, standardPasses, fitnessTests.length),
+      metric("fitness-standard-pass-rate", "sports-health", percent(fitnessPassedStudentCount, fitnessStudentIds.length), "%", population, fitnessQuality, fitnessPassedStudentCount, fitnessStudentIds.length),
+      metric("sports-goal-completion-rate", "sports-health", percent(physicalEarnedCredits, physicalTargetCredits), "%", population, physicalGoalQuality, physicalEarnedCredits, physicalTargetCredits),
       metric("library-visit-coverage-rate", "behavior", libraryVisitQuality.coverageRate, "%", population, libraryVisitQuality, libraryVisitQuality.observedStudentCount, population.eligibleStudentCount),
       metric("library-borrower-coverage-rate", "behavior", bookBorrowQuality.coverageRate, "%", population, bookBorrowQuality, bookBorrowQuality.observedStudentCount, population.eligibleStudentCount),
       metric("campus-consumption-record-coverage-rate", "life", consumptionQuality.coverageRate, "%", population, consumptionQuality, consumptionQuality.observedStudentCount, population.eligibleStudentCount, "not-comparable"),
       metric("practice-participation-rate", "practice", practiceQuality.coverageRate, "%", population, practiceQuality, practiceQuality.observedStudentCount, population.eligibleStudentCount),
+      metric("daily-evaluation-record-coverage-rate", "daily-evaluation", dailyQuality.coverageRate, "%", population, dailyQuality, dailyQuality.observedStudentCount, population.eligibleStudentCount),
       metric("daily-evaluation-positive-rate", "daily-evaluation", percent(praised, dailyEvaluations.length), "%", population, dailyQuality, praised, dailyEvaluations.length, "within-school-trend-only"),
+      metric("daily-evaluation-improvement-rate", "daily-evaluation", percent(improvements, dailyEvaluations.length), "%", population, dailyQuality, improvements, dailyEvaluations.length, "within-school-trend-only"),
     ],
   };
 }
@@ -486,9 +535,70 @@ export function aggregatePortraitDataset(
   const { students, events } = filterForQuery(rawData, query);
   const population = fullDistrictPopulation(students.length);
   const district = buildMetrics(events, population);
-  const distributions = [evaluationDistribution(district.evaluations, population)];
+  const honors = events.filter(isHonor);
+  const distributions = [
+    evaluationDistribution(district.evaluations, population),
+    honorDistribution(honors, population, "award-type", [
+      "outstanding-student",
+      "subject-competition",
+      "academic-innovation",
+      "social-practice",
+      "student-leader",
+      "sports-competition",
+      "artistic-performance",
+      "art-work",
+      "student-scholarship",
+      "campus-culture-art",
+      "financial-aid",
+      "work-study",
+      "other",
+    ]),
+    honorDistribution(honors, population, "award-level", [
+      "international",
+      "national",
+      "provincial",
+      "city",
+      "district",
+      "school",
+      "other",
+    ]),
+    honorDistribution(honors, population, "award-grade", [
+      "special",
+      "first",
+      "second",
+      "third",
+      "other",
+    ]),
+  ];
   const examSummaries = unifiedExamSummaries(events.filter(isAcademicExam), students, rules);
   const examTrends = unifiedExamTrends(examSummaries);
+  const grades: GradePortraitSummary[] = [
+    ...new Map(
+      students.map((student) => [
+        `${student.educationStage}::${student.grade}`,
+        { educationStage: student.educationStage, grade: student.grade },
+      ]),
+    ).values(),
+  ].map(({ educationStage, grade }) => {
+    const gradeStudents = students.filter((student) => (
+      student.educationStage === educationStage && student.grade === grade
+    ));
+    const studentIds = new Set(gradeStudents.map((student) => student.studentId));
+    const gradePopulation: PortraitPopulation = {
+      scope: "grade",
+      educationStage,
+      grade,
+      eligibleStudentCount: gradeStudents.length,
+    };
+    return {
+      educationStage,
+      grade,
+      studentCount: gradeStudents.length,
+      metrics: gradeStudents.length >= rules.minimumPublishableGroupSize
+        ? buildMetrics(events.filter((event) => studentIds.has(event.studentId)), gradePopulation).metrics
+        : [],
+    };
+  });
   const schools: SchoolPortraitSummary[] = [...new Set(students.map((student) => student.schoolId))].map((schoolId) => {
     const schoolStudents = students.filter((student) => student.schoolId === schoolId);
     const schoolPopulation: PortraitPopulation = {
@@ -517,6 +627,7 @@ export function aggregatePortraitDataset(
     trends: [],
     unifiedExamSummaries: examSummaries,
     unifiedExamTrends: examTrends,
+    grades,
     schools,
     attentionSignals,
   };

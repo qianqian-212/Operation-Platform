@@ -37,6 +37,27 @@ describe("aggregatePortraitDataset", () => {
     });
   });
 
+  it("publishes traceable grade snapshots from the same filtered student population", () => {
+    const grade = dataset.grades.find((item) => item.grade === "五年级");
+    expect(grade).toMatchObject({
+      educationStage: "primary",
+      grade: "五年级",
+      studentCount: 3,
+    });
+    expect(grade?.metrics.find((item) => item.key === "five-education-evaluation-coverage-rate"))
+      .toMatchObject({
+        value: 100,
+        numerator: 3,
+        denominator: 3,
+        population: {
+          scope: "grade",
+          educationStage: "primary",
+          grade: "五年级",
+          eligibleStudentCount: 3,
+        },
+      });
+  });
+
   it("summarizes unified midterm and final scores only within the same exam, subject, grade and paper version", () => {
     expect(metric(dataset, "academic-unified-exam-record-coverage-rate")).toMatchObject({
       value: 75,
@@ -96,12 +117,55 @@ describe("aggregatePortraitDataset", () => {
     });
   });
 
+  it("publishes honor type, level and grade distributions from explicit honor fields", () => {
+    expect(dataset.distributions.map((distribution) => distribution.key)).toEqual(
+      expect.arrayContaining([
+        "honor-award-type-distribution",
+        "honor-award-level-distribution",
+        "honor-award-grade-distribution",
+      ]),
+    );
+    const levelDistribution = dataset.distributions.find(
+      (distribution) => distribution.key === "honor-award-level-distribution",
+    );
+    expect(levelDistribution?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: "district", value: 33.33, studentCount: 1 }),
+      expect.objectContaining({ key: "school", value: 33.33, studentCount: 1 }),
+      expect.objectContaining({ key: "city", value: 33.33, studentCount: 1 }),
+    ]));
+    expect(levelDistribution?.quality).toMatchObject({
+      observedStudentCount: 2,
+      validRecordCount: 3,
+    });
+  });
+
   it("excludes unverified practice records from participation", () => {
     expect(metric(dataset, "practice-participation-rate")).toMatchObject({
       value: 50,
       numerator: 2,
       denominator: 4,
       quality: { observedStudentCount: 2, validRecordCount: 3, coverageRate: 50 },
+    });
+  });
+
+  it("separates daily-evaluation record coverage from positive evaluation share", () => {
+    expect(metric(dataset, "daily-evaluation-record-coverage-rate")).toMatchObject({
+      value: 75,
+      numerator: 3,
+      denominator: 4,
+      comparability: "district-comparable",
+    });
+    expect(metric(dataset, "daily-evaluation-positive-rate")).toMatchObject({
+      value: 50,
+      numerator: 2,
+      denominator: 4,
+      comparability: "within-school-trend-only",
+    });
+    expect(metric(dataset, "daily-evaluation-improvement-rate")).toMatchObject({
+      value: 50,
+      numerator: 2,
+      denominator: 4,
+      comparability: "within-school-trend-only",
     });
   });
 

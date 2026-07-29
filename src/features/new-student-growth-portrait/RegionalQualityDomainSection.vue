@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { EChartsCoreOption } from "echarts/core";
 import type { PortraitDataset, PortraitMetric } from "@/features/student-growth-portrait/data-contract";
 import { portraitMetricDefinitionByKey } from "@/features/student-growth-portrait/metric-registry";
@@ -18,35 +18,79 @@ type RegionalQualityTopic = Extract<
 
 const props = defineProps<{
   dataset: PortraitDataset;
+  yearOverYearDataset?: PortraitDataset;
   topicKey: RegionalQualityTopic;
+  schoolNames: Readonly<Record<string, string>>;
 }>();
 
 const preferredMetricKeys: Readonly<Record<RegionalQualityTopic, readonly string[]>> = {
-  "five-education": [
-    "five-education-goal-completion-rate",
-    "five-education-evaluation-coverage-rate",
-  ],
+  "five-education": ["five-education-evaluation-coverage-rate"],
   "sports-health": [
-    "fitness-test-item-pass-rate",
-    "ai-exercise-participation-rate",
-    "ai-exercise-sessions-per-participant",
-    "sunshine-run-participation-rate",
-    "sunshine-run-distance-per-participant",
+    "enrolled-student-count",
+    "fitness-test-record-coverage-rate",
+    "sports-goal-completion-rate",
   ],
-  honor: ["honor-student-coverage-rate", "honor-per-100-students"],
+  honor: ["honor-per-100-students"],
   behavior: ["library-visit-coverage-rate", "library-borrower-coverage-rate"],
   practice: ["practice-participation-rate"],
-  "daily-evaluation": ["daily-evaluation-positive-rate"],
+  "daily-evaluation": ["daily-evaluation-record-coverage-rate"],
 };
 
 const primaryMetricKeys: Readonly<Record<RegionalQualityTopic, string>> = {
-  "five-education": "five-education-goal-completion-rate",
-  "sports-health": "ai-exercise-participation-rate",
+  "five-education": "five-education-evaluation-coverage-rate",
+  "sports-health": "fitness-test-record-coverage-rate",
   honor: "honor-student-coverage-rate",
   behavior: "library-borrower-coverage-rate",
   practice: "practice-participation-rate",
-  "daily-evaluation": "daily-evaluation-positive-rate",
+  "daily-evaluation": "daily-evaluation-record-coverage-rate",
 };
+
+const schoolComparisonTopics = new Set<RegionalQualityTopic>([
+  "five-education",
+  "sports-health",
+  "honor",
+  "behavior",
+  "practice",
+]);
+const schoolComparisonDescriptions: Partial<Record<RegionalQualityTopic, string>> = {
+  "five-education": "比较各校有效评价记录覆盖率，只反映数据完整度，不代表评价质量。",
+  "sports-health": "比较各校体测记录覆盖率，只反映数据完整度，不代表学生健康水平。",
+  honor: "比较各校有荣誉记录的学生覆盖率；缺少机会分母，不用于判断荣誉机会是否公平。",
+  behavior: "比较各校有借阅记录的学生覆盖率；不用于判断阅读质量或学校资源水平。",
+  practice: "比较各校已核验活动参与覆盖率；活动机会和质量不同，不用于学校排名。",
+};
+const comparisonDimension = ref<"grade" | "school">("grade");
+
+const honorItemLabels: Readonly<Record<string, string>> = {
+  "outstanding-student": "优秀学生奖",
+  "subject-competition": "学科竞赛奖",
+  "academic-innovation": "学术创新奖",
+  "social-practice": "优秀社会实践奖",
+  "student-leader": "优秀学生干部奖",
+  "sports-competition": "体育竞赛奖",
+  "artistic-performance": "优秀艺术表演奖",
+  "art-work": "优秀美术作品奖",
+  "student-scholarship": "优秀学生奖学金",
+  "campus-culture-art": "校园文化艺术奖",
+  "financial-aid": "助学金",
+  "work-study": "勤工助学奖",
+  international: "国际级",
+  national: "国家级",
+  provincial: "省级",
+  city: "市级",
+  district: "区县级",
+  school: "校级",
+  special: "特等奖",
+  first: "一等奖",
+  second: "二等奖",
+  third: "三等奖",
+  other: "其他",
+};
+const honorDimensions = ([
+  { key: "award-type", label: "奖项类型" },
+  { key: "award-level", label: "奖项级别" },
+  { key: "award-grade", label: "奖项等级" },
+] as const);
 
 const topicNationalBasis: Readonly<Record<RegionalQualityTopic, string>> = {
   "five-education": "对齐《义务教育质量评价指南》和《普通高中学校办学质量评价指南》的品德、学业、身心、审美、劳动与社会实践维度。",
@@ -77,22 +121,266 @@ const metrics = computed(() => {
 });
 
 const primaryMetric = computed(() => (
-  metrics.value.find((metric) => metric.key === primaryMetricKeys[props.topicKey]) ?? metrics.value[0]
+  props.dataset.metrics.find((metric) => metric.key === primaryMetricKeys[props.topicKey])
+  ?? metrics.value[0]
 ));
 
-const topicDistribution = computed(() => (
-  props.dataset.distributions.find((distribution) => distribution.domain === props.topicKey)
-));
+const canCompareSchools = computed(() => schoolComparisonTopics.has(props.topicKey));
 
 const chartTitle = computed(() => (
-  topicDistribution.value ? "评价等级分布" : "指标数据覆盖"
+  props.topicKey === "daily-evaluation"
+    ? "日常评价结构 · 年级对比"
+    : `${metricLabel(primaryMetric.value)} · ${comparisonDimension.value === "grade" ? "年级对比" : "学校对比"}`
 ));
 
 const chartDescription = computed(() => (
-  topicDistribution.value
-    ? "按有效结构化评价记录统计，不合成为学生或学校综合总分。"
-    : "展示各项指标覆盖到当前在籍学生的比例，不作校际或学校类型比较。"
+  comparisonDimension.value === "school"
+    ? schoolComparisonDescriptions[props.topicKey] ?? "当前指标不支持学校横向比较。"
+    : props.topicKey === "daily-evaluation"
+      ? "每个年级并列展示表扬与待改进记录占比；只描述评价记录结构，不解释为学生表现差异。"
+      : "按同一指标口径比较各年级，缺少有效记录的学生仍保留在分母中。"
 ));
+
+const comparisonRows = computed(() => {
+  const metricKey = primaryMetricKeys[props.topicKey];
+  if (comparisonDimension.value === "school" && canCompareSchools.value) {
+    return props.dataset.schools
+      .map((school) => ({
+        label: props.schoolNames[school.schoolId] ?? "未匹配学校名称",
+        metric: school.metrics.find((item) => item.key === metricKey),
+      }))
+      .filter((row): row is { label: string; metric: PortraitMetric } => Boolean(row.metric));
+  }
+  return props.dataset.grades
+    .map((grade) => ({
+      label: grade.grade,
+      metric: grade.metrics.find((item) => item.key === metricKey),
+    }))
+    .filter((row): row is { label: string; metric: PortraitMetric } => Boolean(row.metric));
+});
+
+const comparisonValues = computed(() => comparisonRows.value.map(({ metric }) => metric.value));
+
+function stageFitnessMetrics(dataset: PortraitDataset | undefined) {
+  if (!dataset) return [];
+  const stageLabels = {
+    primary: "小学达标率",
+    junior: "初中达标率",
+    senior: "高中达标率",
+  } as const;
+  return (["primary", "junior", "senior"] as const).flatMap((educationStage) => {
+    const stageMetrics = dataset.grades
+      .filter((grade) => grade.educationStage === educationStage)
+      .map((grade) => grade.metrics.find((metric) => metric.key === "fitness-standard-pass-rate"))
+      .filter((metric): metric is PortraitMetric => Boolean(metric));
+    const numerator = stageMetrics.reduce((total, metric) => total + (metric.numerator ?? 0), 0);
+    const denominator = stageMetrics.reduce((total, metric) => total + (metric.denominator ?? 0), 0);
+    if (denominator === 0) return [];
+    return [{
+      key: `fitness-pass-${educationStage}`,
+      label: stageLabels[educationStage],
+      value: Number(((numerator / denominator) * 100).toFixed(2)),
+    }];
+  });
+}
+
+const stageFitnessCards = computed(() => {
+  if (props.topicKey !== "sports-health") return [];
+  const previousByKey = new Map(
+    stageFitnessMetrics(props.yearOverYearDataset).map((metric) => [metric.key, metric]),
+  );
+  return stageFitnessMetrics(props.dataset).map((metric) => ({
+    ...metric,
+    value: `${metric.value}%`,
+    detail: yearOverYearText(metric.value, previousByKey.get(metric.key)?.value, true),
+    tone: yearOverYearTone(metric.value, previousByKey.get(metric.key)?.value),
+  }));
+});
+
+const displayMetricCards = computed(() => {
+  const previousMetricByKey = new Map(
+    props.yearOverYearDataset?.metrics.map((metric) => [metric.key, metric]) ?? [],
+  );
+  return [
+    ...metrics.value.map((metric) => ({
+      key: metric.key,
+      label: metric.key === "enrolled-student-count" ? "学生总数" : metricLabel(metric),
+      value: metricValue(metric),
+      detail: metric.key === "enrolled-student-count"
+        ? "同比 暂无可比"
+        : metricYearOverYearText(metric, previousMetricByKey.get(metric.key)),
+      tone: metric.key === "enrolled-student-count"
+        ? "unavailable"
+        : metricYearOverYearTone(metric, previousMetricByKey.get(metric.key)),
+    })),
+    ...stageFitnessCards.value,
+  ];
+});
+
+const sunshineRunCards = computed(() => {
+  if (props.topicKey !== "sports-health") return [];
+  const metricByKey = new Map(props.dataset.metrics.map((metric) => [metric.key, metric]));
+  const previousMetricByKey = new Map(
+    props.yearOverYearDataset?.metrics.map((metric) => [metric.key, metric]) ?? [],
+  );
+  const totalDistance = metricByKey.get("sunshine-run-total-distance");
+  const participation = metricByKey.get("sunshine-run-participation-rate");
+  const sessions = metricByKey.get("sunshine-run-session-count");
+  const distancePerParticipant = metricByKey.get("sunshine-run-distance-per-participant");
+  const durationPerParticipant = metricByKey.get("sunshine-run-duration-per-participant");
+  return [
+    {
+      key: "total-distance",
+      label: "累计运动路程",
+      value: totalDistance ? metricValue(totalDistance) : "—",
+      detail: metricYearOverYearText(
+        totalDistance,
+        previousMetricByKey.get("sunshine-run-total-distance"),
+      ),
+      tone: metricYearOverYearTone(
+        totalDistance,
+        previousMetricByKey.get("sunshine-run-total-distance"),
+      ),
+    },
+    {
+      key: "participant-count",
+      label: "累计运动人数",
+      value: participation?.numerator !== undefined
+        ? `${participation.numerator.toLocaleString("zh-CN")} 人`
+        : "—",
+      detail: yearOverYearText(
+        participation?.numerator,
+        previousMetricByKey.get("sunshine-run-participation-rate")?.numerator,
+      ),
+      tone: metricYearOverYearTone(
+        participation,
+        previousMetricByKey.get("sunshine-run-participation-rate"),
+        true,
+      ),
+    },
+    {
+      key: "session-count",
+      label: "累计运动人次",
+      value: sessions ? metricValue(sessions) : "—",
+      detail: metricYearOverYearText(
+        sessions,
+        previousMetricByKey.get("sunshine-run-session-count"),
+      ),
+      tone: metricYearOverYearTone(
+        sessions,
+        previousMetricByKey.get("sunshine-run-session-count"),
+      ),
+    },
+    {
+      key: "distance-per-participant",
+      label: "人均运动路程",
+      value: distancePerParticipant ? metricValue(distancePerParticipant) : "—",
+      detail: metricYearOverYearText(
+        distancePerParticipant,
+        previousMetricByKey.get("sunshine-run-distance-per-participant"),
+      ),
+      tone: metricYearOverYearTone(
+        distancePerParticipant,
+        previousMetricByKey.get("sunshine-run-distance-per-participant"),
+      ),
+    },
+    {
+      key: "duration-per-participant",
+      label: "人均运动时长",
+      value: durationPerParticipant ? metricValue(durationPerParticipant) : "—",
+      detail: metricYearOverYearText(
+        durationPerParticipant,
+        previousMetricByKey.get("sunshine-run-duration-per-participant"),
+      ),
+      tone: metricYearOverYearTone(
+        durationPerParticipant,
+        previousMetricByKey.get("sunshine-run-duration-per-participant"),
+      ),
+    },
+  ];
+});
+
+const honorCharts = computed(() => honorDimensions.map((dimension) => {
+  const distribution = props.dataset.distributions.find(
+    (item) => item.key === `honor-${dimension.key}-distribution`,
+  );
+  const data = distribution?.items
+    .filter((item) => item.studentCount && item.studentCount > 0)
+    .map((item) => ({
+      name: honorItemLabels[item.key] ?? item.key,
+      value: item.studentCount ?? 0,
+    })) ?? [];
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const option: EChartsCoreOption = {
+    color: ["#2d55eb", "#21a179", "#5b8ff9", "#f5a623", "#7a5af8", "#36b37e", "#f36f56"],
+    tooltip: {
+      trigger: "item",
+      formatter: "{b}<br/>{c} 项（{d}%）",
+    },
+    legend: {
+      type: "scroll",
+      bottom: 0,
+      left: "center",
+      width: "92%",
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: {
+        color: "#575859",
+        fontSize: 11,
+        width: 92,
+        overflow: "truncate",
+      },
+    },
+    title: {
+      text: total.toLocaleString("zh-CN"),
+      subtext: "总计（项）",
+      left: "center",
+      top: "31%",
+      textAlign: "center",
+      textStyle: {
+        color: "#1f2329",
+        fontSize: 20,
+        fontWeight: 600,
+      },
+      subtextStyle: {
+        color: "#898a8c",
+        fontSize: 11,
+        lineHeight: 18,
+      },
+    },
+    series: [{
+      name: dimension.label,
+      type: "pie",
+      radius: ["42%", "68%"],
+      center: ["50%", "42%"],
+      minAngle: 4,
+      avoidLabelOverlap: true,
+      itemStyle: { borderColor: "#ffffff", borderWidth: 2, borderRadius: 4 },
+      label: { show: false },
+      labelLine: { show: false },
+      emphasis: { label: { show: false }, labelLine: { show: false } },
+      data,
+    }],
+  };
+  return { ...dimension, option, total };
+}));
+
+const dailyEvaluationRows = computed(() => props.dataset.grades
+  .map((grade) => {
+    const praise = grade.metrics.find((item) => item.key === "daily-evaluation-positive-rate");
+    const improvement = grade.metrics.find((item) => item.key === "daily-evaluation-improvement-rate");
+    return { label: grade.grade, praise, improvement };
+  })
+  .filter((row): row is {
+    label: string;
+    praise: PortraitMetric;
+    improvement: PortraitMetric;
+  } => Boolean(
+    row.praise
+    && row.improvement
+    && row.praise.denominator
+    && row.praise.denominator > 0,
+  )));
 
 const observationItems = computed(() => {
   const items = [
@@ -117,28 +405,31 @@ const chartOption = computed<EChartsCoreOption>(() => {
     axisTick: { lineStyle: { color: axisColor } },
     axisLabel: { color: axisColor, fontSize: 11 },
   };
-  const distribution = topicDistribution.value;
-  const levelLabels: Record<string, string> = {
-    excellent: "很好",
-    average: "一般",
-    "needs-effort": "需努力",
-  };
-  const categories = distribution
-    ? distribution.items.map((item) => levelLabels[item.key] ?? item.key)
-    : metrics.value.map((metric) => metricLabel(metric));
-  const values = distribution
-    ? distribution.items.map((item) => item.value)
-    : metrics.value.map((metric) => metric.quality.coverageRate);
+  const isDailyEvaluation = props.topicKey === "daily-evaluation";
+  const isSchoolComparison = comparisonDimension.value === "school";
+  const categories = isDailyEvaluation
+    ? dailyEvaluationRows.value.map((row) => row.label)
+    : comparisonRows.value.map((row) => row.label);
+  const hasSchoolDataZoom = isSchoolComparison && categories.length > 4;
+  const values = comparisonValues.value;
 
   return {
     tooltip: {
       trigger: "axis",
+      axisPointer: { type: "shadow" },
       valueFormatter: (value: number | string) => `${value}%`,
     },
+    legend: isDailyEvaluation
+      ? {
+          top: 0,
+          right: 12,
+          textStyle: { color: axisColor, fontSize: 11 },
+        }
+      : undefined,
     grid: {
-      top: 28,
+      top: isDailyEvaluation ? 36 : 28,
       right: 12,
-      bottom: 8,
+      bottom: hasSchoolDataZoom ? 48 : 8,
       left: 8,
       containLabel: true,
     },
@@ -150,6 +441,9 @@ const chartOption = computed<EChartsCoreOption>(() => {
         color: axisColor,
         fontSize: 11,
         hideOverlap: true,
+        rotate: 0,
+        width: isSchoolComparison ? 104 : undefined,
+        overflow: isSchoolComparison ? "truncate" : undefined,
       },
     },
     yAxis: {
@@ -159,13 +453,58 @@ const chartOption = computed<EChartsCoreOption>(() => {
       axisLabel: { color: axisColor, fontSize: 11, formatter: "{value}%" },
       splitLine: { lineStyle: { color: "#ebecf0" } },
     },
-    series: [{
-      type: "bar",
-      barMaxWidth: 48,
-      data: values,
-      itemStyle: { color: "#2d55eb", borderRadius: [4, 4, 0, 0] },
-      label: { show: true, position: "top", formatter: "{c}%", color: "#575859" },
-    }],
+    dataZoom: hasSchoolDataZoom
+      ? [
+          {
+            type: "inside",
+            xAxisIndex: 0,
+            startValue: 0,
+            endValue: 3,
+            zoomOnMouseWheel: false,
+            moveOnMouseMove: true,
+          },
+          {
+            type: "slider",
+            xAxisIndex: 0,
+            startValue: 0,
+            endValue: 3,
+            bottom: 4,
+            height: 16,
+            showDetail: false,
+            brushSelect: false,
+            borderColor: "#ebecf0",
+            fillerColor: "rgba(45, 85, 235, 0.14)",
+            handleStyle: { color: "#2d55eb" },
+            moveHandleStyle: { color: "#2d55eb" },
+          },
+        ]
+      : undefined,
+    series: isDailyEvaluation
+      ? [
+          {
+            name: "表扬",
+            type: "bar",
+            barMaxWidth: 32,
+            data: dailyEvaluationRows.value.map((row) => row.praise.value),
+            itemStyle: { color: "#2d55eb", borderRadius: [4, 4, 0, 0] },
+            label: { show: true, position: "top", formatter: "{c}%", color: "#575859" },
+          },
+          {
+            name: "待改进",
+            type: "bar",
+            barMaxWidth: 32,
+            data: dailyEvaluationRows.value.map((row) => row.improvement.value),
+            itemStyle: { color: "#f59f00", borderRadius: [4, 4, 0, 0] },
+            label: { show: true, position: "top", formatter: "{c}%", color: "#575859" },
+          },
+        ]
+      : [{
+          type: "bar",
+          barMaxWidth: 48,
+          data: values,
+          itemStyle: { color: "#2d55eb", borderRadius: [4, 4, 0, 0] },
+          label: { show: true, position: "top", formatter: "{c}%", color: "#575859" },
+        }],
   };
 });
 
@@ -178,19 +517,67 @@ function metricValue(metric: PortraitMetric) {
   return `${metric.value.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}${metric.unit === "%" ? "%" : ` ${metric.unit}`}`;
 }
 
+function yearOverYearText(
+  current: number | undefined,
+  previous: number | undefined,
+  percentagePoint = false,
+) {
+  if (current === undefined || previous === undefined) return "同比 暂无可比";
+  if (percentagePoint) {
+    const difference = Number((current - previous).toFixed(2));
+    const prefix = difference > 0 ? "+" : "";
+    return `同比 ${prefix}${difference.toFixed(2)} 个百分点`;
+  }
+  if (previous === 0) return "同比 暂无可比";
+  const rate = Number((((current - previous) / previous) * 100).toFixed(2));
+  const prefix = rate > 0 ? "+" : "";
+  return `同比 ${prefix}${rate.toFixed(2)}%`;
+}
+
+function yearOverYearTone(current: number | undefined, previous: number | undefined) {
+  if (current === undefined || previous === undefined || previous === 0) return "unavailable";
+  if (current > previous) return "up";
+  if (current < previous) return "down";
+  return "flat";
+}
+
+function metricYearOverYearText(
+  metric: PortraitMetric | undefined,
+  previous: PortraitMetric | undefined,
+) {
+  if (
+    !metric
+    || !previous
+    || ["insufficient", "unavailable"].includes(metric.quality.status)
+    || ["insufficient", "unavailable"].includes(previous.quality.status)
+  ) {
+    return "同比 暂无可比";
+  }
+  return yearOverYearText(metric.value, previous.value, metric.unit === "%");
+}
+
+function metricYearOverYearTone(
+  metric: PortraitMetric | undefined,
+  previous: PortraitMetric | undefined,
+  compareNumerator = false,
+) {
+  if (
+    !metric
+    || !previous
+    || ["insufficient", "unavailable"].includes(metric.quality.status)
+    || ["insufficient", "unavailable"].includes(previous.quality.status)
+  ) {
+    return "unavailable";
+  }
+  return yearOverYearTone(
+    compareNumerator ? metric.numerator : metric.value,
+    compareNumerator ? previous.numerator : previous.value,
+  );
+}
+
 function metricBasis(metric: PortraitMetric) {
   if (metric.numerator === undefined || metric.denominator === undefined) return "按有效记录聚合";
   return `${metric.numerator.toLocaleString("zh-CN")} / ${metric.denominator.toLocaleString("zh-CN")}`;
-}
-
-function qualityLabel(metric: PortraitMetric) {
-  const labels = {
-    ready: "数据完整",
-    partial: "部分可用",
-    insufficient: "样本不足",
-    unavailable: "暂无数据",
-  };
-  return `${labels[metric.quality.status]} · 覆盖 ${metric.quality.coverageRate}%`;
 }
 
 function comparabilityLabel(metric?: PortraitMetric) {
@@ -210,16 +597,55 @@ function metricMethod(metric?: PortraitMetric) {
 
 <template>
   <div class="regional-quality-domain">
-    <div
-      class="regional-quality-domain__metrics"
-      :class="`has-${Math.min(metrics.length, 5)}-items`"
-    >
-      <article v-for="metric in metrics" :key="metric.key">
-        <span>{{ metricLabel(metric) }}</span>
-        <strong>{{ metricValue(metric) }}</strong>
-        <small>{{ qualityLabel(metric) }}</small>
-      </article>
+    <div>
+      <section
+        class="regional-quality-domain__metric-group"
+        :class="{ 'is-sports': topicKey === 'sports-health' }"
+      >
+        <h3 v-if="topicKey === 'sports-health'">体测与运动参与</h3>
+        <div
+          class="regional-quality-domain__metrics"
+          :class="`has-${Math.min(displayMetricCards.length, 5)}-items`"
+        >
+          <article v-for="metric in displayMetricCards" :key="metric.key">
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small :class="`is-${metric.tone}`">{{ metric.detail }}</small>
+          </article>
+        </div>
+      </section>
     </div>
+
+    <section v-if="topicKey === 'honor'" class="regional-quality-domain__honor-charts">
+      <article
+        v-for="chart in honorCharts"
+        :key="chart.key"
+        class="regional-quality-domain__panel regional-quality-domain__honor-chart"
+      >
+        <header>
+          <div>
+            <h3>{{ chart.label }}统计</h3>
+          </div>
+        </header>
+        <div class="regional-quality-domain__honor-chart-canvas">
+          <NewPortraitChart
+            :option="chart.option"
+            :ariaLabelText="`荣誉发展${chart.label}数量统计，共 ${chart.total} 项`"
+          />
+        </div>
+      </article>
+    </section>
+
+    <section v-if="sunshineRunCards.length" class="regional-quality-domain__metric-group is-sports">
+      <h3>阳光长跑</h3>
+      <div class="regional-quality-domain__metrics has-5-items">
+        <article v-for="metric in sunshineRunCards" :key="metric.key">
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <small :class="`is-${metric.tone}`">{{ metric.detail }}</small>
+        </article>
+      </div>
+    </section>
 
     <article class="regional-quality-domain__panel">
       <header>
@@ -228,6 +654,16 @@ function metricMethod(metric?: PortraitMetric) {
           <p>{{ chartDescription }}</p>
         </div>
         <div class="regional-quality-domain__actions">
+          <ElRadioGroup
+            v-if="canCompareSchools"
+            v-model="comparisonDimension"
+            size="small"
+            :aria-label="`${topic.label}对比维度`"
+          >
+            <ElRadioButton value="grade">按年级</ElRadioButton>
+            <ElRadioButton value="school">按学校</ElRadioButton>
+          </ElRadioGroup>
+          <ElTag v-else effect="plain">仅按年级</ElTag>
           <PortraitHintPopover
             label="观察口径"
             :title="`${topic.label}观察口径`"
@@ -241,7 +677,7 @@ function metricMethod(metric?: PortraitMetric) {
       <div class="regional-quality-domain__chart">
         <NewPortraitChart
           :option="chartOption"
-          :ariaLabelText="`${topic.label}${chartTitle}`"
+          :ariaLabelText="`${topic.label}${comparisonDimension === 'grade' ? '年级' : '学校'}对比`"
         />
       </div>
     </article>
@@ -259,7 +695,7 @@ function metricMethod(metric?: PortraitMetric) {
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--spacing-12);
+  gap: var(--spacing-16);
 }
 
 .regional-quality-domain__metrics.has-1-items { grid-template-columns: minmax(220px, 360px); }
@@ -289,6 +725,42 @@ function metricMethod(metric?: PortraitMetric) {
   font-size: 22px;
   line-height: 30px;
   font-weight: 600;
+}
+
+.regional-quality-domain__metric-group.is-sports {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.regional-quality-domain__metric-group > h3 {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: 600;
+}
+
+.regional-quality-domain__metrics small.is-up {
+  color: var(--color-success-dark-text);
+}
+
+.regional-quality-domain__metrics small.is-down {
+  color: var(--color-error-dark-text);
+}
+
+.regional-quality-domain__metrics small.is-flat,
+.regional-quality-domain__metrics small.is-unavailable {
+  color: var(--color-secondary);
+}
+
+.regional-quality-domain__honor-charts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-16);
+}
+
+.regional-quality-domain__honor-chart-canvas {
+  min-width: 0;
+  height: 250px;
 }
 
 .regional-quality-domain__panel {
@@ -328,11 +800,13 @@ function metricMethod(metric?: PortraitMetric) {
   .regional-quality-domain__metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .regional-quality-domain__metrics.has-1-items,
   .regional-quality-domain__metrics.has-2-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .regional-quality-domain__honor-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
   .regional-quality-domain__metrics,
   .regional-quality-domain__metrics.has-1-items,
   .regional-quality-domain__metrics.has-2-items { grid-template-columns: 1fr; }
+  .regional-quality-domain__honor-charts { grid-template-columns: 1fr; }
 }
 </style>

@@ -16,7 +16,7 @@ import type { PortraitRawDataSource } from "./student-growth-portrait-repository
 export const virtualPortraitDataMetadata = {
   isVirtual: true,
   sourceSystem: "local-student-growth-demo",
-  datasetVersion: "2026.07.28-v5",
+  datasetVersion: "2026.07.29-v7",
   academicYear: "2025-2026",
   comparisonPeriods: ["2024-2025-first", "2024-2025-second", "2025-2026-second"],
   notice: "本数据集完全虚构，仅用于本地演示、联调和计算规则验证，不得用于业务决策。",
@@ -31,6 +31,15 @@ const schoolDefinitions = [
   { id: "virtual-junior-b", name: "虚拟示范初中 B", educationStage: "junior" as const },
   { id: "virtual-senior-a", name: "虚拟示范高中 A", educationStage: "senior" as const },
   { id: "virtual-senior-b", name: "虚拟示范高中 B", educationStage: "senior" as const },
+] as const;
+
+const schoolVariationProfiles = [
+  { evaluationCoverage: 12, fitnessCoverage: 11, honorCoverage: 10, libraryVisitCoverage: 11, bookBorrowCoverage: 10, practiceCoverage: 12, dailyCoverage: 11, exerciseCoverage: 12, runCoverage: 10, academicOffset: -6, finalDelta: -2 },
+  { evaluationCoverage: 10, fitnessCoverage: 9, honorCoverage: 7, libraryVisitCoverage: 8, bookBorrowCoverage: 7, practiceCoverage: 9, dailyCoverage: 8, exerciseCoverage: 8, runCoverage: 12, academicOffset: 4, finalDelta: 5 },
+  { evaluationCoverage: 11, fitnessCoverage: 12, honorCoverage: 12, libraryVisitCoverage: 12, bookBorrowCoverage: 11, practiceCoverage: 10, dailyCoverage: 12, exerciseCoverage: 10, runCoverage: 8, academicOffset: -2, finalDelta: 1 },
+  { evaluationCoverage: 9, fitnessCoverage: 10, honorCoverage: 8, libraryVisitCoverage: 9, bookBorrowCoverage: 8, practiceCoverage: 7, dailyCoverage: 9, exerciseCoverage: 7, runCoverage: 11, academicOffset: 7, finalDelta: -3 },
+  { evaluationCoverage: 12, fitnessCoverage: 8, honorCoverage: 9, libraryVisitCoverage: 10, bookBorrowCoverage: 12, practiceCoverage: 11, dailyCoverage: 10, exerciseCoverage: 11, runCoverage: 7, academicOffset: -5, finalDelta: 6 },
+  { evaluationCoverage: 8, fitnessCoverage: 12, honorCoverage: 11, libraryVisitCoverage: 7, bookBorrowCoverage: 9, practiceCoverage: 8, dailyCoverage: 7, exerciseCoverage: 9, runCoverage: 9, academicOffset: 6, finalDelta: 2 },
 ] as const;
 
 /** 虚拟学校 ID 到展示名的映射；真实环境应改由组织主数据服务提供。 */
@@ -63,6 +72,31 @@ const exerciseTypes = [
 const practiceCategories = ["moral", "intellectual", "physical", "aesthetic", "labor", "club", "volunteer"] as const;
 const dailyThemes = ["课堂参与", "任务坚持", "同伴互助", "劳动实践", "阅读习惯", "体育锻炼"] as const;
 const bookCategories = ["文学", "科学", "历史", "艺术", "社科"] as const;
+const honorAwardTypes = [
+  "outstanding-student",
+  "subject-competition",
+  "academic-innovation",
+  "social-practice",
+  "student-leader",
+  "sports-competition",
+  "artistic-performance",
+  "art-work",
+  "student-scholarship",
+  "campus-culture-art",
+  "financial-aid",
+  "work-study",
+  "other",
+] as const;
+const honorLevels = [
+  "international",
+  "national",
+  "provincial",
+  "city",
+  "district",
+  "school",
+  "other",
+] as const;
+const honorAwardGrades = ["special", "first", "second", "third", "other"] as const;
 
 function gradeForStudent(
   educationStage: (typeof schoolDefinitions)[number]["educationStage"],
@@ -100,6 +134,7 @@ function buildVirtualRawData(): PortraitRawData {
   const events: StudentPortraitEventRecord[] = [];
 
   schoolDefinitions.forEach((school, schoolIndex) => {
+    const variation = schoolVariationProfiles[schoolIndex]!;
     for (let studentIndex = 0; studentIndex < 12; studentIndex += 1) {
       const ordinal = studentIndex + 1;
       const studentId = `${school.id}-student-${String(ordinal).padStart(2, "0")}`;
@@ -132,31 +167,40 @@ function buildVirtualRawData(): PortraitRawData {
           earnedCredits: Math.max(0, earnedCredits - (dimensionIndex === 4 ? 1 : 0)),
           goalCategory: dimension,
         });
-        events.push({
-          ...base(`evaluation-${dimension}`, dimensionIndex + 5),
-          evaluationFormVersion: "five-education-form/2025-v1",
-          dimension,
-          item: `${dimension}-成长表现`,
-          level: (studentIndex + dimensionIndex + schoolIndex) % 6 === 0
-            ? "needs-effort"
-            : (studentIndex + dimensionIndex) % 3 === 0 ? "average" : "excellent",
-          detail: "虚拟评价明细，仅用于演示评价表记录结构。",
-        });
-        if (studentIndex % 4 === dimensionIndex % 4) {
+        if (studentIndex < variation.evaluationCoverage) {
           events.push({
-            ...base(`evaluation-extra-${dimension}`, dimensionIndex + 60),
+            ...base(`evaluation-${dimension}`, dimensionIndex + 5),
             evaluationFormVersion: "five-education-form/2025-v1",
             dimension,
-            item: `${dimension}-专项观察`,
-            level: studentIndex % 5 === 0 ? "needs-effort" : studentIndex % 2 === 0 ? "excellent" : "average",
-            detail: "同学期二次评价，用于丰富等级分布。",
+            item: `${dimension}-成长表现`,
+            level: (studentIndex + dimensionIndex + schoolIndex) % 6 === 0
+              ? "needs-effort"
+              : (studentIndex + dimensionIndex) % 3 === 0 ? "average" : "excellent",
+            detail: "虚拟评价明细，仅用于演示评价表记录结构。",
           });
+          if (studentIndex % 4 === dimensionIndex % 4) {
+            events.push({
+              ...base(`evaluation-extra-${dimension}`, dimensionIndex + 60),
+              evaluationFormVersion: "five-education-form/2025-v1",
+              dimension,
+              item: `${dimension}-专项观察`,
+              level: studentIndex % 5 === 0 ? "needs-effort" : studentIndex % 2 === 0 ? "excellent" : "average",
+              detail: "同学期二次评价，用于丰富等级分布。",
+            });
+          }
         }
       });
 
       subjectsForStage(school.educationStage).forEach((subject, subjectIndex) => {
-        const midtermScore = 48 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 50);
-        const finalScore = 52 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 46);
+        const gradeOffset = studentIndex < 6 ? -3 : 4;
+        const midtermScore = Math.max(
+          40,
+          Math.min(98, 58 + variation.academicOffset + gradeOffset + subjectIndex * 2 + ((studentIndex * 7) % 31)),
+        );
+        const finalScore = Math.max(
+          40,
+          Math.min(100, midtermScore + variation.finalDelta + (studentIndex % 3) - 1),
+        );
         events.push({
           ...base(`exam-midterm-${subjectIndex}`, 12 + subjectIndex),
           examId: `district-unified-${school.educationStage}-${grade}-2025-first-midterm`,
@@ -212,12 +256,15 @@ function buildVirtualRawData(): PortraitRawData {
         }
       });
 
-      if (studentIndex % 2 === 0) {
+      const hasHonorRecord = studentIndex < variation.honorCoverage;
+      if (hasHonorRecord && studentIndex % 2 === 0) {
         events.push({
           ...base("honor", 25),
           kind: studentIndex % 4 === 0 ? "award" : "title",
           name: studentIndex % 4 === 0 ? "虚拟综合实践奖" : "虚拟成长之星",
-          level: studentIndex % 4 === 0 ? "district" : "school",
+          level: honorLevels[(schoolIndex * 2 + studentIndex) % honorLevels.length],
+          awardType: honorAwardTypes[(schoolIndex * 3 + studentIndex) % honorAwardTypes.length],
+          awardGrade: honorAwardGrades[(schoolIndex + studentIndex) % honorAwardGrades.length],
           category: studentIndex % 4 === 0 ? "实践" : "成长",
           organizer: "虚拟教育机构",
           competitionName: studentIndex % 4 === 0 ? "虚拟综合实践活动" : undefined,
@@ -225,24 +272,28 @@ function buildVirtualRawData(): PortraitRawData {
           isTeamAward: false,
         });
       }
-      if (studentIndex % 3 === 0) {
+      if (hasHonorRecord && studentIndex % 3 === 0) {
         events.push({
           ...base("honor-medal", 26),
           kind: "medal",
           name: "虚拟体育达标章",
-          level: studentIndex % 6 === 0 ? "city" : "school",
+          level: honorLevels[(schoolIndex + studentIndex + 2) % honorLevels.length],
+          awardType: "sports-competition",
+          awardGrade: honorAwardGrades[(schoolIndex + studentIndex + 1) % honorAwardGrades.length],
           category: "体育",
           organizer: "虚拟体卫艺中心",
           receivedAt: "2025-10-28T08:00:00.000Z",
           isTeamAward: studentIndex % 6 === 0,
         });
       }
-      if (studentIndex === 1 || studentIndex === 4) {
+      if (hasHonorRecord && (studentIndex === 1 || studentIndex === 4)) {
         events.push({
           ...base("honor-team", 27),
           kind: "award",
           name: "虚拟校园艺术节集体奖",
           level: "district",
+          awardType: studentIndex === 1 ? "artistic-performance" : "campus-culture-art",
+          awardGrade: studentIndex === 1 ? "first" : "second",
           category: "艺术",
           organizer: "虚拟教育局",
           competitionName: "虚拟校园艺术节",
@@ -251,57 +302,63 @@ function buildVirtualRawData(): PortraitRawData {
         });
       }
 
-      fitnessMetrics.forEach(([metric, unit], metricIndex) => {
-        const value = metric === "height"
-          ? 135 + schoolIndex * 4 + studentIndex
-          : metric === "weight"
-            ? 32 + schoolIndex * 2 + studentIndex
-            : metric === "bmi"
-              ? Number((16.5 + schoolIndex * 0.4 + studentIndex * 0.35).toFixed(1))
-              : 60 + ((studentIndex * 5 + metricIndex * 3 + schoolIndex) % 35);
-        events.push({
-          ...base(`fitness-${metric}`, 28 + metricIndex),
-          testBatchId: `virtual-fitness-2025-${school.educationStage}`,
-          metric,
-          value,
-          unit,
-          standardStatus,
-          standardVersion: "national-student-fitness/2014-revised",
-          testedAt: "2025-10-15T08:00:00.000Z",
-        });
-      });
-
-      exerciseTypes.forEach((exerciseType, exerciseIndex) => {
-        events.push({
-          ...base(`ai-exercise-${exerciseIndex}`, 38 + exerciseIndex),
-          exerciseType,
-          sessionCount: 2 + ((studentIndex + exerciseIndex + schoolIndex) % 5),
-          completedAt: `2025-11-${String(5 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
-          isVerified: studentIndex !== 11,
-        });
-        if (studentIndex % 2 === exerciseIndex % 2) {
+      if (studentIndex < variation.fitnessCoverage) {
+        fitnessMetrics.forEach(([metric, unit], metricIndex) => {
+          const value = metric === "height"
+            ? 135 + schoolIndex * 4 + studentIndex
+            : metric === "weight"
+              ? 32 + schoolIndex * 2 + studentIndex
+              : metric === "bmi"
+                ? Number((16.5 + schoolIndex * 0.4 + studentIndex * 0.35).toFixed(1))
+                : 60 + ((studentIndex * 5 + metricIndex * 3 + schoolIndex) % 35);
           events.push({
-            ...base(`ai-exercise-extra-${exerciseIndex}`, 80 + exerciseIndex),
-            exerciseType,
-            sessionCount: 1 + (studentIndex % 3),
-            completedAt: `2025-12-${String(2 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
-            isVerified: studentIndex !== 10,
+            ...base(`fitness-${metric}`, 28 + metricIndex),
+            testBatchId: `virtual-fitness-2025-${school.educationStage}`,
+            metric,
+            value,
+            unit,
+            standardStatus,
+            standardVersion: "national-student-fitness/2014-revised",
+            testedAt: "2025-10-15T08:00:00.000Z",
           });
-        }
-      });
-
-      [0, 1, 2].forEach((runIndex) => {
-        if (studentIndex === 8 && runIndex === 2) return;
-        events.push({
-          ...base(`sunshine-run-${runIndex}`, 45 + runIndex),
-          distanceKilometers: Number((1.2 + studentIndex * 0.1 + runIndex * 0.3).toFixed(1)),
-          durationSeconds: 420 + studentIndex * 18 + runIndex * 40,
-          completedAt: `2025-11-${String(12 + runIndex * 5).padStart(2, "0")}T16:00:00.000Z`,
-          isValidRun: !(studentIndex === 7 && runIndex === 0),
         });
-      });
+      }
 
-      if (studentIndex % 5 !== 4) {
+      if (studentIndex < variation.exerciseCoverage) {
+        exerciseTypes.forEach((exerciseType, exerciseIndex) => {
+          events.push({
+            ...base(`ai-exercise-${exerciseIndex}`, 38 + exerciseIndex),
+            exerciseType,
+            sessionCount: 2 + ((studentIndex + exerciseIndex + schoolIndex) % 5),
+            completedAt: `2025-11-${String(5 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
+            isVerified: studentIndex !== 11,
+          });
+          if (studentIndex % 2 === exerciseIndex % 2) {
+            events.push({
+              ...base(`ai-exercise-extra-${exerciseIndex}`, 80 + exerciseIndex),
+              exerciseType,
+              sessionCount: 1 + (studentIndex % 3),
+              completedAt: `2025-12-${String(2 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
+              isVerified: studentIndex !== 10,
+            });
+          }
+        });
+      }
+
+      if (studentIndex < variation.runCoverage) {
+        [0, 1, 2].forEach((runIndex) => {
+          if (studentIndex === 8 && runIndex === 2) return;
+          events.push({
+            ...base(`sunshine-run-${runIndex}`, 45 + runIndex),
+            distanceKilometers: Number((1.2 + studentIndex * 0.1 + runIndex * 0.3).toFixed(1)),
+            durationSeconds: 420 + studentIndex * 18 + runIndex * 40,
+            completedAt: `2025-11-${String(12 + runIndex * 5).padStart(2, "0")}T16:00:00.000Z`,
+            isValidRun: !(studentIndex === 7 && runIndex === 0),
+          });
+        });
+      }
+
+      if (studentIndex < variation.libraryVisitCoverage) {
         events.push({
           ...base("library-visit", 46),
           enteredAt: "2025-11-08T15:00:00.000Z",
@@ -313,7 +370,7 @@ function buildVirtualRawData(): PortraitRawData {
           leftAt: "2025-11-22T16:10:00.000Z",
         });
       }
-      if (studentIndex % 4 !== 3) {
+      if (studentIndex < variation.bookBorrowCoverage) {
         events.push({
           ...base("book-borrow", 47),
           bookId: `virtual-book-${schoolIndex + 1}-${ordinal}`,
@@ -365,6 +422,7 @@ function buildVirtualRawData(): PortraitRawData {
       }
 
       practiceCategories.forEach((category, categoryIndex) => {
+        if (studentIndex >= variation.practiceCoverage) return;
         if (studentIndex === 9 && categoryIndex > 3) return;
         events.push({
           ...base(`practice-${category}`, 5 + categoryIndex),
@@ -384,18 +442,20 @@ function buildVirtualRawData(): PortraitRawData {
         }
       });
 
-      dailyThemes.forEach((theme, themeIndex) => {
-        if (studentIndex === 11 && themeIndex > 2) return;
-        const isPraise = (studentIndex + themeIndex + schoolIndex) % 3 !== 0;
-        events.push({
-          ...base(`daily-${themeIndex}`, 14 + themeIndex),
-          type: isPraise ? "praise" : "improvement",
-          theme,
-          evaluatedAt: `2025-10-${String(14 + themeIndex).padStart(2, "0")}T12:00:00.000Z`,
-          evaluatorRole: themeIndex % 2 === 0 ? "teacher" : "class-teacher",
-          evaluationFormVersion: "daily-evaluation/2025-v1",
+      if (studentIndex < variation.dailyCoverage) {
+        dailyThemes.forEach((theme, themeIndex) => {
+          if (studentIndex === 11 && themeIndex > 2) return;
+          const isPraise = (studentIndex + themeIndex + schoolIndex) % 3 !== 0;
+          events.push({
+            ...base(`daily-${themeIndex}`, 14 + themeIndex),
+            type: isPraise ? "praise" : "improvement",
+            theme,
+            evaluatedAt: `2025-10-${String(14 + themeIndex).padStart(2, "0")}T12:00:00.000Z`,
+            evaluatorRole: themeIndex % 2 === 0 ? "teacher" : "class-teacher",
+            evaluationFormVersion: "daily-evaluation/2025-v1",
+          });
         });
-      });
+      }
     }
   });
 
