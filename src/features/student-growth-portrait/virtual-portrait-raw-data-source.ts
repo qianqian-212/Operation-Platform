@@ -16,20 +16,21 @@ import type { PortraitRawDataSource } from "./student-growth-portrait-repository
 export const virtualPortraitDataMetadata = {
   isVirtual: true,
   sourceSystem: "local-student-growth-demo",
-  datasetVersion: "2026.07.27-v3",
+  datasetVersion: "2026.07.28-v5",
   academicYear: "2025-2026",
+  comparisonPeriods: ["2024-2025-first", "2024-2025-second", "2025-2026-second"],
   notice: "本数据集完全虚构，仅用于本地演示、联调和计算规则验证，不得用于业务决策。",
   studentCount: 72,
   schoolCount: 6,
 } as const;
 
 const schoolDefinitions = [
-  { id: "virtual-primary-a", name: "虚拟示范小学 A", educationStage: "primary", grade: "四年级" },
-  { id: "virtual-primary-b", name: "虚拟示范小学 B", educationStage: "primary", grade: "四年级" },
-  { id: "virtual-junior-a", name: "虚拟示范初中 A", educationStage: "junior", grade: "七年级" },
-  { id: "virtual-junior-b", name: "虚拟示范初中 B", educationStage: "junior", grade: "七年级" },
-  { id: "virtual-senior-a", name: "虚拟示范高中 A", educationStage: "senior", grade: "高一" },
-  { id: "virtual-senior-b", name: "虚拟示范高中 B", educationStage: "senior", grade: "高一" },
+  { id: "virtual-primary-a", name: "虚拟示范小学 A", educationStage: "primary" as const },
+  { id: "virtual-primary-b", name: "虚拟示范小学 B", educationStage: "primary" as const },
+  { id: "virtual-junior-a", name: "虚拟示范初中 A", educationStage: "junior" as const },
+  { id: "virtual-junior-b", name: "虚拟示范初中 B", educationStage: "junior" as const },
+  { id: "virtual-senior-a", name: "虚拟示范高中 A", educationStage: "senior" as const },
+  { id: "virtual-senior-b", name: "虚拟示范高中 B", educationStage: "senior" as const },
 ] as const;
 
 /** 虚拟学校 ID 到展示名的映射；真实环境应改由组织主数据服务提供。 */
@@ -60,6 +61,21 @@ const exerciseTypes = [
   "sit-and-reach",
 ] as const;
 const practiceCategories = ["moral", "intellectual", "physical", "aesthetic", "labor", "club", "volunteer"] as const;
+const dailyThemes = ["课堂参与", "任务坚持", "同伴互助", "劳动实践", "阅读习惯", "体育锻炼"] as const;
+const bookCategories = ["文学", "科学", "历史", "艺术", "社科"] as const;
+
+function gradeForStudent(
+  educationStage: (typeof schoolDefinitions)[number]["educationStage"],
+  studentIndex: number,
+) {
+  if (educationStage === "primary") return studentIndex < 6 ? "四年级" : "五年级";
+  if (educationStage === "junior") return studentIndex < 6 ? "七年级" : "八年级";
+  return studentIndex < 6 ? "高一" : "高二";
+}
+
+function subjectsForStage(educationStage: (typeof schoolDefinitions)[number]["educationStage"]) {
+  return educationStage === "primary" ? ["语文", "数学", "英语"] : ["语文", "数学", "英语", "科学"];
+}
 
 function sourceFields(id: string, studentId: string, schoolId: string, day: number, term: AcademicTerm = "first") {
   const month = 10 + Math.floor((day - 1) / 28);
@@ -87,8 +103,10 @@ function buildVirtualRawData(): PortraitRawData {
     for (let studentIndex = 0; studentIndex < 12; studentIndex += 1) {
       const ordinal = studentIndex + 1;
       const studentId = `${school.id}-student-${String(ordinal).padStart(2, "0")}`;
+      const grade = gradeForStudent(school.educationStage, studentIndex);
+      const gradePeers = 12;
+      const gradeRankSeed = (studentIndex % 6) + 1 + (schoolIndex % 2) * 6;
       const recordId = (kind: string) => `${kind}-${schoolIndex + 1}-${ordinal}`;
-      const unifiedRank = studentIndex + 1 + (schoolIndex % 2) * 12;
       const goalCredits = 20 + (studentIndex % 3) * 2;
       const earnedCredits = goalCredits - ((studentIndex + schoolIndex) % 4);
       const standardStatus = studentIndex === 11 ? "fail" : studentIndex % 3 === 0 ? "good" : "pass";
@@ -100,7 +118,7 @@ function buildVirtualRawData(): PortraitRawData {
         studentId,
         schoolId: school.id,
         educationStage: school.educationStage,
-        grade: school.grade,
+        grade,
         classId: `${school.id}-class-${studentIndex < 6 ? "01" : "02"}`,
         enrollmentStatus: "active",
         enrolledAt: school.educationStage === "primary" ? "2022-09-01" : school.educationStage === "junior" ? "2023-09-01" : "2024-09-01",
@@ -124,43 +142,74 @@ function buildVirtualRawData(): PortraitRawData {
             : (studentIndex + dimensionIndex) % 3 === 0 ? "average" : "excellent",
           detail: "虚拟评价明细，仅用于演示评价表记录结构。",
         });
+        if (studentIndex % 4 === dimensionIndex % 4) {
+          events.push({
+            ...base(`evaluation-extra-${dimension}`, dimensionIndex + 60),
+            evaluationFormVersion: "five-education-form/2025-v1",
+            dimension,
+            item: `${dimension}-专项观察`,
+            level: studentIndex % 5 === 0 ? "needs-effort" : studentIndex % 2 === 0 ? "excellent" : "average",
+            detail: "同学期二次评价，用于丰富等级分布。",
+          });
+        }
       });
 
-      ["语文", "数学", "英语"].forEach((subject, subjectIndex) => {
+      subjectsForStage(school.educationStage).forEach((subject, subjectIndex) => {
+        const midtermScore = 48 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 50);
+        const finalScore = 52 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 46);
         events.push({
           ...base(`exam-midterm-${subjectIndex}`, 12 + subjectIndex),
-          examId: `district-unified-${school.educationStage}-${school.grade}-2025-first-midterm`,
-          examName: `${school.grade}期中统考`,
+          examId: `district-unified-${school.educationStage}-${grade}-2025-first-midterm`,
+          examName: `${grade}期中统考`,
           examType: "midterm",
           administrationScope: "district-unified",
-          assessmentProgramId: `district-unified/${school.educationStage}/${school.grade}/2025-first`,
-          paperVersion: `district-paper/${school.educationStage}/${school.grade}/2025-first-v1`,
-          assessmentGrade: school.grade,
+          assessmentProgramId: `district-unified/${school.educationStage}/${grade}/2025-first`,
+          paperVersion: `district-paper/${school.educationStage}/${grade}/2025-first-v1`,
+          assessmentGrade: grade,
           subject,
-          score: 48 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 50),
+          score: midtermScore,
           fullScore: 100,
-          rank: unifiedRank,
-          comparableStudentCount: 24,
+          rank: gradeRankSeed,
+          comparableStudentCount: gradePeers,
           comparableScope: "district-unified",
           examAt: "2025-10-30T08:00:00.000Z",
         });
         events.push({
           ...base(`exam-final-${subjectIndex}`, 20 + subjectIndex),
-          examId: `district-unified-${school.educationStage}-${school.grade}-2025-first-final`,
-          examName: `${school.grade}期末统考`,
+          examId: `district-unified-${school.educationStage}-${grade}-2025-first-final`,
+          examName: `${grade}期末统考`,
           examType: "final",
           administrationScope: "district-unified",
-          assessmentProgramId: `district-unified/${school.educationStage}/${school.grade}/2025-first`,
-          paperVersion: `district-paper/${school.educationStage}/${school.grade}/2025-first-v1`,
-          assessmentGrade: school.grade,
+          assessmentProgramId: `district-unified/${school.educationStage}/${grade}/2025-first`,
+          paperVersion: `district-paper/${school.educationStage}/${grade}/2025-first-v1`,
+          assessmentGrade: grade,
           subject,
-          score: 52 + ((studentIndex * 7 + schoolIndex * 3 + subjectIndex * 5) % 46),
+          score: finalScore,
           fullScore: 100,
-          rank: ((unifiedRank + 22) % 24) + 1,
-          comparableStudentCount: 24,
+          rank: ((gradeRankSeed + 10) % gradePeers) + 1,
+          comparableStudentCount: gradePeers,
           comparableScope: "district-unified",
           examAt: "2025-12-28T08:00:00.000Z",
         });
+        if (subjectIndex === 1 && studentIndex % 3 !== 2) {
+          events.push({
+            ...base(`exam-diagnostic-${subjectIndex}`, 70 + subjectIndex),
+            examId: `district-unified-${school.educationStage}-${grade}-2025-first-diagnostic`,
+            examName: `${grade}阶段诊断`,
+            examType: "diagnostic",
+            administrationScope: "district-unified",
+            assessmentProgramId: `district-unified/${school.educationStage}/${grade}/2025-first`,
+            paperVersion: `district-paper/${school.educationStage}/${grade}/2025-first-diagnostic-v1`,
+            assessmentGrade: grade,
+            subject,
+            score: Math.max(40, midtermScore - 3),
+            fullScore: 100,
+            rank: gradeRankSeed,
+            comparableStudentCount: gradePeers,
+            comparableScope: "district-unified",
+            examAt: "2025-09-18T08:00:00.000Z",
+          });
+        }
       });
 
       if (studentIndex % 2 === 0) {
@@ -174,6 +223,31 @@ function buildVirtualRawData(): PortraitRawData {
           competitionName: studentIndex % 4 === 0 ? "虚拟综合实践活动" : undefined,
           receivedAt: "2025-11-20T08:00:00.000Z",
           isTeamAward: false,
+        });
+      }
+      if (studentIndex % 3 === 0) {
+        events.push({
+          ...base("honor-medal", 26),
+          kind: "medal",
+          name: "虚拟体育达标章",
+          level: studentIndex % 6 === 0 ? "city" : "school",
+          category: "体育",
+          organizer: "虚拟体卫艺中心",
+          receivedAt: "2025-10-28T08:00:00.000Z",
+          isTeamAward: studentIndex % 6 === 0,
+        });
+      }
+      if (studentIndex === 1 || studentIndex === 4) {
+        events.push({
+          ...base("honor-team", 27),
+          kind: "award",
+          name: "虚拟校园艺术节集体奖",
+          level: "district",
+          category: "艺术",
+          organizer: "虚拟教育局",
+          competitionName: "虚拟校园艺术节",
+          receivedAt: "2025-12-05T08:00:00.000Z",
+          isTeamAward: true,
         });
       }
 
@@ -205,33 +279,74 @@ function buildVirtualRawData(): PortraitRawData {
           completedAt: `2025-11-${String(5 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
           isVerified: studentIndex !== 11,
         });
-      });
-      events.push({
-        ...base("sunshine-run", 45),
-        distanceKilometers: Number((1.2 + studentIndex * 0.1).toFixed(1)),
-        durationSeconds: 420 + studentIndex * 18,
-        completedAt: "2025-11-22T16:00:00.000Z",
-        isValidRun: studentIndex !== 7,
+        if (studentIndex % 2 === exerciseIndex % 2) {
+          events.push({
+            ...base(`ai-exercise-extra-${exerciseIndex}`, 80 + exerciseIndex),
+            exerciseType,
+            sessionCount: 1 + (studentIndex % 3),
+            completedAt: `2025-12-${String(2 + exerciseIndex).padStart(2, "0")}T16:00:00.000Z`,
+            isVerified: studentIndex !== 10,
+          });
+        }
       });
 
-      events.push({
-        ...base("library-visit", 46),
-        enteredAt: "2025-11-08T15:00:00.000Z",
-        leftAt: `2025-11-08T${String(15 + (studentIndex % 2)).padStart(2, "0")}:35:00.000Z`,
+      [0, 1, 2].forEach((runIndex) => {
+        if (studentIndex === 8 && runIndex === 2) return;
+        events.push({
+          ...base(`sunshine-run-${runIndex}`, 45 + runIndex),
+          distanceKilometers: Number((1.2 + studentIndex * 0.1 + runIndex * 0.3).toFixed(1)),
+          durationSeconds: 420 + studentIndex * 18 + runIndex * 40,
+          completedAt: `2025-11-${String(12 + runIndex * 5).padStart(2, "0")}T16:00:00.000Z`,
+          isValidRun: !(studentIndex === 7 && runIndex === 0),
+        });
       });
-      events.push({
-        ...base("book-borrow", 47),
-        bookId: `virtual-book-${schoolIndex + 1}-${ordinal}`,
-        category: ["文学", "科学", "历史", "艺术"][studentIndex % 4]!,
-        borrowedAt: "2025-11-08T15:10:00.000Z",
-        returnedAt: "2025-11-22T15:10:00.000Z",
+
+      if (studentIndex % 5 !== 4) {
+        events.push({
+          ...base("library-visit", 46),
+          enteredAt: "2025-11-08T15:00:00.000Z",
+          leftAt: `2025-11-08T${String(15 + (studentIndex % 2)).padStart(2, "0")}:35:00.000Z`,
+        });
+        events.push({
+          ...base("library-visit-2", 90),
+          enteredAt: "2025-11-22T15:00:00.000Z",
+          leftAt: "2025-11-22T16:10:00.000Z",
+        });
+      }
+      if (studentIndex % 4 !== 3) {
+        events.push({
+          ...base("book-borrow", 47),
+          bookId: `virtual-book-${schoolIndex + 1}-${ordinal}`,
+          category: bookCategories[studentIndex % bookCategories.length]!,
+          borrowedAt: "2025-11-08T15:10:00.000Z",
+          returnedAt: "2025-11-22T15:10:00.000Z",
+        });
+        if (studentIndex % 2 === 0) {
+          events.push({
+            ...base("book-borrow-2", 91),
+            bookId: `virtual-book-${schoolIndex + 1}-${ordinal}-b`,
+            category: bookCategories[(studentIndex + 2) % bookCategories.length]!,
+            borrowedAt: "2025-12-01T15:10:00.000Z",
+            returnedAt: "2025-12-15T15:10:00.000Z",
+          });
+        }
+      }
+
+      [0, 1, 2].forEach((attendanceIndex) => {
+        events.push({
+          ...base(`attendance-${attendanceIndex}`, 48 + attendanceIndex),
+          type: studentIndex === 6 && attendanceIndex === 0
+            ? "late"
+            : studentIndex === 7 && attendanceIndex === 1
+              ? "sick-leave"
+              : studentIndex === 9 && attendanceIndex === 2
+                ? "early-leave"
+                : "normal",
+          durationMinutes: studentIndex === 6 && attendanceIndex === 0 ? 12 : 0,
+          recordedAt: `2025-11-${String(10 + attendanceIndex).padStart(2, "0")}T07:40:00.000Z`,
+        });
       });
-      events.push({
-        ...base("attendance", 48),
-        type: studentIndex === 6 ? "late" : studentIndex === 7 ? "sick-leave" : "normal",
-        durationMinutes: studentIndex === 6 ? 12 : 0,
-        recordedAt: "2025-11-10T07:40:00.000Z",
-      });
+
       (["breakfast", "lunch", "dinner", "stationery"] as const).forEach((category, categoryIndex) => {
         events.push({
           ...base(`consumption-${category}`, 49 + categoryIndex),
@@ -240,53 +355,172 @@ function buildVirtualRawData(): PortraitRawData {
           consumedAt: `2025-11-${String(11 + categoryIndex).padStart(2, "0")}T12:00:00.000Z`,
         });
       });
-      if (studentIndex === 5) {
+      if (studentIndex === 5 || studentIndex === 9) {
         events.push({
           ...base("clinic", 4),
-          symptomCodes: ["cough", "fever"],
-          visitedAt: "2025-10-04T10:00:00.000Z",
+          symptomCodes: studentIndex === 5 ? ["cough", "fever"] : ["headache"],
+          visitedAt: studentIndex === 5 ? "2025-10-04T10:00:00.000Z" : "2025-11-18T10:00:00.000Z",
           isInfectiousDiseaseHistory: false,
         });
       }
 
       practiceCategories.forEach((category, categoryIndex) => {
+        if (studentIndex === 9 && categoryIndex > 3) return;
         events.push({
           ...base(`practice-${category}`, 5 + categoryIndex),
           activityId: `virtual-practice-${schoolIndex + 1}-${categoryIndex + 1}`,
           category,
           participatedAt: `2025-10-${String(5 + categoryIndex).padStart(2, "0")}T14:00:00.000Z`,
-          isVerified: studentIndex !== 7,
+          isVerified: studentIndex !== 7 && !(studentIndex === 10 && category === "club"),
         });
+        if (category === "volunteer" && studentIndex % 3 === 0) {
+          events.push({
+            ...base("practice-volunteer-extra", 95),
+            activityId: `virtual-practice-${schoolIndex + 1}-volunteer-extra`,
+            category,
+            participatedAt: "2025-12-03T14:00:00.000Z",
+            isVerified: true,
+          });
+        }
       });
-      events.push({
-        ...base("daily-praise", 14),
-        type: "praise",
-        theme: "课堂参与",
-        evaluatedAt: "2025-10-14T12:00:00.000Z",
-        evaluatorRole: "teacher",
-        evaluationFormVersion: "daily-evaluation/2025-v1",
-      });
-      events.push({
-        ...base("daily-improvement", 15),
-        type: "improvement",
-        theme: "任务坚持",
-        evaluatedAt: "2025-10-15T12:00:00.000Z",
-        evaluatorRole: "teacher",
-        evaluationFormVersion: "daily-evaluation/2025-v1",
+
+      dailyThemes.forEach((theme, themeIndex) => {
+        if (studentIndex === 11 && themeIndex > 2) return;
+        const isPraise = (studentIndex + themeIndex + schoolIndex) % 3 !== 0;
+        events.push({
+          ...base(`daily-${themeIndex}`, 14 + themeIndex),
+          type: isPraise ? "praise" : "improvement",
+          theme,
+          evaluatedAt: `2025-10-${String(14 + themeIndex).padStart(2, "0")}T12:00:00.000Z`,
+          evaluatorRole: themeIndex % 2 === 0 ? "teacher" : "class-teacher",
+          evaluationFormVersion: "daily-evaluation/2025-v1",
+        });
       });
     }
   });
 
-  return { students, events };
-}
+  const comparisonEvents = [
+    ...buildPeriodEvents(events, {
+      academicYear: "2024-2025",
+      term: "first",
+      scoreAdjustment: -4,
+      coverageStudentLimit: 8,
+    }),
+    ...buildPeriodEvents(events, {
+      academicYear: "2024-2025",
+      term: "second",
+      scoreAdjustment: -2,
+      coverageStudentLimit: 10,
+    }),
+    ...buildPeriodEvents(events, {
+      academicYear: "2025-2026",
+      term: "second",
+      scoreAdjustment: 2,
+      coverageStudentLimit: 12,
+    }),
+  ];
 
-const virtualPortraitRawData = buildVirtualRawData();
+  return { students, events: [...events, ...comparisonEvents] };
+}
 
 function cloneEvent(record: StudentPortraitEventRecord): StudentPortraitEventRecord {
   return "symptomCodes" in record
     ? { ...record, symptomCodes: [...record.symptomCodes] }
     : { ...record };
 }
+
+interface VirtualPeriod {
+  academicYear: string;
+  term: Exclude<AcademicTerm, "whole-year">;
+  scoreAdjustment: number;
+  coverageStudentLimit: number;
+}
+
+const eventDateFields = [
+  "occurredAt",
+  "importedAt",
+  "examAt",
+  "receivedAt",
+  "testedAt",
+  "completedAt",
+  "enteredAt",
+  "leftAt",
+  "borrowedAt",
+  "returnedAt",
+  "recordedAt",
+  "consumedAt",
+  "visitedAt",
+  "participatedAt",
+  "evaluatedAt",
+] as const;
+
+function remapTimestamp(timestamp: string, period: VirtualPeriod) {
+  const [startYear] = period.academicYear.split("-").map(Number);
+  const targetYear = period.term === "first" ? startYear : startYear! + 1;
+  const sourceMonth = Number(timestamp.slice(5, 7));
+  const targetMonth = period.term === "first"
+    ? sourceMonth
+    : sourceMonth === 10 ? 3 : sourceMonth === 11 ? 4 : 6;
+  return `${targetYear}-${String(targetMonth).padStart(2, "0")}${timestamp.slice(7)}`;
+}
+
+function studentOrdinal(studentId: string) {
+  return Number(studentId.slice(-2));
+}
+
+function isCoverageFact(record: StudentPortraitEventRecord) {
+  return "examId" in record
+    || ("evaluationFormVersion" in record && "dimension" in record)
+    || "testBatchId" in record
+    || ("kind" in record && "receivedAt" in record)
+    || "bookId" in record
+    || "activityId" in record
+    || ("evaluatedAt" in record && "type" in record);
+}
+
+function buildPeriodEvents(
+  sourceEvents: StudentPortraitEventRecord[],
+  period: VirtualPeriod,
+): StudentPortraitEventRecord[] {
+  const periodKey = `${period.academicYear}-${period.term}`;
+  return sourceEvents.flatMap((sourceRecord) => {
+    const ordinal = studentOrdinal(sourceRecord.studentId);
+    if (isCoverageFact(sourceRecord) && ordinal > period.coverageStudentLimit) return [];
+    if (
+      "evaluatedAt" in sourceRecord
+      && sourceRecord.type === "improvement"
+      && period.term === "second"
+      && ordinal % 3 === 0
+    ) return [];
+
+    const record = cloneEvent(sourceRecord);
+    const mutableRecord = record as unknown as Record<string, unknown>;
+    eventDateFields.forEach((field) => {
+      const value = mutableRecord[field];
+      if (typeof value === "string") mutableRecord[field] = remapTimestamp(value, period);
+    });
+
+    record.id = `${sourceRecord.id}-${periodKey}`;
+    record.sourceRecordId = `${sourceRecord.sourceRecordId}-${periodKey}`;
+    record.academicYear = period.academicYear;
+    record.term = period.term;
+
+    if ("examId" in record) {
+      record.examId = record.examId.replace("2025-first", periodKey);
+      record.assessmentProgramId = record.assessmentProgramId.replace("2025-first", periodKey);
+      record.paperVersion = record.paperVersion.replace("2025-first", periodKey);
+      record.score = Math.max(0, Math.min(record.fullScore, record.score + period.scoreAdjustment));
+    }
+    if ("testBatchId" in record) {
+      const testBatchParts = record.testBatchId.split("-");
+      record.testBatchId = `virtual-fitness-${periodKey}-${testBatchParts[testBatchParts.length - 1]}`;
+    }
+
+    return [record];
+  });
+}
+
+const virtualPortraitRawData = buildVirtualRawData();
 
 function matchesQuery(student: StudentProfileRecord, query: PortraitQuery) {
   return (!query.schoolIds?.length || query.schoolIds.includes(student.schoolId))
@@ -307,6 +541,7 @@ export const virtualPortraitRawDataSource: PortraitRawDataSource = {
       .filter((event) => selectedStudentIds.has(event.studentId))
       .filter((event) => query.academicYears.includes(event.academicYear))
       .filter((event) => !query.terms?.length || query.terms.includes(event.term))
+      .filter((event) => !query.subjects?.length || !("examId" in event) || query.subjects.includes(event.subject))
       .map(cloneEvent);
 
     return { students, events };

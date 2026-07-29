@@ -1,72 +1,321 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
-  Building2,
+  Award,
+  BookOpenCheck,
   ChartNoAxesCombined,
-  CircleCheckBig,
+  ClipboardCheck,
+  Dumbbell,
   LayoutDashboard,
-  Lightbulb,
-  Network,
   Search,
-  Target,
+  Sparkles,
   TrendingUp,
-  TriangleAlert,
   Users,
 } from "@lucide/vue";
 import { ElMessage } from "element-plus";
 import PageFilterBar from "@/components/PageFilterBar.vue";
+import MetricDefinitionPopover from "@/features/new-student-growth-portrait/MetricDefinitionPopover.vue";
 import NewPortraitChart from "@/features/new-student-growth-portrait/NewPortraitChart.vue";
+import RegionalQualityDomainSection from "@/features/new-student-growth-portrait/RegionalQualityDomainSection.vue";
 import {
-  createGroupSchoolOption,
-  createTrendOption,
-  gapTrendOption,
-  groupScaleOption,
-  groupStructureOption,
-  heatmapOption,
-  measureOption,
-  migrationOption,
-  schoolDistributionOption,
-  schoolQuadrantOption,
-  schoolTypeOption,
-  supportFunnelOption,
-  urbanRuralOption,
+  nationalStandardAlignment,
+  regionalPortraitNationalDimensions,
+} from "@/features/new-student-growth-portrait/national-standard-alignment";
+import {
+  createCoverageOption,
+  createUnifiedExamSubjectOption,
 } from "@/features/new-student-growth-portrait/chart-options";
+import { portraitAnchors } from "@/features/new-student-growth-portrait/data";
+import type {
+  EducationStage,
+  PortraitDataset,
+  PortraitQuery,
+  UnifiedExamSummary,
+} from "@/features/student-growth-portrait/data-contract";
 import {
-  equityMetrics,
-  findings,
-  focusSchools,
-  groupStats,
-  overviewMetrics,
-  portraitAnchors,
-  schoolRows,
-  supportRows,
-  supportStats,
-} from "@/features/new-student-growth-portrait/data";
+  portraitMetricDefinitionByKey,
+} from "@/features/student-growth-portrait/metric-registry";
+import { runtimeStudentGrowthPortraitRepository } from "@/features/student-growth-portrait/runtime-student-growth-portrait-repository";
+import {
+  virtualPortraitDataMetadata,
+} from "@/features/student-growth-portrait/virtual-portrait-raw-data-source";
 
 const activeAnchor = ref<(typeof portraitAnchors)[number]["key"]>("regional-overview");
 const stage = ref("全部学段");
 const grade = ref("全部年级");
-const schoolType = ref("全部学校");
-const term = ref("2025—2026下学期");
-const trendMode = ref<"综合趋势" | "分学段">("综合趋势");
-const selectedGroup = ref("critical");
-const schoolKeyword = ref("");
-const appliedScope = ref("全部学段 · 全部年级 · 全部学校");
+const term = ref("2025—2026上学期");
+const academicSubject = ref("");
+const nationalAlignmentPanels = ref<string[]>([]);
+const comprehensiveDataset = ref<PortraitDataset>();
+const yearOverYearDataset = ref<PortraitDataset>();
+const comprehensiveLoading = ref(false);
+const comprehensiveError = ref("");
+let comprehensiveRequestController: AbortController | null = null;
+
+const termPeriods = {
+  "2025—2026下学期": {
+    current: { academicYear: "2025-2026", term: "second" },
+    yearOverYear: { academicYear: "2024-2025", term: "second" },
+  },
+  "2025—2026上学期": {
+    current: { academicYear: "2025-2026", term: "first" },
+    yearOverYear: { academicYear: "2024-2025", term: "first" },
+  },
+  "2024—2025下学期": {
+    current: { academicYear: "2024-2025", term: "second" },
+    yearOverYear: { academicYear: "2023-2024", term: "second" },
+  },
+} as const;
 
 const anchorIcons = {
   "regional-overview": LayoutDashboard,
-  "student-groups": Users,
-  "school-development": Building2,
-  "regional-equity": Network,
-  "growth-support": Target,
+  "five-education": Sparkles,
+  "sports-health": Dumbbell,
+  honor: Award,
+  behavior: BookOpenCheck,
+  practice: Users,
+  "daily-evaluation": ClipboardCheck,
+  "data-coverage": ChartNoAxesCombined,
 };
 
-const metricIcons = [Users, TrendingUp, ChartNoAxesCombined, TriangleAlert, CircleCheckBig];
-const trendOption = computed(() => createTrendOption(trendMode.value === "分学段"));
-const groupSchoolOption = computed(() => createGroupSchoolOption(selectedGroup.value));
-const filteredSchoolRows = computed(() => {
-  const keyword = schoolKeyword.value.trim();
-  return keyword ? schoolRows.filter((row) => row.school.includes(keyword) || row.type.includes(keyword)) : schoolRows;
+const regionalQualityTopics = [
+  {
+    key: "five-education",
+    title: "五育评价",
+    description: "观察区域成长目标完成、评价覆盖及“很好、一般、需努力”的结构，不合成为学生综合总分。",
+    primaryMetricKey: "five-education-goal-completion-rate",
+  },
+  {
+    key: "sports-health",
+    title: "运动健康",
+    description: "汇总规范体测、AI 体锻与阳光长跑的覆盖和参与，不依据有限记录推断健康诊断。",
+    primaryMetricKey: "ai-exercise-participation-rate",
+  },
+  {
+    key: "honor",
+    title: "荣誉发展",
+    description: "观察荣誉覆盖与每百名学生荣誉记录数；缺少机会分母时，不作学校公平性判断。",
+    primaryMetricKey: "honor-student-coverage-rate",
+  },
+  {
+    key: "behavior",
+    title: "行为习惯",
+    description: "以图书馆到访和借阅覆盖观察校园学习行为；缺少应考勤次数时不发布异常率。",
+    primaryMetricKey: "library-borrower-coverage-rate",
+  },
+  {
+    key: "practice",
+    title: "实践活动",
+    description: "按已核验活动记录统计区域参与覆盖，活动次数不直接等同于活动质量。",
+    primaryMetricKey: "practice-participation-rate",
+  },
+  {
+    key: "daily-evaluation",
+    title: "日常评价",
+    description: "观察表扬与待改进记录结构；未接入整改闭环前不计算改进完成率。",
+    primaryMetricKey: "daily-evaluation-positive-rate",
+  },
+] as const;
+
+const coverageDefinitions = [
+  { key: "academic-unified-exam-record-coverage-rate", label: "统考成绩记录" },
+  { key: "five-education-evaluation-coverage-rate", label: "五育成长评价" },
+  { key: "fitness-test-record-coverage-rate", label: "体质测试记录" },
+  { key: "honor-student-coverage-rate", label: "荣誉记录" },
+  { key: "library-borrower-coverage-rate", label: "图书借阅记录" },
+  { key: "practice-participation-rate", label: "实践活动记录" },
+  { key: "daily-evaluation-positive-rate", label: "日常评价记录" },
+] as const;
+
+const metricMap = computed(() => new Map(
+  comprehensiveDataset.value?.metrics.map((metric) => [metric.key, metric]) ?? [],
+));
+const yearOverYearMetricMap = computed(() => new Map(
+  yearOverYearDataset.value?.metrics.map((metric) => [metric.key, metric]) ?? [],
+));
+const coverageRows = computed(() => coverageDefinitions.map((definition) => {
+  const metric = metricMap.value.get(definition.key);
+  return {
+    ...definition,
+    observedStudentCount: metric?.quality.observedStudentCount ?? 0,
+    eligibleStudentCount: metric?.quality.eligibleStudentCount ?? 0,
+    coverageRate: metric?.quality.coverageRate ?? 0,
+    status: metric?.quality.status ?? "unavailable",
+    calculation: portraitMetricDefinitionByKey.get(definition.key)?.calculation ?? "当前指标字典未登记计算方式。",
+  };
+}));
+const coverageOption = computed(() => createCoverageOption(coverageRows.value));
+const gradeOptions = computed(() => ({
+  全部学段: ["四年级", "五年级", "七年级", "八年级", "高一", "高二"],
+  小学: ["四年级", "五年级"],
+  初中: ["七年级", "八年级"],
+  高中: ["高一", "高二"],
+}[stage.value] ?? []));
+
+const metricIcons = [
+  Users,
+  TrendingUp,
+  ChartNoAxesCombined,
+  Sparkles,
+  Dumbbell,
+  Award,
+  BookOpenCheck,
+  Users,
+  ClipboardCheck,
+];
+const academicSubjects = computed(() => [
+  ...new Set(comprehensiveDataset.value?.unifiedExamSummaries.map((summary) => summary.subject) ?? []),
+]);
+const trendSummaries = computed(() => (
+  (comprehensiveDataset.value?.unifiedExamSummaries ?? [])
+    .filter((summary) => summary.subject === academicSubject.value)
+));
+const trendOption = computed(() => createUnifiedExamSubjectOption(
+  trendSummaries.value,
+  academicSubject.value,
+));
+const currentSubjectExamWave = computed(() => (
+  subjectExamWave(comprehensiveDataset.value, academicSubject.value)
+));
+const yearOverYearSubjectExamWave = computed(() => (
+  subjectExamWave(yearOverYearDataset.value, academicSubject.value)
+));
+const currentSubjectExamStats = computed(() => aggregateExamWave(currentSubjectExamWave.value));
+const yearOverYearSubjectExamStats = computed(() => aggregateExamWave(yearOverYearSubjectExamWave.value));
+const academicReady = computed(() => Boolean(academicSubject.value && currentSubjectExamStats.value));
+
+type ChangeTone = "up" | "down" | "flat" | "unavailable";
+type SubjectExamStats = {
+  scoreRate: number;
+  coverageRate: number;
+  observedStudentCount: number;
+  eligibleStudentCount: number;
+  examLabel: string;
+};
+
+function subjectExamWave(dataset: PortraitDataset | undefined, subject: string) {
+  if (!subject) return [] as UnifiedExamSummary[];
+  const selected = (dataset?.unifiedExamSummaries ?? []).filter((summary) => (
+    summary.subject === subject
+    && (summary.examType === "midterm" || summary.examType === "final")
+  ));
+  if (!selected.length) return [];
+  const latest = selected.reduce((current, summary) => (
+    summary.examAt > current.examAt ? summary : current
+  ));
+  return selected.filter((summary) => summary.examType === latest.examType);
+}
+
+function aggregateExamWave(summaries: readonly UnifiedExamSummary[]): SubjectExamStats | undefined {
+  if (!summaries.length) return undefined;
+  const scoreNumerator = summaries.reduce((total, summary) => total + summary.scoreNumerator, 0);
+  const scoreDenominator = summaries.reduce((total, summary) => total + summary.scoreDenominator, 0);
+  const observedStudentCount = summaries.reduce(
+    (total, summary) => total + summary.quality.observedStudentCount,
+    0,
+  );
+  const eligibleStudentCount = summaries.reduce(
+    (total, summary) => total + summary.quality.eligibleStudentCount,
+    0,
+  );
+  return {
+    scoreRate: scoreDenominator > 0
+      ? Number(((scoreNumerator / scoreDenominator) * 100).toFixed(2))
+      : 0,
+    coverageRate: eligibleStudentCount > 0
+      ? Number(((observedStudentCount / eligibleStudentCount) * 100).toFixed(2))
+      : 0,
+    observedStudentCount,
+    eligibleStudentCount,
+    examLabel: summaries[0]?.examType === "final" ? "期末统考" : "期中统考",
+  };
+}
+
+function percentagePointChange(
+  current: number | undefined,
+  previous: number | undefined,
+): { text: string; tone: ChangeTone } {
+  if (current === undefined || previous === undefined) {
+    return { text: "暂无可比", tone: "unavailable" };
+  }
+  const difference = Number((current - previous).toFixed(2));
+  if (difference === 0) {
+    return { text: "持平 0.00%", tone: "flat" };
+  }
+  const prefix = difference > 0 ? "+" : "";
+  return {
+    text: `${prefix}${difference.toFixed(2)}%`,
+    tone: difference > 0 ? "up" : "down",
+  };
+}
+
+function unavailableChange(text: string): { text: string; tone: ChangeTone } {
+  return { text, tone: "unavailable" };
+}
+
+const filterScopeLabel = computed(() => `${stage.value} · ${grade.value}`);
+const academicScopeMessage = computed(() => {
+  if (!academicSubject.value) return "当前数据源没有可用统考科目。";
+  if (!currentSubjectExamStats.value) {
+    return `上方筛选范围（${filterScopeLabel.value}）内暂无${academicSubject.value}统考数据。`;
+  }
+  return `学段/年级由上方筛选栏控制；当前按${filterScopeLabel.value}统计${academicSubject.value}${currentSubjectExamStats.value.examLabel}，多年级按成绩分子分母加权。`;
+});
+const overviewMetrics = computed(() => {
+  const studentMetric = metricMap.value.get("enrolled-student-count");
+  const latest = academicReady.value ? currentSubjectExamStats.value : undefined;
+  const yearOverYearLatest = academicReady.value ? yearOverYearSubjectExamStats.value : undefined;
+  const examCoverage = latest?.coverageRate;
+  const subjectLabel = academicSubject.value || "单科";
+  const metricItem = (label: string, key: string) => {
+    const metric = metricMap.value.get(key);
+    return {
+      label,
+      value: metric ? metric.value.toFixed(2) : "—",
+      unit: metric ? metric.unit : "",
+      yearOverYear: percentagePointChange(metric?.value, yearOverYearMetricMap.value.get(key)?.value),
+      explanationKey: "period-comparison" as const,
+    };
+  };
+  return [
+    {
+      label: "区域学生总数（有效学籍去重）",
+      value: studentMetric ? studentMetric.value.toLocaleString("zh-CN") : "—",
+      unit: "人",
+      yearOverYear: unavailableChange("缺少历史学籍快照"),
+      explanationKey: "period-comparison" as const,
+    },
+    {
+      label: `${subjectLabel}平均得分率（统考）`,
+      value: latest ? latest.scoreRate.toFixed(2) : "—",
+      unit: latest ? "%" : "",
+      yearOverYear: latest
+        ? percentagePointChange(latest.scoreRate, yearOverYearLatest?.scoreRate)
+        : unavailableChange("选择科目后可比较"),
+      explanationKey: "academic-quality-rate" as const,
+    },
+    {
+      label: latest
+        ? `${subjectLabel}统考成绩覆盖率（${latest.observedStudentCount}/${latest.eligibleStudentCount}人）`
+        : `${subjectLabel}统考成绩覆盖率`,
+      value: examCoverage === undefined ? "—" : examCoverage.toFixed(2),
+      unit: examCoverage === undefined ? "" : "%",
+      yearOverYear: latest
+        ? percentagePointChange(examCoverage, yearOverYearLatest?.coverageRate)
+        : unavailableChange("选择科目后可比较"),
+      explanationKey: "period-comparison" as const,
+    },
+    metricItem("五育评价覆盖率", "five-education-evaluation-coverage-rate"),
+    metricItem("体测记录覆盖率", "fitness-test-record-coverage-rate"),
+    metricItem("荣誉学生覆盖率", "honor-student-coverage-rate"),
+    metricItem("图书借阅覆盖率", "library-borrower-coverage-rate"),
+    metricItem("有效活动参与率", "practice-participation-rate"),
+    metricItem("日常评价表扬占比", "daily-evaluation-positive-rate"),
+  ];
+});
+
+watch(academicSubjects, (subjects) => {
+  if (!subjects.includes(academicSubject.value)) academicSubject.value = subjects[0] ?? "";
 });
 
 let observer: IntersectionObserver | null = null;
@@ -81,44 +330,85 @@ function goToAnchor(anchor: (typeof portraitAnchors)[number]["key"]) {
 }
 
 function applyFilters() {
-  appliedScope.value = `${stage.value} · ${grade.value} · ${schoolType.value}`;
-  ElMessage.success(`已更新统计范围：${appliedScope.value}`);
+  ElMessage.success(`已更新统计范围：${stage.value} · ${grade.value}`);
+  void loadComprehensiveDataset();
 }
 
 function resetFilters() {
   stage.value = "全部学段";
   grade.value = "全部年级";
-  schoolType.value = "全部学校";
-  term.value = "2025—2026下学期";
-  appliedScope.value = "全部学段 · 全部年级 · 全部学校";
+  term.value = "2025—2026上学期";
+  academicSubject.value = academicSubjects.value[0] ?? "";
   ElMessage.info("已恢复默认统计范围");
+  void loadComprehensiveDataset();
 }
 
-function notify(message: string) {
-  ElMessage.success(message);
+function comprehensiveQuery(
+  period: { academicYear: string; term: "first" | "second" },
+): PortraitQuery {
+  const stageMap: Record<string, EducationStage> = {
+    小学: "primary",
+    初中: "junior",
+    高中: "senior",
+  };
+  const query: PortraitQuery = {
+    tenantId: "bureau-local-demo",
+    academicYears: [period.academicYear],
+    terms: [period.term],
+    domains: ["academic", ...regionalQualityTopics.map((topic) => topic.key)],
+  };
+  const selectedStage = stageMap[stage.value];
+  if (selectedStage) query.educationStages = [selectedStage];
+  if (grade.value !== "全部年级") query.grades = [grade.value];
+  return query;
 }
 
-function attentionTagType(level: string) {
-  if (level === "高关注") return "danger";
-  if (level === "较高关注") return "warning";
+async function loadComprehensiveDataset() {
+  comprehensiveRequestController?.abort();
+  const controller = new AbortController();
+  comprehensiveRequestController = controller;
+  comprehensiveLoading.value = true;
+  comprehensiveError.value = "";
+  try {
+    const selectedPeriod = termPeriods[term.value as keyof typeof termPeriods];
+    const [currentDataset, yearAgoDataset] = await Promise.all([
+      runtimeStudentGrowthPortraitRepository.query(
+        comprehensiveQuery(selectedPeriod.current),
+        controller.signal,
+      ),
+      runtimeStudentGrowthPortraitRepository.query(
+        comprehensiveQuery(selectedPeriod.yearOverYear),
+        controller.signal,
+      ),
+    ]);
+    comprehensiveDataset.value = currentDataset;
+    yearOverYearDataset.value = yearAgoDataset;
+  } catch (error) {
+    if (controller.signal.aborted) return;
+    comprehensiveError.value = error instanceof Error ? error.message : "学生发展数据加载失败";
+  } finally {
+    if (comprehensiveRequestController === controller) {
+      comprehensiveLoading.value = false;
+      comprehensiveRequestController = null;
+    }
+  }
+}
+
+function coverageStatusLabel(status: string) {
+  if (status === "ready") return "完整";
+  if (status === "partial") return "部分覆盖";
+  if (status === "insufficient") return "数据不足";
+  return "未接入";
+}
+
+function coverageStatusType(status: string) {
+  if (status === "ready") return "success";
+  if (status === "partial") return "warning";
   return "info";
 }
 
-function developmentTagType(status: string) {
-  if (status === "优势发展" || status === "稳定进步") return "success";
-  if (status === "重点关注") return "warning";
-  if (status === "专项支持") return "danger";
-  return "primary";
-}
-
-function supportTagType(status: string) {
-  if (status === "成效良好") return "success";
-  if (status === "需要优化") return "warning";
-  if (status === "重点督导") return "danger";
-  return "primary";
-}
-
 onMounted(() => {
+  void loadComprehensiveDataset();
   observer = new IntersectionObserver((entries) => {
     const visibleEntry = entries
       .filter((entry) => entry.isIntersecting)
@@ -137,6 +427,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  comprehensiveRequestController?.abort();
+  comprehensiveRequestController = null;
   observer?.disconnect();
   observer = null;
 });
@@ -151,19 +443,24 @@ onBeforeUnmount(() => {
           <span>区域学生发展治理视角</span>
         </div>
         <h1>新学生成长画像</h1>
-        <p>从区域整体质量出发，连续观察学生群体结构、学校发展差异、教育均衡与成长支持成效。</p>
+        <p>从区域整体质量出发，连续观察德智体美劳、运动健康、荣誉、行为、实践、日常评价及学业发展结构。</p>
       </div>
       <div class="new-student-portrait__coverage">
-        <span class="new-student-portrait__coverage-label">当前数据覆盖</span>
-        <strong>54 所学校 · 86,420 名学生</strong>
-        <ElProgress :percentage="96.8" :show-text="false" :stroke-width="6" />
+        <span class="new-student-portrait__coverage-label">当前演示数据</span>
+        <strong>{{ virtualPortraitDataMetadata.schoolCount }} 所学校 · {{ virtualPortraitDataMetadata.studentCount }} 名学生</strong>
+        <small>{{ virtualPortraitDataMetadata.notice }}</small>
       </div>
     </header>
 
     <PageFilterBar class="portrait-filter" aria-label="学生发展画像统计范围">
       <label class="portrait-filter__field">
         <span>学段：</span>
-        <ElSelect v-model="stage" aria-label="学段" class="portrait-filter__select">
+        <ElSelect
+          v-model="stage"
+          aria-label="学段"
+          class="portrait-filter__select"
+          @change="grade = '全部年级'"
+        >
           <ElOption label="全部学段" value="全部学段" />
           <ElOption label="小学" value="小学" />
           <ElOption label="初中" value="初中" />
@@ -174,18 +471,7 @@ onBeforeUnmount(() => {
         <span>年级：</span>
         <ElSelect v-model="grade" aria-label="年级" class="portrait-filter__select">
           <ElOption label="全部年级" value="全部年级" />
-          <ElOption label="七年级" value="七年级" />
-          <ElOption label="八年级" value="八年级" />
-          <ElOption label="九年级" value="九年级" />
-        </ElSelect>
-      </label>
-      <label class="portrait-filter__field">
-        <span>学校：</span>
-        <ElSelect v-model="schoolType" aria-label="学校类型" class="portrait-filter__select portrait-filter__select--wide">
-          <ElOption label="全部学校" value="全部学校" />
-          <ElOption label="城区学校" value="城区学校" />
-          <ElOption label="乡镇学校" value="乡镇学校" />
-          <ElOption label="九年一贯制" value="九年一贯制" />
+          <ElOption v-for="option in gradeOptions" :key="option" :label="option" :value="option" />
         </ElSelect>
       </label>
       <label class="portrait-filter__field portrait-filter__field--term">
@@ -205,7 +491,6 @@ onBeforeUnmount(() => {
 
     <div class="new-student-portrait__workspace">
       <nav class="portrait-anchor-nav" aria-label="新学生成长画像内容锚点">
-        <div class="portrait-anchor-nav__title">内容导航</div>
         <a
           v-for="anchor in portraitAnchors"
           :key="anchor.key"
@@ -221,20 +506,39 @@ onBeforeUnmount(() => {
             <strong>{{ anchor.label }}</strong>
           </span>
         </a>
-        <div class="portrait-anchor-nav__scope">
-          <span>当前范围</span>
-          <strong>{{ appliedScope }}</strong>
-        </div>
       </nav>
 
       <main class="new-student-portrait__content">
         <section id="regional-overview" class="portrait-section" aria-labelledby="regional-overview-title">
           <div class="portrait-section__heading">
             <div>
-              <span class="portrait-section__index">01 · OVERVIEW</span>
               <h2 id="regional-overview-title">区域发展总览</h2>
-              <p>汇总区域规模、发展水平、重点群体及学校差异，统一当前统计范围。</p>
+              <p>学段与年级由上方筛选栏控制；此处只切换统考科目。得分率、覆盖率与趋势均按筛选范围统计，不跨科合并。</p>
             </div>
+            <div class="portrait-academic-scope" aria-label="统考学业口径">
+              <label class="portrait-academic-scope__field">
+                <span>科目</span>
+                <ElSelect
+                  v-model="academicSubject"
+                  aria-label="统考分析科目"
+                  style="width: 120px"
+                  :disabled="academicSubjects.length === 0"
+                >
+                  <ElOption
+                    v-for="subject in academicSubjects"
+                    :key="subject"
+                    :label="subject"
+                    :value="subject"
+                  />
+                </ElSelect>
+              </label>
+            </div>
+          </div>
+
+          <div class="portrait-scope-notice" :class="{ 'is-ready': academicReady }">
+            <strong>{{ academicSubject || "科目" }}</strong>
+            <span>{{ academicScopeMessage }}</span>
+            <MetricDefinitionPopover metric-key="period-comparison" label="同比说明" />
           </div>
 
           <div class="portrait-metrics">
@@ -251,201 +555,151 @@ onBeforeUnmount(() => {
               </div>
               <strong>{{ metric.value }}<small>{{ metric.unit }}</small></strong>
               <div class="portrait-metric__bottom">
-                <span :class="metric.trendDirection === 'positive' ? 'is-positive' : 'is-negative'">{{ metric.trend }}</span>
-                <small>较上学期</small>
+                <span class="portrait-metric__changes" :class="`is-${metric.yearOverYear.tone}`">
+                  同比 {{ metric.yearOverYear.text }}
+                </span>
+                <MetricDefinitionPopover
+                  v-if="metric.explanationKey === 'academic-quality-rate'"
+                  metric-key="academic-quality-rate"
+                  label="计算说明"
+                />
               </div>
             </article>
           </div>
 
-          <div class="portrait-grid portrait-grid--2-1">
-            <article class="portrait-panel">
-              <header class="portrait-panel__header">
-                <div>
-                  <h3>区域学生发展趋势</h3>
-                  <p>学业增值按学生本期标准分减基期标准分后取区域均值；及格率与低分率按参考学生去重统计。</p>
+          <article class="portrait-panel portrait-national-alignment">
+            <ElCollapse v-model="nationalAlignmentPanels">
+              <ElCollapseItem name="national-framework">
+                <template #title>
+                  <div class="portrait-national-alignment__title">
+                    <div>
+                      <h3>国家评价框架对齐</h3>
+                      <p>默认收起；展开查看评价维度、适用边界与政策来源。</p>
+                    </div>
+                    <ElTag size="small" type="success" effect="light">
+                      核对至 {{ nationalStandardAlignment.checkedAt }}
+                    </ElTag>
+                  </div>
+                </template>
+                <div class="portrait-national-alignment__body">
+                  <div class="portrait-national-dimensions">
+                    <article v-for="dimension in regionalPortraitNationalDimensions" :key="dimension.key">
+                      <strong>{{ dimension.label }}</strong>
+                      <p>{{ dimension.evidence }}</p>
+                    </article>
+                  </div>
+                  <div class="portrait-national-references">
+                    <a
+                      v-for="reference in nationalStandardAlignment.references"
+                      :key="reference.key"
+                      :href="reference.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span>{{ reference.documentNumber ?? reference.title }}</span>
+                      <small>{{ reference.status }} · {{ reference.appliesTo }}</small>
+                    </a>
+                  </div>
                 </div>
-                <ElRadioGroup v-model="trendMode" size="small">
-                  <ElRadioButton label="综合趋势" value="综合趋势" />
-                  <ElRadioButton label="分学段" value="分学段" />
-                </ElRadioGroup>
-              </header>
-              <div class="portrait-panel__chart">
-                <NewPortraitChart :option="trendOption" ariaLabelText="区域学生发展近六学期趋势" />
-              </div>
-            </article>
-
-            <article class="portrait-panel">
-              <header class="portrait-panel__header">
-                <div>
-                  <h3>区域智能摘要</h3>
-                  <p>仅归纳当前筛选范围内达到统计发布门槛的变化。</p>
-                </div>
-                <ElButton link type="primary" @click="notify('已重新生成当前范围摘要')">重新生成</ElButton>
-              </header>
-              <div class="portrait-summary">
-                <div class="portrait-summary__title"><Lightbulb :size="16" /> 本期核心判断</div>
-                <p>区域学生整体发展保持稳定，学业增值指数较上学期提升 2.6%。八年级英语及格临界群体有所扩大，乡镇学校数学低分率仍高于区域均值。</p>
-              </div>
-              <div class="portrait-findings">
-                <div v-for="finding in findings" :key="finding.title" class="portrait-finding" :class="`is-${finding.tone}`">
-                  <span />
-                  <div><strong>{{ finding.title }}</strong><p>{{ finding.text }}</p></div>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <div class="portrait-grid portrait-grid--3-2">
-            <article class="portrait-panel">
-              <header class="portrait-panel__header">
-                <div><h3>学生群体结构</h3><p>按当前水平与连续两期变化方向互斥分组，每名学生只计入一个主群体。</p></div>
-                <ElTag size="small" effect="plain">动态群体</ElTag>
-              </header>
-              <div class="portrait-panel__chart">
-                <NewPortraitChart :option="groupStructureOption" ariaLabelText="区域学生群体结构占比" />
-              </div>
-            </article>
-            <article class="portrait-panel">
-              <header class="portrait-panel__header">
-                <div><h3>学校发展四象限</h3><p>横轴为综合发展指数，纵轴为学业增值，气泡面积对应学生规模。</p></div>
-                <ElButton link type="primary" @click="goToAnchor('school-development')">查看全部</ElButton>
-              </header>
-              <div class="portrait-panel__chart">
-                <NewPortraitChart :option="schoolQuadrantOption" ariaLabelText="学校综合发展指数与学业增值四象限" />
-              </div>
-            </article>
-          </div>
+              </ElCollapseItem>
+            </ElCollapse>
+          </article>
 
           <article class="portrait-panel">
             <header class="portrait-panel__header">
-              <div><h3>重点关注学校</h3><p>由临界群体变化、校际差异和支持改善率联合识别，并保留触发原因。</p></div>
-            </header>
-            <ElTable :data="focusSchools" row-key="school" stripe aria-label="重点关注学校列表">
-              <ElTableColumn column-key="school" label="学校" min-width="190">
-                <template #default="{ row }"><strong class="portrait-table__school">{{ row.school }}</strong><small class="portrait-table__meta">{{ row.type }} · {{ row.students }} 名学生</small></template>
-              </ElTableColumn>
-              <ElTableColumn prop="issue" label="主要关注问题" min-width="220" />
-              <ElTableColumn prop="group" label="关联群体" min-width="140" />
-              <ElTableColumn prop="value" label="当前值" width="100" />
-              <ElTableColumn prop="delta" label="较上学期" width="100" />
-              <ElTableColumn column-key="level" label="关注等级" width="110">
-                <template #default="{ row }"><ElTag :type="attentionTagType(row.level)" size="small">{{ row.level }}</ElTag></template>
-              </ElTableColumn>
-              <ElTableColumn prop="action" label="建议动作" min-width="180" />
-            </ElTable>
-          </article>
-        </section>
-
-        <section id="student-groups" class="portrait-section" aria-labelledby="student-groups-title">
-          <div class="portrait-section__heading">
-            <div><span class="portrait-section__index">02 · COHORTS</span><h2 id="student-groups-title">学生群体画像</h2><p>统计群体规模、校内占比和跨学期迁移，区域端不展示学生名单。</p></div>
-          </div>
-          <div class="portrait-mini-stats">
-            <article v-for="item in groupStats" :key="item.label"><span>{{ item.label }}</span><strong>{{ item.value }}</strong><small>{{ item.note }}</small></article>
-          </div>
-          <div class="portrait-grid portrait-grid--half">
-            <article class="portrait-panel">
-              <header class="portrait-panel__header"><div><h3>重点群体规模</h3><p>按学生唯一标识去重，同一学生只进入一个主群体。</p></div></header>
-              <div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="groupScaleOption" ariaLabelText="重点学生群体规模" /></div>
-            </article>
-            <article class="portrait-panel">
-              <header class="portrait-panel__header"><div><h3>群体阶段迁移</h3><p>连接宽度表示同一批学生从上期群体流向本期群体的人数。</p></div></header>
-              <div class="portrait-panel__chart portrait-panel__chart--tall">
-                <NewPortraitChart :option="migrationOption" ariaLabelText="学生群体上学期至本学期阶段迁移桑基图" />
+              <div>
+                <h3>统考学业质量趋势</h3>
+                <p>随上方筛选栏的学段/年级/学期与本区科目同步；展示期中、期末得分率，多年级按成绩分子分母加权，不跨科合并。</p>
               </div>
-            </article>
-          </div>
-          <article class="portrait-panel">
-            <header class="portrait-panel__header">
-              <div><h3>群体学校分布</h3><p>学校群体占比 = 该群体学生数 ÷ 学校当前统计范围学生数。</p></div>
-              <ElSelect v-model="selectedGroup" aria-label="选择学生群体" style="width: 180px">
-                <ElOption label="及格临界群体" value="critical" />
-                <ElOption label="持续下降群体" value="decline" />
-                <ElOption label="高投入低成效" value="effort" />
-              </ElSelect>
+              <div class="portrait-panel__actions">
+                <MetricDefinitionPopover metric-key="academic-quality-rate" label="得分率口径" />
+              </div>
             </header>
-            <div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="groupSchoolOption" ariaLabelText="所选学生群体学校分布" /></div>
-          </article>
-        </section>
-
-        <section id="school-development" class="portrait-section" aria-labelledby="school-development-title">
-          <div class="portrait-section__heading">
-            <div><span class="portrait-section__index">03 · SCHOOLS</span><h2 id="school-development-title">学校发展画像</h2><p>分开比较学校当前水平与起点校正后的变化，避免只按平均分判断。</p></div>
-          </div>
-          <div class="portrait-grid portrait-grid--2-1">
-            <article class="portrait-panel">
-              <header class="portrait-panel__header"><div><h3>学校发展分布</h3><p>学业增值 = 本期学生标准分 − 基期学生标准分，再汇总为学校均值。</p></div></header>
-              <div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="schoolDistributionOption" ariaLabelText="学校发展区域分布" /></div>
-            </article>
-            <article class="portrait-panel">
-              <header class="portrait-panel__header"><div><h3>区域学校结构</h3><p>按学校主数据中的办学类型去重统计，共 54 所。</p></div></header>
-              <div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="schoolTypeOption" ariaLabelText="区域学校类型结构" /></div>
-            </article>
-          </div>
-          <article class="portrait-panel">
-            <header class="portrait-panel__header">
-              <div><h3>学校发展列表</h3><p>发展指数、学业增值与支持覆盖率分别计算，不合并为单一排名。</p></div>
-              <ElInput v-model="schoolKeyword" :prefix-icon="Search" clearable placeholder="搜索学校" aria-label="搜索学校" style="width: 220px" />
-            </header>
-            <ElTable :data="filteredSchoolRows" row-key="school" stripe aria-label="学校发展列表">
-              <ElTableColumn type="index" label="排序" width="68" />
-              <ElTableColumn column-key="school" label="学校" min-width="180"><template #default="{ row }"><strong class="portrait-table__school">{{ row.school }}</strong><small class="portrait-table__meta">{{ row.type }}</small></template></ElTableColumn>
-              <ElTableColumn prop="index" label="发展指数" width="105" sortable />
-              <ElTableColumn prop="valueAdd" label="学业增值" width="105" sortable />
-              <ElTableColumn prop="critical" label="临界群体占比" width="130" sortable />
-              <ElTableColumn prop="support" label="支持覆盖率" width="115" sortable />
-              <ElTableColumn prop="trend" label="趋势" width="110" />
-              <ElTableColumn column-key="status" label="综合状态" width="120"><template #default="{ row }"><ElTag :type="developmentTagType(row.status)" size="small">{{ row.status }}</ElTag></template></ElTableColumn>
-              <ElTableColumn column-key="actions" label="操作" width="96"><template #default="{ row }"><ElButton link type="primary" @click="notify(`已打开 ${row.school} 画像摘要`)">查看画像</ElButton></template></ElTableColumn>
-            </ElTable>
-          </article>
-        </section>
-
-        <section id="regional-equity" class="portrait-section" aria-labelledby="regional-equity-title">
-          <div class="portrait-section__heading">
-            <div><span class="portrait-section__index">04 · EQUITY</span><h2 id="regional-equity-title">区域均衡分析</h2><p>在同一统计范围内比较校际、城乡、片区和同类学校差异。</p></div>
-          </div>
-          <div class="portrait-metrics">
-            <article v-for="(metric, index) in equityMetrics" :key="metric.label" class="portrait-metric">
-              <div class="portrait-metric__top"><span>{{ metric.label }}</span><span class="portrait-metric__icon"><component :is="metricIcons[index]" :size="18" /></span></div>
-              <strong>{{ metric.value }}<small>{{ metric.unit }}</small></strong>
-              <div class="portrait-metric__bottom"><span :class="metric.trendDirection === 'positive' ? 'is-positive' : 'is-negative'">{{ metric.trend }}</span><small>差异变化</small></div>
-            </article>
-          </div>
-          <div class="portrait-grid portrait-grid--half">
-            <article class="portrait-panel"><header class="portrait-panel__header"><div><h3>城乡学校发展对比</h3><p>分别计算城乡学校指标均值，差值使用百分点呈现。</p></div></header><div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="urbanRuralOption" ariaLabelText="城乡学校发展指标对比" /></div></article>
-            <article class="portrait-panel"><header class="portrait-panel__header"><div><h3>校际差距变化</h3><p>校际差异采用学校得分率的变异系数，数值越低表示越均衡。</p></div></header><div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="gapTrendOption" ariaLabelText="校际和城乡差异指数变化" /></div></article>
-          </div>
-          <article class="portrait-panel">
-            <header class="portrait-panel__header"><div><h3>片区发展热力矩阵</h3><p>单元格为片区内学校指标均值，颜色越深表示数值越高。</p></div></header>
-            <div class="portrait-panel__chart portrait-panel__chart--tall">
-              <NewPortraitChart :option="heatmapOption" ariaLabelText="五个片区的五类发展指标热力矩阵" />
+            <div class="portrait-panel__chart">
+              <NewPortraitChart :option="trendOption" :ariaLabelText="`${academicSubject}统考学业质量趋势`" />
             </div>
           </article>
         </section>
 
-        <section id="growth-support" class="portrait-section" aria-labelledby="growth-support-title">
+        <section
+          v-for="topic in regionalQualityTopics"
+          :id="topic.key"
+          :key="topic.key"
+          class="portrait-section"
+          :aria-labelledby="`${topic.key}-title`"
+        >
           <div class="portrait-section__heading">
-            <div><span class="portrait-section__index">05 · SUPPORT</span><h2 id="growth-support-title">成长支持成效</h2><p>从识别、纳入、执行、改善到稳定保持，观察支持闭环是否真正生效。</p></div>
-            <ElButton @click="notify('已打开指标口径说明')">指标口径</ElButton>
+            <div>
+              <h2 :id="`${topic.key}-title`">{{ topic.title }}</h2>
+              <p>{{ topic.description }}</p>
+            </div>
           </div>
-          <div class="portrait-mini-stats">
-            <article v-for="item in supportStats" :key="item.label"><span>{{ item.label }}</span><strong>{{ item.value }}</strong><small>{{ item.note }}</small></article>
+          <ElSkeleton v-if="comprehensiveLoading && !comprehensiveDataset" :rows="5" animated />
+          <ElEmpty
+            v-else-if="comprehensiveError || !comprehensiveDataset"
+            :description="comprehensiveError || '当前范围暂无可计算数据'"
+            :image-size="72"
+          />
+          <RegionalQualityDomainSection
+            v-else
+            :dataset="comprehensiveDataset"
+            :topic-key="topic.key"
+          />
+        </section>
+
+        <section id="data-coverage" class="portrait-section" aria-labelledby="data-coverage-title">
+          <div class="portrait-section__heading">
+            <div>
+              <h2 id="data-coverage-title">区域数据覆盖</h2>
+              <p>按当前在籍学生分母检查各数据源的学生覆盖情况；不使用缺失的城乡、片区或学校类型字段推断区域均衡。</p>
+            </div>
           </div>
-          <div class="portrait-grid portrait-grid--half">
-            <article class="portrait-panel"><header class="portrait-panel__header"><div><h3>支持闭环转化</h3><p>每层人数以上一环节为基数，追踪识别、纳入、完成、改善与稳定保持。</p></div></header><div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="supportFunnelOption" ariaLabelText="成长支持闭环转化漏斗" /></div></article>
-            <article class="portrait-panel"><header class="portrait-panel__header"><div><h3>不同措施改善效果</h3><p>改善率 = 措施后退出重点群体人数 ÷ 完成该措施人数。</p></div></header><div class="portrait-panel__chart portrait-panel__chart--tall"><NewPortraitChart :option="measureOption" ariaLabelText="不同成长支持措施改善效果" /></div></article>
+          <div class="portrait-grid portrait-grid--2-1">
+            <article class="portrait-panel">
+              <header class="portrait-panel__header">
+                <div>
+                  <h3>各领域数据覆盖率</h3>
+                  <p>覆盖率只说明数据是否接入，不代表学生发展质量或学校工作成效。</p>
+                </div>
+              </header>
+              <div class="portrait-panel__chart portrait-panel__chart--tall">
+                <NewPortraitChart :option="coverageOption" ariaLabelText="区域各学生发展领域数据覆盖率" />
+              </div>
+            </article>
+            <article class="portrait-panel">
+              <header class="portrait-panel__header">
+                <div>
+                  <h3>发布边界</h3>
+                  <p>缺少稳定主数据时，页面主动收缩比较维度。</p>
+                </div>
+              </header>
+              <div class="portrait-coverage-boundaries">
+                <div><span>当前可用</span><strong>学段、年级、学期、学科</strong></div>
+                <div><span>当前缺失</span><strong>城乡、片区、学校类型</strong></div>
+                <div><span>处理方式</span><strong>不计算分类差异与均衡指数</strong></div>
+              </div>
+            </article>
           </div>
           <article class="portrait-panel">
-            <header class="portrait-panel__header"><div><h3>学校支持成效</h3><p>支持覆盖率 = 已纳入支持人数 ÷ 学校重点群体人数。</p></div></header>
-            <ElTable :data="supportRows" row-key="school" stripe aria-label="学校成长支持成效">
-              <ElTableColumn prop="school" label="学校" min-width="170" />
-              <ElTableColumn prop="target" label="重点群体规模" width="125" />
-              <ElTableColumn column-key="coverage" label="支持覆盖率" min-width="170"><template #default="{ row }"><ElProgress :percentage="row.coverage" :stroke-width="7" /></template></ElTableColumn>
-              <ElTableColumn prop="completion" label="措施完成率" width="120" />
-              <ElTableColumn prop="improve" label="群体改善率" width="120" />
-              <ElTableColumn prop="stable" label="稳定保持率" width="120" />
-              <ElTableColumn column-key="status" label="状态" width="110"><template #default="{ row }"><ElTag :type="supportTagType(row.status)" size="small">{{ row.status }}</ElTag></template></ElTableColumn>
+            <header class="portrait-panel__header">
+              <div>
+                <h3>数据源覆盖明细</h3>
+                <p>每项同时展示有效学生数、在籍分母、覆盖率和指标字典中的计算方式。</p>
+              </div>
+            </header>
+            <ElTable :data="coverageRows" row-key="key" stripe aria-label="区域数据源覆盖明细">
+              <ElTableColumn prop="label" column-key="label" label="数据领域" min-width="150" />
+              <ElTableColumn prop="observedStudentCount" column-key="observed" label="有效学生数" width="120" />
+              <ElTableColumn prop="eligibleStudentCount" column-key="eligible" label="在籍分母" width="110" />
+              <ElTableColumn prop="coverageRate" column-key="coverage" label="覆盖率" width="110">
+                <template #default="{ row }">{{ row.coverageRate }}%</template>
+              </ElTableColumn>
+              <ElTableColumn prop="status" column-key="status" label="数据状态" width="120">
+                <template #default="{ row }">
+                  <ElTag :type="coverageStatusType(row.status)" size="small">{{ coverageStatusLabel(row.status) }}</ElTag>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn prop="calculation" column-key="calculation" label="计算方式" min-width="320" show-overflow-tooltip />
             </ElTable>
           </article>
         </section>
@@ -466,8 +720,7 @@ onBeforeUnmount(() => {
 .new-student-portrait__intro,
 .portrait-filter,
 .portrait-panel,
-.portrait-metric,
-.portrait-mini-stats article {
+.portrait-metric {
   border: 0;
   background: var(--color-white);
 }
@@ -520,6 +773,13 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-md);
 }
 
+.new-student-portrait__coverage small {
+  display: block;
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 18px;
+}
+
 .portrait-filter {
   border: 0;
   border-radius: var(--radius-md);
@@ -551,17 +811,13 @@ onBeforeUnmount(() => {
   position: sticky;
   top: var(--spacing-16);
   display: grid;
+  max-height: calc(100vh - var(--spacing-32));
+  overflow-y: auto;
   gap: var(--spacing-4);
   padding: var(--spacing-12);
   border: 0;
   border-radius: var(--radius-md);
   background: var(--color-white);
-}
-
-.portrait-anchor-nav__title {
-  padding: var(--spacing-4) var(--spacing-8) var(--spacing-8);
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
 }
 
 .portrait-anchor-nav a {
@@ -609,18 +865,6 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-.portrait-anchor-nav__scope {
-  display: grid;
-  gap: var(--spacing-4);
-  margin-top: var(--spacing-8);
-  padding: var(--spacing-8);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-muted);
-}
-
-.portrait-anchor-nav__scope span { color: var(--color-secondary); font-size: var(--font-size-xs); }
-.portrait-anchor-nav__scope strong { color: var(--color-body); font-size: var(--font-size-xs); font-weight: 500; line-height: 18px; }
-
 .new-student-portrait__content {
   display: grid;
   min-width: 0;
@@ -645,15 +889,7 @@ onBeforeUnmount(() => {
   gap: var(--spacing-16);
 }
 
-.portrait-section__index {
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .08em;
-}
-
 .portrait-section__heading h2 {
-  margin-top: var(--spacing-4);
   font-size: 20px;
   line-height: 28px;
   font-weight: 600;
@@ -665,6 +901,43 @@ onBeforeUnmount(() => {
   color: var(--color-secondary);
   font-size: var(--font-size-xs);
 }
+
+.portrait-academic-scope {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-12);
+}
+
+.portrait-academic-scope__field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.portrait-scope-notice {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) var(--spacing-16);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-dark-text);
+  background: var(--color-warning-light);
+  font-size: var(--font-size-xs);
+}
+
+.portrait-scope-notice.is-ready {
+  color: var(--color-success-dark-text);
+  background: var(--color-success-light);
+}
+
+.portrait-scope-notice strong { flex: none; font-size: var(--font-size-sm); }
+.portrait-scope-notice span { min-width: 0; flex: 1; }
 
 .portrait-metrics {
   display: grid;
@@ -680,19 +953,189 @@ onBeforeUnmount(() => {
 .portrait-metric__top,
 .portrait-metric__bottom {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-8);
 }
 
-.portrait-metric__top { color: var(--color-body); font-size: var(--font-size-sm); }
-.portrait-metric__icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-md); color: var(--color-primary); background: var(--color-primary-light); }
-.portrait-metric > strong { display: block; margin-top: var(--spacing-12); font-size: 26px; line-height: 32px; font-weight: 600; }
-.portrait-metric > strong small { margin-left: var(--spacing-4); color: var(--color-secondary); font-size: var(--font-size-xs); font-weight: 400; }
-.portrait-metric__bottom { margin-top: var(--spacing-10); font-size: var(--font-size-xs); }
-.portrait-metric__bottom small { color: var(--color-secondary); }
-.is-positive { color: var(--color-success-dark-text); }
-.is-negative { color: var(--color-error-dark-text); }
+.portrait-metric__top {
+  color: var(--color-body);
+  font-size: var(--font-size-sm);
+  line-height: 20px;
+}
+
+.portrait-metric__top > span:first-child {
+  min-width: 0;
+}
+
+.portrait-metric__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.portrait-metric > strong {
+  display: block;
+  margin-top: var(--spacing-12);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+.portrait-metric > strong small {
+  margin-left: var(--spacing-4);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+.portrait-metric__bottom {
+  margin-top: var(--spacing-10);
+  align-items: center;
+  font-size: var(--font-size-xs);
+}
+
+.portrait-metric__changes {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-4);
+  line-height: 18px;
+}
+
+.portrait-metric__changes.is-up {
+  color: var(--color-success-dark-text);
+}
+
+.portrait-metric__changes.is-down {
+  color: var(--color-error-dark-text);
+}
+
+.portrait-metric__changes.is-flat,
+.portrait-metric__changes.is-unavailable {
+  color: var(--color-secondary);
+}
+
+.portrait-national-alignment :deep(.el-collapse),
+.portrait-national-alignment :deep(.el-collapse-item__header),
+.portrait-national-alignment :deep(.el-collapse-item__wrap) {
+  border: 0;
+}
+
+.portrait-national-alignment :deep(.el-collapse-item__header) {
+  height: auto;
+  min-height: 48px;
+  padding: 0;
+  line-height: normal;
+}
+
+.portrait-national-alignment :deep(.el-collapse-item__content) {
+  padding: var(--spacing-16) 0 0;
+}
+
+.portrait-national-alignment__title {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  padding-right: var(--spacing-12);
+}
+
+.portrait-national-alignment__title > div {
+  min-width: 0;
+}
+
+.portrait-national-alignment__title h3 {
+  color: var(--color-title);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: 600;
+}
+
+.portrait-national-alignment__title p {
+  margin-top: var(--spacing-4);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.portrait-national-alignment__body {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+  gap: var(--spacing-16);
+}
+
+.portrait-national-dimensions {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--spacing-12);
+}
+
+.portrait-national-dimensions article {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--spacing-6);
+  padding: var(--spacing-14);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+}
+
+.portrait-national-dimensions strong {
+  color: var(--color-title);
+  font-size: var(--font-size-sm);
+}
+
+.portrait-national-dimensions p,
+.portrait-national-references small {
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 18px;
+}
+
+.portrait-national-references {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--spacing-8);
+}
+
+.portrait-national-references a {
+  display: grid;
+  min-width: 0;
+  gap: var(--spacing-2);
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  text-decoration: none;
+}
+
+.portrait-national-references a:hover {
+  color: var(--color-primary-dark-text);
+}
+
+.portrait-national-references a:focus-visible {
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 1px;
+}
+
+.portrait-national-references span {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .portrait-grid {
   display: grid;
@@ -700,8 +1143,6 @@ onBeforeUnmount(() => {
   gap: var(--spacing-16);
 }
 .portrait-grid--2-1 { grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); }
-.portrait-grid--3-2 { grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); }
-.portrait-grid--half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .portrait-panel {
   display: grid;
@@ -723,6 +1164,13 @@ onBeforeUnmount(() => {
 }
 .portrait-panel__header > div:first-child { min-width: 0; flex: 1; }
 .portrait-panel__header h3 { font-size: var(--font-size-lg); line-height: var(--line-height-lg); font-weight: 600; }
+.portrait-panel__actions {
+  display: flex;
+  min-width: 0;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-12);
+}
 .portrait-panel__chart {
   width: 100%;
   max-width: 100%;
@@ -733,54 +1181,52 @@ onBeforeUnmount(() => {
 }
 .portrait-panel__chart--tall { height: 340px; }
 
-.portrait-summary {
-  padding: var(--spacing-14);
-  border-radius: var(--radius-md);
-  background: var(--color-primary-light);
-}
-.portrait-summary__title { display: flex; align-items: center; gap: var(--spacing-6); color: var(--color-primary-dark-text); font-size: var(--font-size-sm); font-weight: 600; }
-.portrait-summary p { margin-top: var(--spacing-8); color: var(--color-body); font-size: var(--font-size-xs); line-height: 20px; }
-.portrait-findings { display: grid; gap: var(--spacing-14); }
-.portrait-finding { display: grid; grid-template-columns: 8px 1fr; gap: var(--spacing-10); }
-.portrait-finding > span { width: 7px; height: 7px; margin-top: var(--spacing-6); border-radius: var(--radius-full); background: var(--finding-color); }
-.portrait-finding.is-success { --finding-color: var(--color-success-dark-text); }
-.portrait-finding.is-warning { --finding-color: var(--color-warning-dark-text); }
-.portrait-finding.is-danger { --finding-color: var(--color-error-dark-text); }
-.portrait-finding strong { font-size: var(--font-size-sm); }
-.portrait-finding p { margin-top: var(--spacing-4); color: var(--color-secondary); font-size: var(--font-size-xs); line-height: 18px; }
-
-.portrait-table__school,
-.portrait-table__meta { display: block; }
-.portrait-table__school { color: var(--color-title); font-size: var(--font-size-sm); font-weight: 600; }
-.portrait-table__meta { margin-top: var(--spacing-2); color: var(--color-secondary); font-size: 11px; }
-
-.portrait-mini-stats {
+.portrait-coverage-boundaries {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-12);
 }
-.portrait-mini-stats article { display: grid; gap: var(--spacing-6); padding: var(--spacing-16); border-radius: var(--radius-md); }
-.portrait-mini-stats span,
-.portrait-mini-stats small { color: var(--color-secondary); font-size: var(--font-size-xs); }
-.portrait-mini-stats strong { font-size: 21px; line-height: 28px; font-weight: 600; }
+
+.portrait-coverage-boundaries > div {
+  display: grid;
+  gap: var(--spacing-6);
+  padding: var(--spacing-14);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+}
+
+.portrait-coverage-boundaries span {
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.portrait-coverage-boundaries strong {
+  color: var(--color-title);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
 
 @media (max-width: 1380px) {
   .portrait-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .portrait-grid--2-1,
-  .portrait-grid--3-2 { grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
+  .portrait-national-alignment__body { grid-template-columns: 1fr; }
+  .portrait-grid--2-1 { grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
   .portrait-filter__updated { max-width: 156px; line-height: 18px; text-align: right; }
 }
 
 @media (max-width: 1120px) {
   .new-student-portrait__workspace { grid-template-columns: 1fr; }
-  .portrait-anchor-nav { top: 0; z-index: 4; display: flex; overflow-x: auto; padding: var(--spacing-8); }
-  .portrait-anchor-nav__title,
-  .portrait-anchor-nav__scope { display: none; }
+  .portrait-anchor-nav {
+    top: 0;
+    z-index: 4;
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: var(--spacing-8);
+  }
   .portrait-anchor-nav a { min-width: max-content; min-height: 40px; }
   .portrait-anchor-nav__copy { display: block; }
-  .portrait-grid--2-1,
-  .portrait-grid--3-2,
-  .portrait-grid--half { grid-template-columns: 1fr; }
+  .portrait-grid--2-1 { grid-template-columns: 1fr; }
+  .portrait-national-dimensions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .portrait-section { scroll-margin-top: 64px; }
 }
 
@@ -788,10 +1234,13 @@ onBeforeUnmount(() => {
   .new-student-portrait__intro,
   .portrait-filter,
   .portrait-section__heading { align-items: flex-start; flex-direction: column; }
+  .portrait-panel__header,
+  .portrait-panel__actions { align-items: flex-start; flex-direction: column; }
   .new-student-portrait__coverage { width: 100%; padding: var(--spacing-16) 0 0; }
   .portrait-filter__updated { margin-top: var(--spacing-8); }
   .portrait-metrics,
-  .portrait-mini-stats { grid-template-columns: 1fr; }
+  .portrait-national-dimensions { grid-template-columns: 1fr; }
+  .portrait-national-alignment__title { align-items: flex-start; flex-direction: column; }
   .portrait-filter__field,
   .portrait-filter__field--term { width: 100%; }
 }

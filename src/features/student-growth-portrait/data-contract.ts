@@ -243,6 +243,7 @@ export interface PortraitQuery {
   grades?: string[];
   academicYears: string[];
   terms?: AcademicTerm[];
+  subjects?: string[];
   domains?: PortraitDomain[];
 }
 
@@ -325,6 +326,8 @@ export interface AcademicScoreBandDistributionItem {
 export interface UnifiedExamSchoolSummary {
   schoolId: string;
   studentCount: number;
+  scoreNumerator: number;
+  scoreDenominator: number;
   scoreRate: number;
   standardScore: number;
   excellentRate: number;
@@ -349,6 +352,8 @@ export interface UnifiedExamSummary {
   assessmentGrade: string;
   subject: string;
   examAt: string;
+  scoreNumerator: number;
+  scoreDenominator: number;
   scoreRate: number;
   standardScoreBaseline: number;
   scoreStandardDeviation: number;

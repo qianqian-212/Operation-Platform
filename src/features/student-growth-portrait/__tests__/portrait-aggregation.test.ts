@@ -51,6 +51,8 @@ describe("aggregatePortraitDataset", () => {
         assessmentGrade: "五年级",
         subject: "数学",
         paperVersion: "district-paper/primary/五年级/2025-first-v1",
+        scoreNumerator: 260,
+        scoreDenominator: 300,
         scoreRate: 86.67,
         excellentRate: 33.33,
         goodOrAboveRate: 100,

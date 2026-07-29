@@ -169,6 +169,7 @@ function filterForQuery(rawData: PortraitRawData, query: PortraitQuery) {
     && studentIds.has(record.studentId)
     && query.academicYears.includes(record.academicYear)
     && (!query.terms?.length || query.terms.includes(record.term))
+    && (!query.subjects?.length || !isAcademicExam(record) || query.subjects.includes(record.subject))
   ));
 
   return { students, events };
@@ -305,10 +306,14 @@ function unifiedExamSummaries(
           if (schoolRecords.length < rules.minimumPublishableGroupSize) return undefined;
           const schoolScoreRates = schoolRecords.map(scoreRateFor);
           const schoolMean = schoolScoreRates.reduce((sum, value) => sum + value, 0) / Math.max(schoolScoreRates.length, 1);
+          const schoolScoreNumerator = schoolRecords.reduce((sum, record) => sum + record.score, 0);
+          const schoolScoreDenominator = schoolRecords.reduce((sum, record) => sum + record.fullScore, 0);
           const schoolDistribution = scoreBandDistribution(schoolRecords, rules);
           return {
             schoolId,
             studentCount: new Set(schoolRecords.map((record) => record.studentId)).size,
+            scoreNumerator: schoolScoreNumerator,
+            scoreDenominator: schoolScoreDenominator,
             scoreRate: Number(schoolMean.toFixed(2)),
             standardScore: Number((scoreDeviation > 0 ? 50 + (10 * (schoolMean - meanScoreRate) / scoreDeviation) : 50).toFixed(2)),
             excellentRate: schoolDistribution.find((item) => item.key === "excellent")?.rate ?? 0,
@@ -334,6 +339,8 @@ function unifiedExamSummaries(
         assessmentGrade: sample.assessmentGrade,
         subject: sample.subject,
         examAt: sample.examAt,
+        scoreNumerator: totalScore,
+        scoreDenominator: totalFullScore,
         scoreRate: percent(totalScore, totalFullScore),
         standardScoreBaseline: 50,
         scoreStandardDeviation: Number(scoreDeviation.toFixed(2)),
