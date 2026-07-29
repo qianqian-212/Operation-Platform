@@ -39,6 +39,7 @@ const eagerlyLoadedLucideIcons = new Set([
   "users.mjs",
   "vote.mjs",
 ]);
+const administrativeBoundaryProxyPrefix = "/api/administrative-boundaries";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -56,6 +57,24 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  server: {
+    proxy: {
+      [administrativeBoundaryProxyPrefix]: {
+        target: "https://geo.datav.aliyun.com",
+        changeOrigin: true,
+        rewrite(path) {
+          const code = path.slice(administrativeBoundaryProxyPrefix.length + 1);
+          return `/areas_v3/bound/${code}_full.json`;
+        },
+        configure(proxy) {
+          proxy.on("proxyReq", (proxyRequest) => {
+            proxyRequest.removeHeader("origin");
+            proxyRequest.removeHeader("referer");
+          });
+        },
+      },
     },
   },
   build: {

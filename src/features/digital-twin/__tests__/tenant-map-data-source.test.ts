@@ -121,7 +121,7 @@ describe("tenant administrative map data source", () => {
     const district = squareFeature("440106", "天河区", "district");
     vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith("/440100_full.json")) {
+      if (url.endsWith("/api/administrative-boundaries/440100")) {
         return Promise.resolve({
           ok: true,
           json: async () => ({ type: "FeatureCollection", features: [district] }),

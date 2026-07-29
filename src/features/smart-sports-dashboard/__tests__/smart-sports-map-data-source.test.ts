@@ -75,7 +75,7 @@ describe("smart sports administrative map data source", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://geo.datav.aliyun.com/areas_v3/bound/440100_full.json",
+      "/api/administrative-boundaries/440100",
       { signal: expect.any(AbortSignal) },
     );
     expect(first).toMatchObject({ scope: "city", code: "440100", terminal: false });

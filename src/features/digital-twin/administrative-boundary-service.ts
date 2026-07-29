@@ -2,7 +2,7 @@ import guangdongCities from "@/assets/maps/guangdong-cities.json";
 import type { GeoFeature, GeoFeatureCollection } from "./geo";
 import type { AdministrativeRegionScope } from "@/types/user";
 
-const mapEndpoint = "https://geo.datav.aliyun.com/areas_v3/bound";
+const mapEndpoint = "/api/administrative-boundaries";
 const mapRequestTimeoutMs = 8_000;
 const maximumCachedCollections = 16;
 const pinnedCollectionCodes = new Set(["440000"]);
@@ -108,7 +108,7 @@ export async function loadAdministrativeChildren(
     requestController.abort();
   }, mapRequestTimeoutMs);
   try {
-    const response = await fetch(`${mapEndpoint}/${code}_full.json`, {
+    const response = await fetch(`${mapEndpoint}/${code}`, {
       signal: requestController.signal,
     });
     if (response.status === 404) throw new AdministrativeBoundaryUnavailableError(code);

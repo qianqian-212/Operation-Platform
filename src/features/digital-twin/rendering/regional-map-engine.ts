@@ -19,7 +19,10 @@ import { GroundGridLayer } from "./ground-grid-layer";
 import { InstitutionLayer } from "./institution-layer";
 import { MapCameraTransition } from "./map-camera-transition";
 import type { MapCameraFraming } from "./map-camera-transition";
-import { disposeMapSceneLayers } from "./map-scene-layer";
+import {
+  disposeMapSceneLayers,
+  setMapSceneLayerPresentationVisible,
+} from "./map-scene-layer";
 import type { TuningAwareMapSceneLayer } from "./map-scene-layer";
 import {
   createMapProjection,
@@ -875,6 +878,13 @@ export class RegionalMapEngine {
     this.energyTowerLayer = undefined;
     bundle.institutionLayer?.setHovered();
     bundle.energyTowerLayer?.setHovered();
+    for (const layer of [
+      bundle.institutionLayer,
+      bundle.connectionLayer,
+      bundle.energyTowerLayer,
+    ]) {
+      if (layer) setMapSceneLayerPresentationVisible(layer.root, false);
+    }
     bundle.institutionLayer?.root.removeFromParent();
     bundle.connectionLayer?.root.removeFromParent();
     bundle.energyTowerLayer?.root.removeFromParent();
@@ -926,6 +936,13 @@ export class RegionalMapEngine {
     if (this.connectionLayer) this.mapRoot.add(this.connectionLayer.root);
     if (this.institutionLayer) this.mapRoot.add(this.institutionLayer.root);
     if (this.energyTowerLayer) this.mapRoot.add(this.energyTowerLayer.root);
+    for (const layer of [
+      this.institutionLayer,
+      this.connectionLayer,
+      this.energyTowerLayer,
+    ]) {
+      if (layer) setMapSceneLayerPresentationVisible(layer.root, true);
+    }
     return true;
   }
 
