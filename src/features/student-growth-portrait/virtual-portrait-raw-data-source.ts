@@ -16,7 +16,7 @@ import type { PortraitRawDataSource } from "./student-growth-portrait-repository
 export const virtualPortraitDataMetadata = {
   isVirtual: true,
   sourceSystem: "local-student-growth-demo",
-  datasetVersion: "2026.07.29-v7",
+  datasetVersion: "2026.07.30-v12",
   academicYear: "2025-2026",
   comparisonPeriods: ["2024-2025-first", "2024-2025-second", "2025-2026-second"],
   notice: "本数据集完全虚构，仅用于本地演示、联调和计算规则验证，不得用于业务决策。",
@@ -49,7 +49,23 @@ export const virtualPortraitSchoolNames: Readonly<Record<string, string>> = Obje
 
 const academicYear = virtualPortraitDataMetadata.academicYear;
 const importedAt = "2026-01-15T08:00:00.000Z";
-const fiveEducationDimensions = ["moral", "intellectual", "physical", "aesthetic", "labor"] as const;
+const fiveEducationDimensions = [
+  { key: "moral", label: "品德发展", secondary: "values-and-conduct", secondaryLabel: "价值观与行为" },
+  { key: "intellectual", label: "学业发展", secondary: "learning-literacy", secondaryLabel: "学习素养" },
+  { key: "physical", label: "身心健康", secondary: "physical-and-mental", secondaryLabel: "身心素质" },
+  { key: "aesthetic", label: "审美素养", secondary: "aesthetic-expression", secondaryLabel: "审美与表现" },
+  { key: "labor", label: "劳动实践", secondary: "labor-participation", secondaryLabel: "劳动意识与参与" },
+] as const;
+const evaluationFormVersionByStage = {
+  primary: "five-education-form/primary/2025-2026-first-v1",
+  junior: "five-education-form/junior/2025-2026-first-v1",
+  senior: "five-education-form/senior/2025-2026-first-v1",
+} as const;
+const evaluationLevels = [
+  { key: "excellent", label: "很好", order: 0 },
+  { key: "average", label: "一般", order: 1 },
+  { key: "needs-effort", label: "需努力", order: 2 },
+] as const;
 const fitnessMetrics = [
   ["height", "cm"],
   ["weight", "kg"],
@@ -71,7 +87,15 @@ const exerciseTypes = [
 ] as const;
 const practiceCategories = ["moral", "intellectual", "physical", "aesthetic", "labor", "club", "volunteer"] as const;
 const dailyThemes = ["课堂参与", "任务坚持", "同伴互助", "劳动实践", "阅读习惯", "体育锻炼"] as const;
-const bookCategories = ["文学", "科学", "历史", "艺术", "社科"] as const;
+const dailyPraiseGradeBias: Readonly<Record<string, number>> = {
+  四年级: 0,
+  五年级: 1,
+  七年级: 1,
+  八年级: -1,
+  高一: 0,
+  高二: 1,
+};
+const bookCategories = ["文学", "科学", "历史", "艺术", "经济", "社会科学"] as const;
 const honorAwardTypes = [
   "outstanding-student",
   "subject-competition",
@@ -162,29 +186,47 @@ function buildVirtualRawData(): PortraitRawData {
 
       fiveEducationDimensions.forEach((dimension, dimensionIndex) => {
         events.push({
-          ...base(`goal-${dimension}`, dimensionIndex),
+          ...base(`goal-${dimension.key}`, dimensionIndex),
           targetCredits: goalCredits,
           earnedCredits: Math.max(0, earnedCredits - (dimensionIndex === 4 ? 1 : 0)),
-          goalCategory: dimension,
+          goalCategory: dimension.key,
         });
         if (studentIndex < variation.evaluationCoverage) {
+          const level = evaluationLevels[
+            (studentIndex + dimensionIndex + schoolIndex) % 6 === 0
+              ? 2
+              : (studentIndex + dimensionIndex) % 3 === 0 ? 1 : 0
+          ]!;
           events.push({
-            ...base(`evaluation-${dimension}`, dimensionIndex + 5),
-            evaluationFormVersion: "five-education-form/2025-v1",
-            dimension,
-            item: `${dimension}-成长表现`,
-            level: (studentIndex + dimensionIndex + schoolIndex) % 6 === 0
-              ? "needs-effort"
-              : (studentIndex + dimensionIndex) % 3 === 0 ? "average" : "excellent",
+            ...base(`evaluation-${dimension.key}`, dimensionIndex + 5),
+            evaluationFormVersion: evaluationFormVersionByStage[school.educationStage],
+            dimension: dimension.key,
+            dimensionLabel: dimension.label,
+            dimensionOrder: dimensionIndex,
+            secondaryIndicator: dimension.secondary,
+            secondaryIndicatorLabel: dimension.secondaryLabel,
+            item: `${dimension.key}-成长表现`,
+            level: level.key,
+            levelLabel: level.label,
+            levelOrder: level.order,
             detail: "虚拟评价明细，仅用于演示评价表记录结构。",
           });
           if (studentIndex % 4 === dimensionIndex % 4) {
+            const extraLevel = evaluationLevels[
+              studentIndex % 5 === 0 ? 2 : studentIndex % 2 === 0 ? 0 : 1
+            ]!;
             events.push({
-              ...base(`evaluation-extra-${dimension}`, dimensionIndex + 60),
-              evaluationFormVersion: "five-education-form/2025-v1",
-              dimension,
-              item: `${dimension}-专项观察`,
-              level: studentIndex % 5 === 0 ? "needs-effort" : studentIndex % 2 === 0 ? "excellent" : "average",
+              ...base(`evaluation-extra-${dimension.key}`, dimensionIndex + 60),
+              evaluationFormVersion: evaluationFormVersionByStage[school.educationStage],
+              dimension: dimension.key,
+              dimensionLabel: dimension.label,
+              dimensionOrder: dimensionIndex,
+              secondaryIndicator: dimension.secondary,
+              secondaryIndicatorLabel: dimension.secondaryLabel,
+              item: `${dimension.key}-专项观察`,
+              level: extraLevel.key,
+              levelLabel: extraLevel.label,
+              levelOrder: extraLevel.order,
               detail: "同学期二次评价，用于丰富等级分布。",
             });
           }
@@ -369,19 +411,39 @@ function buildVirtualRawData(): PortraitRawData {
           enteredAt: "2025-11-22T15:00:00.000Z",
           leftAt: "2025-11-22T16:10:00.000Z",
         });
+        if (studentIndex % 2 === 0) {
+          events.push({
+            ...base("library-visit-3", 61),
+            enteredAt: "2025-12-01T15:00:00.000Z",
+            leftAt: "2025-12-01T15:45:00.000Z",
+          });
+        }
       }
       if (studentIndex < variation.bookBorrowCoverage) {
+        const firstBorrowTransactionId = `virtual-loan-${schoolIndex + 1}-${ordinal}-1`;
         events.push({
           ...base("book-borrow", 47),
           bookId: `virtual-book-${schoolIndex + 1}-${ordinal}`,
+          borrowTransactionId: firstBorrowTransactionId,
           category: bookCategories[studentIndex % bookCategories.length]!,
           borrowedAt: "2025-11-08T15:10:00.000Z",
           returnedAt: "2025-11-22T15:10:00.000Z",
         });
+        if (studentIndex % 3 === 0) {
+          events.push({
+            ...base("book-borrow-same-transaction", 89),
+            bookId: `virtual-book-${schoolIndex + 1}-${ordinal}-same-loan`,
+            borrowTransactionId: firstBorrowTransactionId,
+            category: bookCategories[(studentIndex + 4) % bookCategories.length]!,
+            borrowedAt: "2025-11-08T15:10:00.000Z",
+            returnedAt: "2025-11-22T15:10:00.000Z",
+          });
+        }
         if (studentIndex % 2 === 0) {
           events.push({
             ...base("book-borrow-2", 91),
             bookId: `virtual-book-${schoolIndex + 1}-${ordinal}-b`,
+            borrowTransactionId: `virtual-loan-${schoolIndex + 1}-${ordinal}-2`,
             category: bookCategories[(studentIndex + 2) % bookCategories.length]!,
             borrowedAt: "2025-12-01T15:10:00.000Z",
             returnedAt: "2025-12-15T15:10:00.000Z",
@@ -423,6 +485,7 @@ function buildVirtualRawData(): PortraitRawData {
 
       practiceCategories.forEach((category, categoryIndex) => {
         if (studentIndex >= variation.practiceCoverage) return;
+        if (categoryIndex > 0 && (studentIndex + categoryIndex * 2 + schoolIndex) % 5 === 0) return;
         if (studentIndex === 9 && categoryIndex > 3) return;
         events.push({
           ...base(`practice-${category}`, 5 + categoryIndex),
@@ -443,9 +506,15 @@ function buildVirtualRawData(): PortraitRawData {
       });
 
       if (studentIndex < variation.dailyCoverage) {
+        const basePraiseCount = 2 + ((studentIndex + schoolIndex) % 4);
+        const praiseCount = Math.min(
+          dailyThemes.length - 1,
+          Math.max(1, basePraiseCount + (dailyPraiseGradeBias[grade] ?? 0)),
+        );
         dailyThemes.forEach((theme, themeIndex) => {
           if (studentIndex === 11 && themeIndex > 2) return;
-          const isPraise = (studentIndex + themeIndex + schoolIndex) % 3 !== 0;
+          const rotatedThemeIndex = (themeIndex + studentIndex + schoolIndex) % dailyThemes.length;
+          const isPraise = rotatedThemeIndex < praiseCount;
           events.push({
             ...base(`daily-${themeIndex}`, 14 + themeIndex),
             type: isPraise ? "praise" : "improvement",
@@ -565,6 +634,12 @@ function buildPeriodEvents(
     record.academicYear = period.academicYear;
     record.term = period.term;
 
+    if ("evaluationFormVersion" in record && "dimension" in record) {
+      record.evaluationFormVersion = record.evaluationFormVersion.replace(
+        /\/[^/]+$/,
+        `/${periodKey}-v1`,
+      );
+    }
     if ("examId" in record) {
       record.examId = record.examId.replace("2025-first", periodKey);
       record.assessmentProgramId = record.assessmentProgramId.replace("2025-first", periodKey);

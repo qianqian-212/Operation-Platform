@@ -76,13 +76,9 @@ describe("tenant menu templates", () => {
       (record) => record.parentId === null && record.name === "AI教育治理",
     )!;
     const studentEvaluation = child(aiGovernance.id, "学生发展评价");
-    expect(child(studentEvaluation.id, "区域学生发展画像")).toMatchObject({
+    expect(child(studentEvaluation.id, "学生成长画像")).toMatchObject({
       type: "page",
       pageKey: "bureau-student-growth-portrait",
-    });
-    expect(child(studentEvaluation.id, "新学生成长画像")).toMatchObject({
-      type: "page",
-      pageKey: "bureau-new-student-growth-portrait",
     });
     const mentalHealth = child(aiGovernance.id, "学生心理健康管理");
     expect(child(mentalHealth.id, "心理健康档案")).toMatchObject({

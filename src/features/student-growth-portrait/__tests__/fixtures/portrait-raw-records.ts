@@ -47,12 +47,12 @@ export const portraitRawRecords = {
     { ...currentSource("goal-c-academic", "student-c", "school-b", "2025-12-20"), targetCredits: 10, earnedCredits: 9, goalCategory: "intellectual" },
     { ...currentSource("goal-d-moral", "student-d", "school-b", "2025-12-20"), targetCredits: 10, earnedCredits: 10, goalCategory: "moral" },
 
-    { ...currentSource("evaluation-a-moral", "student-a", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", item: "行为规范", level: "excellent" },
-    { ...currentSource("evaluation-a-academic", "student-a", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", item: "学习习惯", level: "average" },
-    { ...currentSource("evaluation-b-moral", "student-b", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", item: "行为规范", level: "needs-effort" },
-    { ...currentSource("evaluation-b-academic", "student-b", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", item: "学习习惯", level: "excellent" },
-    { ...currentSource("evaluation-c-moral", "student-c", "school-b", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", item: "行为规范", level: "excellent" },
-    { ...currentSource("evaluation-c-academic", "student-c", "school-b", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", item: "学习习惯", level: "excellent" },
+    { ...currentSource("evaluation-a-moral", "student-a", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", secondaryIndicator: "conduct", item: "行为规范", level: "excellent" },
+    { ...currentSource("evaluation-a-academic", "student-a", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", secondaryIndicator: "learning-habit", item: "学习习惯", level: "average" },
+    { ...currentSource("evaluation-b-moral", "student-b", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", secondaryIndicator: "conduct", item: "行为规范", level: "needs-effort" },
+    { ...currentSource("evaluation-b-academic", "student-b", "school-a", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", secondaryIndicator: "learning-habit", item: "学习习惯", level: "excellent" },
+    { ...currentSource("evaluation-c-moral", "student-c", "school-b", "2025-12-20"), evaluationFormVersion: "v1", dimension: "moral", secondaryIndicator: "conduct", item: "行为规范", level: "excellent" },
+    { ...currentSource("evaluation-c-academic", "student-c", "school-b", "2025-12-20"), evaluationFormVersion: "v1", dimension: "intellectual", secondaryIndicator: "learning-habit", item: "学习习惯", level: "excellent" },
 
     { ...previousSource("exam-a-previous", "student-a", "school-a", "2025-06-30"), examId: "g5-final-spring", examName: "五年级期末统考", ...unifiedExamMetadata("final"), subject: "数学", score: 88, fullScore: 100, rank: 2, comparableStudentCount: 3, comparableScope: "district-unified", examAt: "2025-06-30" },
     { ...currentSource("exam-a-midterm", "student-a", "school-a", "2025-10-31"), examId: "g5-midterm-fall", examName: "五年级期中统考", ...unifiedExamMetadata("midterm"), subject: "数学", score: 92, fullScore: 100, rank: 1, comparableStudentCount: 3, comparableScope: "district-unified", examAt: "2025-10-31" },

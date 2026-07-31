@@ -35,6 +35,35 @@ describe("aggregatePortraitDataset", () => {
       denominator: 4,
       quality: { status: "partial", observedStudentCount: 3, coverageRate: 75 },
     });
+    expect(metric(dataset, "five-education-evaluated-student-count"))
+      .toMatchObject({ value: 3, unit: "人", numerator: 3 });
+    expect(metric(dataset, "five-education-evaluation-record-count"))
+      .toMatchObject({ value: 6, unit: "条", numerator: 6 });
+    expect(metric(dataset, "five-education-evaluation-form-version-count"))
+      .toMatchObject({ value: 1, unit: "套", numerator: 1 });
+    expect(dataset.distributions.map((distribution) => distribution.key)).toEqual(
+      expect.arrayContaining([
+        "five-education-dimension-v1-moral-level-distribution",
+        "five-education-dimension-v1-intellectual-level-distribution",
+      ]),
+    );
+    const moralDistribution = dataset.distributions.find(
+      (distribution) => distribution.key === "five-education-dimension-v1-moral-level-distribution",
+    );
+    expect(moralDistribution).toMatchObject({
+      label: "moral",
+      group: { key: "v1", label: "v1" },
+    });
+    expect(moralDistribution?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: "excellent", value: 66.67, studentCount: 2 }),
+      expect.objectContaining({ key: "needs-effort", value: 33.33, studentCount: 1 }),
+    ]));
+    expect(dataset.schools.find((school) => school.schoolId === "school-a")?.distributions)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          key: "five-education-dimension-v1-moral-level-distribution",
+        }),
+      ]));
   });
 
   it("publishes traceable grade snapshots from the same filtered student population", () => {
@@ -118,6 +147,9 @@ describe("aggregatePortraitDataset", () => {
   });
 
   it("publishes honor type, level and grade distributions from explicit honor fields", () => {
+    expect(metric(dataset, "honor-national-count")).toMatchObject({ value: 0, unit: "项" });
+    expect(metric(dataset, "honor-provincial-count")).toMatchObject({ value: 0, unit: "项" });
+    expect(metric(dataset, "honor-city-count")).toMatchObject({ value: 1, unit: "项" });
     expect(dataset.distributions.map((distribution) => distribution.key)).toEqual(
       expect.arrayContaining([
         "honor-award-type-distribution",
@@ -146,6 +178,37 @@ describe("aggregatePortraitDataset", () => {
       denominator: 4,
       quality: { observedStudentCount: 2, validRecordCount: 3, coverageRate: 50 },
     });
+    expect(metric(dataset, "practice-activity-count-per-student")).toMatchObject({
+      value: 0.75,
+      numerator: 3,
+      denominator: 4,
+    });
+    expect(metric(dataset, "practice-category-count-per-student")).toMatchObject({
+      value: 0.75,
+      numerator: 3,
+      denominator: 4,
+    });
+    expect(metric(dataset, "practice-category-coverage-rate")).toMatchObject({
+      value: 42.86,
+      numerator: 3,
+      denominator: 7,
+    });
+    expect(metric(dataset, "practice-moral-participant-count")).toMatchObject({ value: 1 });
+    expect(metric(dataset, "practice-physical-participant-count")).toMatchObject({ value: 1 });
+    expect(metric(dataset, "practice-aesthetic-participant-count")).toMatchObject({ value: 1 });
+    expect(metric(dataset, "practice-volunteer-participant-count")).toMatchObject({ value: 0 });
+    expect(metric(dataset, "practice-moral-participation-rate")).toMatchObject({
+      value: 25,
+      numerator: 1,
+      denominator: 4,
+      unit: "%",
+    });
+    expect(metric(dataset, "practice-volunteer-participation-rate")).toMatchObject({
+      value: 0,
+      numerator: 0,
+      denominator: 4,
+      unit: "%",
+    });
   });
 
   it("separates daily-evaluation record coverage from positive evaluation share", () => {
@@ -167,6 +230,69 @@ describe("aggregatePortraitDataset", () => {
       denominator: 4,
       comparability: "within-school-trend-only",
     });
+  });
+
+  it("aggregates library visits, valid dwell time, borrow volume, transactions and categories", () => {
+    expect(metric(dataset, "library-visits-per-student")).toMatchObject({
+      value: 0.75,
+      unit: "次/生",
+      numerator: 3,
+      denominator: 4,
+    });
+    expect(metric(dataset, "library-dwell-hours-per-student")).toMatchObject({
+      value: 0.38,
+      unit: "小时/生",
+      numerator: 1.5,
+      denominator: 4,
+    });
+    expect(metric(dataset, "book-borrow-volume-per-student")).toMatchObject({
+      value: 0.75,
+      unit: "册/生",
+      numerator: 3,
+      denominator: 4,
+    });
+    expect(metric(dataset, "book-borrow-transactions-per-student")).toMatchObject({
+      value: 0.75,
+      unit: "次/生",
+      numerator: 3,
+      denominator: 4,
+    });
+    expect(metric(dataset, "library-visit-count-last-7-days")).toMatchObject({
+      value: 1,
+      unit: "次",
+      numerator: 1,
+    });
+    expect(metric(dataset, "library-visit-count-last-30-days")).toMatchObject({
+      value: 3,
+      unit: "次",
+      numerator: 3,
+    });
+    expect(metric(dataset, "book-borrow-volume-last-7-days")).toMatchObject({
+      value: 1,
+      unit: "册",
+      numerator: 1,
+    });
+    expect(metric(dataset, "book-borrow-volume-last-30-days")).toMatchObject({
+      value: 3,
+      unit: "册",
+      numerator: 3,
+    });
+    expect(metric(dataset, "book-borrow-transaction-count-last-7-days")).toMatchObject({
+      value: 1,
+      unit: "次",
+      numerator: 1,
+    });
+    expect(metric(dataset, "book-borrow-transaction-count-last-30-days")).toMatchObject({
+      value: 3,
+      unit: "次",
+      numerator: 3,
+    });
+    expect(dataset.distributions.find(
+      (distribution) => distribution.key === "behavior-book-category-distribution",
+    )?.items).toEqual(expect.arrayContaining([
+      { key: "文学", value: 66.67, studentCount: 2 },
+      { key: "数理化", value: 33.33, studentCount: 1 },
+    ]));
   });
 
   it("emits evidence-backed low-coverage signals instead of an unsupported diagnosis", () => {

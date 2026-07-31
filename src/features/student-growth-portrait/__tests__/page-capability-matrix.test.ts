@@ -6,11 +6,6 @@ import {
   studentGrowthPageCapabilityMatrix,
   studentGrowthTopicCapabilityMatrix,
 } from "../page-capability-matrix";
-import {
-  assertRegionalPortraitAnchorMatrix,
-  regionalPortraitAnchorMatrix,
-} from "../regional-portrait-anchor-matrix";
-
 describe("student growth portrait page capability matrix", () => {
   it("is the explicit source of every topic boundary", () => {
     expect(studentGrowthTopicCapabilityMatrix).toHaveLength(10);
@@ -29,6 +24,9 @@ describe("student growth portrait page capability matrix", () => {
     expect(pageCapabilityForTopic("five-education")?.metricKeys).toEqual([
       "five-education-goal-completion-rate",
       "five-education-evaluation-coverage-rate",
+      "five-education-evaluated-student-count",
+      "five-education-evaluation-record-count",
+      "five-education-evaluation-form-version-count",
     ]);
     expect(pageCapabilityForTopic("life")?.status).toBe("restricted");
   });
@@ -44,23 +42,5 @@ describe("student growth portrait page capability matrix", () => {
       .toContain("practice-participation-rate");
     expect(studentGrowthPageCapabilityMatrix.find((capability) => capability.key === "overview-data-summary")?.metricKeys)
       .toContain("academic-unified-exam-record-coverage-rate");
-  });
-
-  it("defines ten flat anchors for one regional portrait page instead of ten routes", () => {
-    expect(() => assertRegionalPortraitAnchorMatrix()).not.toThrow();
-    expect(regionalPortraitAnchorMatrix.map((anchor) => anchor.label)).toEqual([
-      "区域发展总览",
-      "学业发展画像",
-      "学生群体画像",
-      "学校发展画像",
-      "区域均衡分析",
-      "综合素质画像",
-      "成长支持成效",
-      "专题分析",
-      "AI 分析助手",
-      "区域发展报告",
-    ]);
-    expect(regionalPortraitAnchorMatrix.find((anchor) => anchor.key === "student-cohorts"))
-      .toMatchObject({ status: "planned", metricKeys: [] });
   });
 });

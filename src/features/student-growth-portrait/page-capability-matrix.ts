@@ -5,7 +5,7 @@ import { portraitMetricDefinitionByKey } from "./metric-registry";
  * 学生成长画像的数据领域与内容组件能力事实源。
  *
  * 每一项都把页面可见能力限定为：可计算指标、原始记录、质量门槛与权限边界的交集。
- * 左侧单页锚点由 regional-portrait-anchor-matrix.ts 单独维护，不得把数据领域当成页面或菜单。
+ * 页面锚点由最终画像页面的 page/data.ts 维护，不得把数据领域当成页面或菜单。
  * 内容组件不得绕过本矩阵新增指标、诊断、排名或处置动作。
  */
 export type StudentGrowthTopicKey = PortraitDomain | "overview" | "mental-health";
@@ -62,7 +62,7 @@ export const studentGrowthTopicCapabilityMatrix: readonly StudentGrowthTopicCapa
   {
     key: "behavior",
     label: "行为习惯",
-    description: "展示阅读、图书馆与考勤来源的覆盖情况。",
+    description: "展示近 7 天或近 30 天到馆与借阅累计值、学期生均泡馆时长及借阅类别构成。",
     status: "limited",
     limitation: "考勤异常率缺少应考勤人次分母，当前不做异常率比较或行为判断。",
   },
@@ -154,9 +154,15 @@ export const studentGrowthPageCapabilityMatrix: readonly StudentGrowthPageCapabi
     topic: "five-education",
     label: "五育评价专题",
     status: "enabled",
-    metricKeys: ["five-education-goal-completion-rate", "five-education-evaluation-coverage-rate"],
+    metricKeys: [
+      "five-education-goal-completion-rate",
+      "five-education-evaluation-coverage-rate",
+      "five-education-evaluated-student-count",
+      "five-education-evaluation-record-count",
+      "five-education-evaluation-form-version-count",
+    ],
     sourceRecords: ["GrowthGoalRecord", "GrowthEvaluationRecord"],
-    qualityGate: "成长目标完成率按学分总和计算；评价结果必须带评价表版本。",
+    qualityGate: "成长目标完成率按学分总和计算；评价结果必须带评价表版本、一级指标、二级指标、评价项和该版本定义的评价等级。",
     permissionBoundary: "仅聚合展示，不推导跨维度综合评分。",
   },
   {
@@ -220,7 +226,13 @@ export const studentGrowthPageCapabilityMatrix: readonly StudentGrowthPageCapabi
     topic: "honor",
     label: "荣誉发展专题",
     status: "enabled",
-    metricKeys: ["honor-student-coverage-rate", "honor-per-100-students"],
+    metricKeys: [
+      "honor-student-coverage-rate",
+      "honor-per-100-students",
+      "honor-national-count",
+      "honor-provincial-count",
+      "honor-city-count",
+    ],
     sourceRecords: ["HonorRecord"],
     qualityGate: "荣誉记录按 sourceRecordId 去重；必须同时保留颁发时间和荣誉类别。",
     permissionBoundary: "没有参与机会分母时，不评价机会公平性。",
@@ -230,11 +242,21 @@ export const studentGrowthPageCapabilityMatrix: readonly StudentGrowthPageCapabi
     topic: "behavior",
     label: "行为习惯专题",
     status: "limited",
-    metricKeys: ["library-visit-coverage-rate", "library-borrower-coverage-rate"],
+    metricKeys: [
+      "library-visit-coverage-rate",
+      "library-borrower-coverage-rate",
+      "library-dwell-hours-per-student",
+      "library-visit-count-last-7-days",
+      "library-visit-count-last-30-days",
+      "book-borrow-volume-last-7-days",
+      "book-borrow-volume-last-30-days",
+      "book-borrow-transaction-count-last-7-days",
+      "book-borrow-transaction-count-last-30-days",
+    ],
     sourceRecords: ["LibraryVisitRecord", "BookBorrowRecord", "AttendanceRecord"],
     qualityGate: "借阅记录不等同于完成阅读；考勤异常率须先补齐应考勤人次。",
     permissionBoundary: "不根据借阅、到馆或考勤记录生成行为标签。",
-    limitation: "当前仅展示图书馆相关覆盖，不展示考勤异常率。",
+    limitation: "当前以来源最新业务时间为截止日展示近 7 天或近 30 天到馆、借阅累计值，并保留学期生均泡馆时长；不展示考勤异常率。",
   },
   {
     key: "life-topic",
@@ -252,7 +274,19 @@ export const studentGrowthPageCapabilityMatrix: readonly StudentGrowthPageCapabi
     topic: "practice",
     label: "实践活动专题",
     status: "enabled",
-    metricKeys: ["practice-participation-rate"],
+    metricKeys: [
+      "practice-participation-rate",
+      "practice-activity-count-per-student",
+      "practice-category-count-per-student",
+      "practice-category-coverage-rate",
+      "practice-moral-participation-rate",
+      "practice-intellectual-participation-rate",
+      "practice-physical-participation-rate",
+      "practice-aesthetic-participation-rate",
+      "practice-labor-participation-rate",
+      "practice-club-participation-rate",
+      "practice-volunteer-participation-rate",
+    ],
     sourceRecords: ["PracticeActivityRecord"],
     qualityGate: "仅统计已核验活动；参与次数不等同于活动质量。",
     permissionBoundary: "不以活动次数推导综合素质结论。",

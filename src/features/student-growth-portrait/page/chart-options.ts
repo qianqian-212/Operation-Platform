@@ -1,11 +1,6 @@
 import type { EChartsCoreOption } from "echarts/core";
 import type { AcademicExamType, UnifiedExamSummary } from "@/features/student-growth-portrait/data-contract";
 
-export interface CoverageChartRow {
-  label: string;
-  coverageRate: number;
-}
-
 const axisColor = "#898a8c";
 const primaryColor = "#2d55eb";
 const positiveColor = "#13a889";
@@ -56,7 +51,7 @@ function latestSummary(summaries: readonly UnifiedExamSummary[]) {
 
 /**
  * 统考年级质量对比：每个年级只取当前科目最新一场统考。
- * 柱形表示得分质量，折线表示成绩记录完整度，两者都使用百分比但不互相推导。
+ * 主图只比较得分质量；成绩记录完整度仅在不足 100% 时由页面作为质量提醒展示。
  */
 export function createUnifiedExamGradeComparisonOption(
   summaries: readonly UnifiedExamSummary[],
@@ -74,7 +69,7 @@ export function createUnifiedExamGradeComparisonOption(
   ]));
 
   return {
-    color: [primaryColor, positiveColor],
+    color: [primaryColor],
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "shadow" },
@@ -82,12 +77,7 @@ export function createUnifiedExamGradeComparisonOption(
         typeof value === "number" ? `${value}%` : `${value}`
       ),
     },
-    legend: {
-      top: 4,
-      right: 12,
-      textStyle: axisLabel,
-    },
-    grid,
+    grid: { ...grid, top: 24 },
     xAxis: {
       ...axisStyle,
       type: "category",
@@ -109,14 +99,6 @@ export function createUnifiedExamGradeComparisonOption(
         barMaxWidth: 38,
         data: grades.map((grade) => latestByGrade.get(grade)?.scoreRate ?? null),
         itemStyle: { color: primaryColor, borderRadius: [4, 4, 0, 0] },
-      },
-      {
-        name: "成绩覆盖率",
-        type: "line",
-        symbolSize: 7,
-        data: grades.map((grade) => latestByGrade.get(grade)?.quality.coverageRate ?? null),
-        lineStyle: { width: 2, type: "dashed", color: positiveColor },
-        itemStyle: { color: positiveColor },
       },
     ],
   };
@@ -220,48 +202,5 @@ export function createUnifiedExamSubjectOption(
         },
       },
     ],
-  };
-}
-
-export function createCoverageOption(rows: readonly CoverageChartRow[]): EChartsCoreOption {
-  return {
-    tooltip: {
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
-      formatter: (params: Array<{ name: string; value: number }>) => {
-        const item = params[0];
-        return item ? `${item.name}<br/>覆盖率：${item.value}%` : "";
-      },
-    },
-    grid: { left: 118, right: 44, top: 16, bottom: 20 },
-    xAxis: {
-      ...axisStyle,
-      type: "value",
-      min: 0,
-      max: 100,
-      axisLabel: { ...axisLabel, formatter: "{value}%" },
-      splitLine,
-    },
-    yAxis: {
-      ...axisStyle,
-      type: "category",
-      data: rows.map((row) => row.label),
-      axisLabel,
-    },
-    series: [{
-      type: "bar",
-      barWidth: 18,
-      data: rows.map((row) => row.coverageRate),
-      label: {
-        show: true,
-        position: "right",
-        formatter: "{c}%",
-        color: "#575859",
-      },
-      itemStyle: {
-        color: "#2d55eb",
-        borderRadius: [0, 4, 4, 0],
-      },
-    }],
   };
 }

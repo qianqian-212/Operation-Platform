@@ -43,12 +43,42 @@ final result: passed
 
 ---
 
-# 新学生成长画像设计 QA
+# 学生成长画像：行为习惯与环图复检
+
+- 验证日期：2026-07-29
+- 页面：`http://127.0.0.1:4174/bureau/education-governance/student-growth-portrait`
+- 视角：本地演示数据、体验区教育局
+- 参考截图：`/var/folders/l9/bm97cgp13bv5rj46q3pyjrpw0000gn/T/codex-clipboard-23190daa-301b-46a2-85d8-8c69bc9d1d76.png`
+- 实现截图：`/private/tmp/new-student-growth-honor-full.png`
+- 同屏对照：`/private/tmp/portrait-ring-comparison.png`
+- 行为习惯截图：`/private/tmp/new-student-growth-behavior.png`
+
+## 结论
+
+- 荣誉与借阅类别图统一使用 ECharts 官方环形饼图配置；扇区间距 2px、圆角 4px、中心强调字号 16px，业务侧只对接聚合分类数据、图表名称和主题颜色。
+- 五育评价按学段适用评价表版本聚合，区域端展示覆盖率、参评学生数、有效评价记录数、适用表版本数和一级指标等级构成；等级系列来自原始评价表配置。
+- 荣誉概览在每百名学生荣誉数之外展示国家级、省级、市级有效获奖记录数。
+- 行为习惯使用当前筛选学期，并以当前范围全部有效在籍学生为统一分母，展示生均入馆次数、生均泡馆时长、生均借阅册数和生均借阅次数。
+- 泡馆时长只累加存在有效离馆时间且时长为正的记录；缺少离馆时间的记录不进入时长分子，但学生仍保留在区域分母中。
+- 借阅次数按交易标识去重，同一次借多册只计一次；借阅类别饼图按明细册数构成。
+- 当前虚拟源不是连续实时数据，因此不发布“近七天”统计，避免把无数据误读为零。
+
+## 验证
+
+- `npm run check`：通过，83 个测试文件、437 个测试全部通过，生产构建成功。
+- `npm run test:e2e -- e2e/student-growth-portrait.spec.ts`：通过。
+- Chromium 实测：教育局切换、行为习惯锚点、荣誉发展锚点、四项生均指标和借阅类别图表均正常。
+
+final result: passed
+
+---
+
+# 学生成长画像设计 QA
 
 - source visual truth path: `/Users/liuxiao/Downloads/region-growth-demo/index.html`
-- source screenshot path: `output/design-qa/new-student-growth-portrait/source.png`
-- implementation URL: `http://127.0.0.1:4175/bureau/education-governance/new-student-growth-portrait`
-- implementation screenshot path: `output/design-qa/new-student-growth-portrait/implementation.png`
+- source screenshot path: `output/design-qa/student-growth-portrait/source.png`
+- implementation URL: `http://127.0.0.1:4175/bureau/education-governance/student-growth-portrait`
+- implementation screenshot path: `output/design-qa/student-growth-portrait/implementation.png`
 - viewport: 1280 × 720 CSS px
 - source pixels: 1280 × 720
 - implementation pixels: 1280 × 720

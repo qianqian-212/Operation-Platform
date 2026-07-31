@@ -61,13 +61,28 @@ export interface GrowthGoalRecord extends SourceRecord {
   goalCategory?: string;
 }
 
-export type GrowthEvaluationLevel = "excellent" | "average" | "needs-effort";
+/**
+ * 评价等级由评价表版本定义，不能在区域端写死为“很好/一般/需努力”。
+ * level 保存稳定编码，levelLabel 保存该版本下的展示名称。
+ */
+export type GrowthEvaluationLevel = string;
 
 export interface GrowthEvaluationRecord extends SourceRecord {
   evaluationFormVersion: string;
+  /** 一级指标编码。 */
   dimension: string;
+  dimensionLabel?: string;
+  /** 一级指标在当前评价表版本中的显示顺序。 */
+  dimensionOrder?: number;
+  /** 二级指标编码。 */
+  secondaryIndicator: string;
+  secondaryIndicatorLabel?: string;
+  /** 评价项编码或名称。 */
   item: string;
   level: GrowthEvaluationLevel;
+  levelLabel?: string;
+  /** 评价等级在当前评价表版本中的显示顺序。 */
+  levelOrder?: number;
   detail?: string;
 }
 
@@ -191,6 +206,7 @@ export interface LibraryVisitRecord extends SourceRecord {
 
 export interface BookBorrowRecord extends SourceRecord {
   bookId: string;
+  borrowTransactionId?: string;
   category: string;
   borrowedAt: string;
   returnedAt?: string;
@@ -311,12 +327,20 @@ export interface PortraitMetric {
 
 export interface PortraitDistributionItem {
   key: string;
+  label?: string;
+  order?: number;
   value: number;
   studentCount?: number;
 }
 
 export interface PortraitDistribution {
   key: string;
+  label?: string;
+  group?: {
+    key: string;
+    label: string;
+  };
+  order?: number;
   domain: PortraitDomain;
   population: PortraitPopulation;
   items: PortraitDistributionItem[];
@@ -421,6 +445,11 @@ export interface SchoolPortraitSummary {
   schoolId: string;
   studentCount: number;
   metrics: PortraitMetric[];
+  /**
+   * 仅发布满足最小群体规模与数据覆盖门槛的校级分布。
+   * 页面可据此形成同评价表、同指标、同等级的匿名校际区间，不得生成学校排名。
+   */
+  distributions: PortraitDistribution[];
 }
 
 export interface GradePortraitSummary {

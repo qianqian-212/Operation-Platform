@@ -72,24 +72,14 @@ describe("page registry", () => {
 
   it("registers the bureau student growth portrait as an available shell page", () => {
     expect(pageRegistryByKey.get("bureau-student-growth-portrait")).toMatchObject({
-      title: "区域学生发展画像",
+      title: "学生成长画像",
       path: "/bureau/education-governance/student-growth-portrait",
       tenantTypes: ["bureau"],
       status: "available",
       surface: "shell",
       openMode: "current",
     });
-  });
-
-  it("registers the new student growth portrait as a separate available shell page", () => {
-    expect(pageRegistryByKey.get("bureau-new-student-growth-portrait")).toMatchObject({
-      title: "新学生成长画像",
-      path: "/bureau/education-governance/new-student-growth-portrait",
-      tenantTypes: ["bureau"],
-      status: "available",
-      surface: "shell",
-      openMode: "current",
-    });
+    expect(pageRegistryByKey.has("bureau-new-student-growth-portrait")).toBe(false);
   });
 
   it("registers a reusable menu-scoped developing placeholder page", () => {

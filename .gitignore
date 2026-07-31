@@ -41,6 +41,7 @@ __screenshots__/
 # Vite
 *.timestamp-*-*.mjs
 .vercel
+.wrangler/
 
 # Legacy local terrain experiments; the regional map now generates textures at runtime.
 /src/assets/textures/map/terrain-*.jpg

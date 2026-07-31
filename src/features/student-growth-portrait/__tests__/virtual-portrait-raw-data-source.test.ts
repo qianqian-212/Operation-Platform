@@ -79,6 +79,7 @@ describe("virtualPortraitRawDataSource", () => {
     const honorRecords = raw.events.filter((event) => "receivedAt" in event && "kind" in event);
     const sunshineRuns = raw.events.filter((event) => "distanceKilometers" in event);
     const dailyEvaluations = raw.events.filter((event) => "evaluatedAt" in event && "type" in event);
+    const bookBorrows = raw.events.filter((event) => "bookId" in event);
     const scienceExams = raw.events.filter((event) => "examId" in event && event.subject === "科学");
 
     expect(grades).toEqual(new Set(["四年级", "五年级", "七年级", "八年级", "高一", "高二"]));
@@ -90,6 +91,10 @@ describe("virtualPortraitRawDataSource", () => {
     expect(sunshineRuns.length).toBeGreaterThan(72);
     expect(dailyEvaluations.length).toBeGreaterThan(144);
     expect(new Set(dailyEvaluations.map((event) => event.theme)).size).toBeGreaterThanOrEqual(6);
+    expect(new Set(bookBorrows.map((event) => event.category)).size).toBeGreaterThanOrEqual(6);
+    expect(new Set(bookBorrows.map(
+      (event) => event.borrowTransactionId ?? event.sourceRecordId,
+    )).size).toBeLessThan(bookBorrows.length);
   });
 
   it("keeps school comparison metrics visibly differentiated without hard-coded chart results", async () => {
@@ -165,5 +170,28 @@ describe("virtualPortraitRawDataSource", () => {
     });
     expect(previousEvaluationCoverage?.value).toBeLessThan(currentEvaluationCoverage?.value ?? 0);
     expect(previousAcademicSummary?.scoreRate).toBeLessThan(currentAcademicSummary?.scoreRate ?? 0);
+  });
+
+  it("switches to the evaluation forms associated with the selected academic term", async () => {
+    const previousQuery = {
+      ...fullQuery,
+      academicYears: ["2024-2025"],
+      terms: ["second"],
+    } satisfies PortraitQuery;
+    const [currentRaw, previousRaw] = await Promise.all([
+      virtualPortraitRawDataSource.load(fullQuery),
+      virtualPortraitRawDataSource.load(previousQuery),
+    ]);
+    const evaluationVersions = (events: typeof currentRaw.events) => new Set(events
+      .filter((event) => "evaluationFormVersion" in event && "dimension" in event)
+      .map((event) => event.evaluationFormVersion));
+    const currentVersions = evaluationVersions(currentRaw.events);
+    const previousVersions = evaluationVersions(previousRaw.events);
+
+    expect(currentVersions.size).toBe(3);
+    expect(previousVersions.size).toBe(3);
+    expect([...currentVersions].every((version) => version.includes("2025-2026-first"))).toBe(true);
+    expect([...previousVersions].every((version) => version.includes("2024-2025-second"))).toBe(true);
+    expect(previousVersions).not.toEqual(currentVersions);
   });
 });
