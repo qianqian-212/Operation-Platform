@@ -648,7 +648,7 @@ export const portraitMetricRegistry: readonly PortraitMetricDefinition[] = [
   {
     key: "daily-evaluation-positive-rate",
     domain: "daily-evaluation",
-    label: "正向评价占比",
+    label: "表扬记录占比",
     availability: "ready",
     calculation: "表扬记录数 ÷ 全部有效日常评价记录数。",
     requiredFields: ["type", "evaluatedAt", "evaluationFormVersion"],

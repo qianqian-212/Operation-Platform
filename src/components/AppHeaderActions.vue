@@ -1,7 +1,7 @@
 <template>
   <div class="header-actions">
     <button
-      class="ai-assistant-entry"
+      class="header-icon-entry ai-assistant-entry"
       type="button"
       aria-label="AI 运营助手"
       title="AI 运营助手"
@@ -65,6 +65,17 @@
       {{ activeRoleLabel }}
     </el-tag>
 
+    <button
+      class="header-icon-entry message-center-entry"
+      type="button"
+      :aria-label="messageCenterLabel"
+      :title="messageCenterLabel"
+      @click="openMessageCenter"
+    >
+      <el-icon><Bell /></el-icon>
+      <span v-if="messageCenterStore.unreadCount" class="message-center-badge" aria-hidden="true" />
+    </button>
+
     <el-dropdown trigger="click" @command="handleUserCommand">
       <button class="user-info" type="button">
         <el-avatar :size="32" class="user-avatar">{{ userInfo.initials }}</el-avatar>
@@ -83,6 +94,7 @@
     </el-dropdown>
 
     <ChangePasswordDialog v-model="passwordDialogVisible" />
+    <MessageCenterDrawer />
   </div>
 </template>
 
@@ -91,15 +103,17 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { ArrowDown } from "@element-plus/icons-vue";
+import { ArrowDown, Bell } from "@element-plus/icons-vue";
 import assistantAvatarVideo from "@/assets/ai-assistant/avatar-48.webm";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog.vue";
+import MessageCenterDrawer from "@/features/message-center/components/MessageCenterDrawer.vue";
 import { TENANT_TAG_TYPE, TENANT_TYPE_LABEL } from "@/config/tenant";
 import { useNavigationStore } from "@/stores/navigation";
 import { useUserStore } from "@/stores/user";
 import { useWorkbenchStore } from "@/stores/workbench";
 import { useAuthStore } from "@/stores/auth";
 import { useAiAssistantStore } from "@/stores/ai-assistant";
+import { useMessageCenterStore } from "@/stores/message-center";
 import type { TenantType } from "@/types/user";
 
 const router = useRouter();
@@ -108,6 +122,7 @@ const userStore = useUserStore();
 const workbenchStore = useWorkbenchStore();
 const authStore = useAuthStore();
 const aiAssistantStore = useAiAssistantStore();
+const messageCenterStore = useMessageCenterStore();
 const passwordDialogVisible = ref(false);
 const { userInfo, currentTenant, availableTenants, isAdmin } = storeToRefs(userStore);
 const { activeRoleRecord, availableRoleRecords } = storeToRefs(navigationStore);
@@ -132,6 +147,17 @@ const platformAdminTenant = computed(() =>
 );
 
 const canOpenPlatformConfig = computed(() => isAdmin.value && Boolean(platformAdminTenant.value));
+const messageCenterLabel = computed(() => messageCenterStore.unreadCount
+  ? `消息中心，${messageCenterStore.unreadCount} 条未读`
+  : "消息中心");
+
+function openMessageCenter() {
+  void messageCenterStore.open({
+    tenantId: currentTenant.value.id,
+    userId: userInfo.value.id,
+    tenantType: currentTenant.value.type,
+  });
+}
 
 async function handleTenantSwitch(tenantId: string) {
   const tenant = availableTenants.value.find((item) => item.id === tenantId);
@@ -206,7 +232,7 @@ async function confirmDiscardWorkbenchChanges() {
   height: 100%;
 }
 
-.ai-assistant-entry {
+.header-icon-entry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -217,16 +243,16 @@ async function confirmDiscardWorkbenchChanges() {
   overflow: hidden;
   background: transparent;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: background-color 160ms ease;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
-.ai-assistant-entry:hover {
+.header-icon-entry:hover {
   background: var(--color-primary-light);
 }
 
-.ai-assistant-entry:focus-visible {
+.header-icon-entry:focus-visible {
   outline: 2px solid var(--color-primary-line-light);
   outline-offset: 2px;
 }
@@ -235,6 +261,30 @@ async function confirmDiscardWorkbenchChanges() {
   width: 30px;
   height: 30px;
   object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+.message-center-entry {
+  position: relative;
+  padding: 0;
+  color: var(--color-title);
+  background: var(--color-bg-muted);
+}
+
+.message-center-entry :deep(.el-icon) {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.message-center-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-white);
   border-radius: var(--radius-full);
 }
 

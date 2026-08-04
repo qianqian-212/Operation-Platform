@@ -56,7 +56,11 @@ const preferredMetricKeys: Readonly<Record<RegionalQualityTopic, readonly string
     "practice-category-count-per-student",
     "practice-category-coverage-rate",
   ],
-  "daily-evaluation": ["daily-evaluation-record-coverage-rate"],
+  "daily-evaluation": [
+    "daily-evaluation-record-coverage-rate",
+    "daily-evaluation-positive-rate",
+    "daily-evaluation-improvement-rate",
+  ],
 };
 
 const primaryMetricKeys: Readonly<Record<RegionalQualityTopic, string>> = {

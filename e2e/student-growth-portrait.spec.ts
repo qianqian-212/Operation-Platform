@@ -285,6 +285,9 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
   await expect(page.getByRole("img", { name: "七年级日常评价构成" })).toBeVisible();
   await expect(page.locator("#daily-evaluation")).toContainText("表扬与待改进记录构成");
   await expect(page.locator("#daily-evaluation")).toContainText("日常评价记录覆盖率");
+  await expect(page.locator("#daily-evaluation")).toContainText("表扬记录占比");
+  await expect(page.locator("#daily-evaluation")).toContainText("待改进评价占比");
+  await expect(page.locator("#daily-evaluation .regional-quality-domain__metrics article")).toHaveCount(3);
   await expect(page.getByRole("heading", { name: "七年级日常评价构成" })).toBeVisible();
   await expect(page.locator("#daily-evaluation")).toContainText("环图展示当前年级表扬与待改进记录构成");
 

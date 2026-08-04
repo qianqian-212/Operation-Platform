@@ -38,6 +38,55 @@ test("首次进入工作台并打开业务模块", async ({ page }) => {
   await expect(page.getByText(/开发中\.\.\.$/)).toBeVisible();
 });
 
+test("顶部消息入口复用工作台公开信息并打开抽屉", async ({ page }) => {
+  await page.goto("/");
+
+  const assistantEntry = page.getByRole("button", { name: "AI 运营助手" });
+  const messageEntry = page.getByRole("button", { name: "消息中心" });
+  const roleTag = page.locator(".header-actions > .role-tag");
+  const userEntry = page.locator(".header-actions .user-info");
+  await expect(assistantEntry).toHaveCSS("border-radius", "999px");
+  await expect(messageEntry).toHaveCSS("border-radius", "999px");
+  await expect(messageEntry).toHaveCSS("background-color", "rgb(247, 248, 251)");
+  await expect(messageEntry.locator(".el-icon")).toHaveCSS("width", "18px");
+  const [roleBounds, messageBounds, userBounds] = await Promise.all([
+    roleTag.boundingBox(),
+    messageEntry.boundingBox(),
+    userEntry.boundingBox(),
+  ]);
+  expect(messageBounds!.x).toBeGreaterThan(roleBounds!.x + roleBounds!.width);
+  expect(messageBounds!.x + messageBounds!.width).toBeLessThan(userBounds!.x);
+
+  await messageEntry.click();
+  const drawer = page.getByRole("dialog", { name: "消息" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByText(/条未读/)).toHaveCount(0);
+  await expect(drawer.locator(".message-category-sticky")).toHaveCSS("position", "sticky");
+  await expect(drawer.getByText("暂无通知公告或公开信息", { exact: true })).toBeVisible();
+
+  await drawer.getByRole("button", { name: "查看工作台" }).click();
+  await expect(page).toHaveURL(/\/workbench$/);
+
+  await page.getByRole("button", { name: /学校 体育东路小学海明学校/ }).click();
+  await page.getByRole("menuitem", { name: "体验区教育局", exact: true }).click();
+  await expect(page.getByRole("button", { name: /教育局 体验区教育局/ })).toBeVisible();
+
+  await messageEntry.click();
+  await expect(drawer.getByText("关于报送暑期值班安排的通知", { exact: true })).toBeVisible();
+  await expect(drawer.getByText("2026 年义务教育招生工作实施方案", { exact: true })).toBeVisible();
+  const stickyTabs = drawer.locator(".message-category-sticky");
+  const drawerBody = drawer.locator(".el-drawer__body");
+  const tabsTopBeforeScroll = (await stickyTabs.boundingBox())!.y;
+  await drawerBody.evaluate((element) => element.scrollTo(0, element.scrollHeight));
+  const tabsTopAfterScroll = (await stickyTabs.boundingBox())!.y;
+  expect(Math.abs(tabsTopAfterScroll - tabsTopBeforeScroll)).toBeLessThanOrEqual(1);
+  await drawerBody.evaluate((element) => element.scrollTo(0, 0));
+  await drawer.getByRole("button", { name: /关于报送暑期值班安排的通知/ }).click();
+  await expect(drawer.getByRole("heading", { name: "关于报送暑期值班安排的通知" })).toBeVisible();
+  await expect(drawer.getByText("请各单位于本周五前完成暑期值班表在线填报，并确认应急联系人信息。", { exact: true })).toBeVisible();
+  await drawer.getByRole("button", { name: "返回消息" }).click();
+});
+
 test("访问系统页面时自动进入运营平台租户", async ({ page }) => {
   await page.goto("/system/organization");
 
