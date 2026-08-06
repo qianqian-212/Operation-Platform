@@ -311,6 +311,77 @@ function trendData(
   };
 }
 
+const tenantTypeLabels = {
+  school: "学校",
+  bureau: "教育局",
+  org: "机构",
+  platform: "平台",
+} as const;
+
+function accountPanelData(context: WorkbenchDataContext) {
+  const roleName = context.roleName ?? (context.profile === "admin" ? "管理员" : "业务角色");
+  const orgName = context.tenant.shortName || context.tenant.name;
+  return {
+    kind: "account-panel" as const,
+    name: context.userName ?? context.userId,
+    initials: context.userInitials ?? (context.userName ?? context.userId).slice(0, 1).toUpperCase(),
+    account: context.userAccount ?? context.userId,
+    badgeLabel: roleName,
+    verified: true,
+    organizations: [
+      {
+        id: `${context.tenant.id}-primary`,
+        orgName,
+        roleName,
+        tenantTypeLabel: tenantTypeLabels[context.tenant.type],
+        meta: "当前",
+        active: true,
+      },
+      {
+        id: `${context.tenant.id}-secondary`,
+        orgName: context.tenant.type === "bureau" ? "辖区协作组" : "跨校协作组",
+        roleName: "协作者",
+        tenantTypeLabel: tenantTypeLabels[context.tenant.type],
+        meta: "备用",
+      },
+    ],
+    goals: [
+      {
+        id: "tasks",
+        title: "待办处理",
+        remainingLabel: "还剩 3 项",
+        progress: 58,
+        tone: "primary" as const,
+        icon: "ClipboardList",
+      },
+      {
+        id: "messages",
+        title: "消息回复",
+        remainingLabel: "还剩 5 条",
+        progress: 72,
+        tone: "warning" as const,
+        icon: "MessageSquareText",
+      },
+      {
+        id: "learning",
+        title: "资源学习",
+        remainingLabel: "还剩 2 课时",
+        progress: 64,
+        tone: "primary" as const,
+        icon: "BookOpen",
+      },
+      {
+        id: "training",
+        title: "培训学时",
+        remainingLabel: "还剩 1.5 小时",
+        progress: 82,
+        tone: "success" as const,
+        icon: "GraduationCap",
+      },
+    ],
+  };
+}
+
 export class MockWorkbenchDataSource implements WorkbenchDataSource {
   async load(
     definition: WorkbenchWidgetDefinition,
@@ -332,6 +403,9 @@ export class MockWorkbenchDataSource implements WorkbenchDataSource {
           { label: "我的订阅", value: 0, target: overviewTarget(/订阅/) },
         ],
       };
+    }
+    if (definition.kind === "account-panel") {
+      return accountPanelData(context);
     }
     if (definition.kind === "metric") {
       const metric = metricValues[definition.dataKey] ?? {

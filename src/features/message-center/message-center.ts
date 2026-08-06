@@ -19,25 +19,49 @@ export interface MessageCenterItem {
   isUnread: boolean;
 }
 
+export type PublicFeedGroupKey = keyof typeof bureauPublicFeedData;
+
 const PUBLIC_FEED_GROUPS: ReadonlyArray<{
-  key: keyof typeof bureauPublicFeedData;
+  key: PublicFeedGroupKey;
   category: MessageCenterItem["category"];
 }> = [
   { key: "announcements", category: "通知公告" },
   { key: "information-disclosure", category: "信息公开" },
 ];
 
-function itemId(groupKey: keyof typeof bureauPublicFeedData, item: WorkbenchFeedItemData) {
-  return `${groupKey}:${item.id}`;
+export function messageCenterItemId(groupKey: PublicFeedGroupKey, itemId: string) {
+  return `${groupKey}:${itemId}`;
+}
+
+export function resolvePublicFeedMessageId(itemId: string): string | null {
+  for (const { key } of PUBLIC_FEED_GROUPS) {
+    if (bureauPublicFeedData[key].some((item) => item.id === itemId)) {
+      return messageCenterItemId(key, itemId);
+    }
+  }
+  return null;
+}
+
+export function supportsMessageCenterFeed(tenantType: TenantType) {
+  return tenantType === "bureau";
+}
+
+export function messageCenterEmptyDescription(
+  tenantType: TenantType,
+  activeCategory: "all" | MessageCenterItem["category"],
+) {
+  if (!supportsMessageCenterFeed(tenantType)) return "当前机构暂无消息";
+  if (activeCategory !== "all") return "该分类下暂无消息";
+  return "暂无通知公告或公开信息";
 }
 
 export function toMessageCenterItems(
   tenantType: TenantType,
   readItemIds: ReadonlySet<string> = new Set(),
 ): MessageCenterItem[] {
-  if (tenantType !== "bureau") return [];
+  if (!supportsMessageCenterFeed(tenantType)) return [];
   return PUBLIC_FEED_GROUPS.flatMap(({ key, category }) => bureauPublicFeedData[key].map((item) => {
-    const id = itemId(key, item);
+    const id = messageCenterItemId(key, item.id);
     return {
       id,
       category,
@@ -49,4 +73,13 @@ export function toMessageCenterItems(
       isUnread: Boolean(item.unread) && !readItemIds.has(id),
     };
   }));
+}
+
+export function isSourceFeedItemUnread(
+  item: WorkbenchFeedItemData,
+  readItemIds: ReadonlySet<string>,
+) {
+  const messageId = resolvePublicFeedMessageId(item.id);
+  if (!messageId) return Boolean(item.unread);
+  return Boolean(item.unread) && !readItemIds.has(messageId);
 }

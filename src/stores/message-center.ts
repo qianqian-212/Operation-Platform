@@ -5,6 +5,10 @@ import {
   type MessageCenterContext,
   type MessageCenterItem,
 } from "@/features/message-center/message-center";
+import {
+  loadMessageCenterReadIds,
+  saveMessageCenterReadIds,
+} from "@/features/message-center/message-center-read-storage";
 
 function contextKey(context: MessageCenterContext) {
   return `${context.tenantId}:${context.userId}`;
@@ -15,8 +19,33 @@ export const useMessageCenterStore = defineStore("message-center", () => {
   const items = ref<MessageCenterItem[]>([]);
   const loading = ref(false);
   const errorMessage = ref("");
+  const readIdsByContext = ref<Record<string, string[]>>({});
   const unreadCount = computed(() => items.value.filter((item) => item.isUnread).length);
-  const readItemIdsByContext = new Map<string, Set<string>>();
+
+  function readSetFor(context: MessageCenterContext) {
+    const key = contextKey(context);
+    if (!(key in readIdsByContext.value)) {
+      readIdsByContext.value = {
+        ...readIdsByContext.value,
+        [key]: [...loadMessageCenterReadIds(key)],
+      };
+    }
+    return new Set(readIdsByContext.value[key] ?? []);
+  }
+
+  function ensureReadState(context: MessageCenterContext) {
+    if (!context.tenantId || !context.userId) return;
+    readSetFor(context);
+  }
+
+  function persistReadSet(context: MessageCenterContext, readItemIds: Set<string>) {
+    const key = contextKey(context);
+    readIdsByContext.value = {
+      ...readIdsByContext.value,
+      [key]: [...readItemIds],
+    };
+    saveMessageCenterReadIds(key, readItemIds);
+  }
 
   function refresh(context: MessageCenterContext) {
     if (!context.tenantId || !context.userId) {
@@ -25,9 +54,7 @@ export const useMessageCenterStore = defineStore("message-center", () => {
     }
     loading.value = true;
     errorMessage.value = "";
-    const key = contextKey(context);
-    const readItemIds = readItemIdsByContext.get(key) ?? new Set<string>();
-    items.value = toMessageCenterItems(context.tenantType, readItemIds);
+    items.value = toMessageCenterItems(context.tenantType, readSetFor(context));
     loading.value = false;
   }
 
@@ -40,26 +67,28 @@ export const useMessageCenterStore = defineStore("message-center", () => {
     isOpen.value = false;
   }
 
+  function isRead(context: MessageCenterContext, itemId: string) {
+    return readSetFor(context).has(itemId);
+  }
+
   function markRead(context: MessageCenterContext, itemId: string) {
-    const item = items.value.find((candidate) => candidate.id === itemId);
-    if (!item || !item.isUnread) return;
-    const key = contextKey(context);
-    const readItemIds = readItemIdsByContext.get(key) ?? new Set<string>();
+    const readItemIds = readSetFor(context);
+    if (readItemIds.has(itemId)) {
+      refresh(context);
+      return;
+    }
     readItemIds.add(itemId);
-    readItemIdsByContext.set(key, readItemIds);
-    items.value = items.value.map((candidate) => candidate.id === itemId
-      ? { ...candidate, isUnread: false }
-      : candidate);
+    persistReadSet(context, readItemIds);
+    refresh(context);
   }
 
   function markAllRead(context: MessageCenterContext) {
     const unreadIds = items.value.filter((item) => item.isUnread).map((item) => item.id);
     if (!unreadIds.length) return;
-    const key = contextKey(context);
-    const readItemIds = readItemIdsByContext.get(key) ?? new Set<string>();
+    const readItemIds = readSetFor(context);
     unreadIds.forEach((itemId) => readItemIds.add(itemId));
-    readItemIdsByContext.set(key, readItemIds);
-    items.value = items.value.map((item) => ({ ...item, isUnread: false }));
+    persistReadSet(context, readItemIds);
+    refresh(context);
   }
 
   return {
@@ -68,9 +97,12 @@ export const useMessageCenterStore = defineStore("message-center", () => {
     loading,
     errorMessage,
     unreadCount,
+    readIdsByContext,
     refresh,
     open,
     close,
+    ensureReadState,
+    isRead,
     markRead,
     markAllRead,
   };

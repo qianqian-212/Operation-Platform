@@ -49,6 +49,20 @@ function metrics(
   }));
 }
 
+function accountPanel(position: { x: number; y: number; w: number; h: number }): WidgetSpec {
+  return {
+    id: "account-panel",
+    title: "个人面板",
+    description: "当前账号、任职单位与本周目标进度。",
+    kind: "account-panel",
+    tone: "primary",
+    position,
+    settings: { kind: "none" },
+    minSize: { w: 3, h: 5 },
+    maxSize: { w: 6, h: 8 },
+  };
+}
+
 function adminPanels(
   trend: Pick<WidgetSpec, "id" | "title" | "description">,
   list: Pick<WidgetSpec, "id" | "title" | "description" | "tone">,
@@ -356,7 +370,7 @@ const templateSpecs: TemplateSpec[] = [
   {
     tenantType: "school",
     profile: "admin",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "student-count", title: "在校学生", description: "当前组织在校学生规模。", tone: "primary" },
@@ -370,12 +384,13 @@ const templateSpecs: TemplateSpec[] = [
         { id: "notices", title: "通知工作", description: "近期校务通知与发布状态。", tone: "neutral" },
         { id: "student-distribution", title: "学生分布", description: "学生按年级的结构分布。" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "school",
     profile: "business",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "today-courses", title: "今日课程", description: "今天安排的课程数量。", tone: "primary" },
@@ -387,12 +402,13 @@ const templateSpecs: TemplateSpec[] = [
         { id: "my-tasks", title: "我的待办", description: "按优先级整理的个人任务。", tone: "warning" },
         { id: "notices", title: "通知工作", description: "与当前工作相关的最新通知。", tone: "neutral" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "bureau",
     profile: "admin",
-    revision: 6,
+    revision: 7,
     widgets: [
       ...metrics([
         { id: "school-count", title: "覆盖学校", description: "当前教育局纳管的学校数量。", tone: "primary" },
@@ -424,12 +440,13 @@ const templateSpecs: TemplateSpec[] = [
       },
       ...bureauPortalPanels(6),
       ...bureauResourcePanels(25),
+      accountPanel({ x: 8, y: 38, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "bureau",
     profile: "business",
-    revision: 6,
+    revision: 7,
     widgets: [
       ...metrics([
         { id: "my-reviews", title: "我的审核", description: "分配给本人的审核事项。", tone: "primary" },
@@ -438,12 +455,13 @@ const templateSpecs: TemplateSpec[] = [
       ], true),
       ...bureauPortalPanels(2),
       ...bureauResourcePanels(21),
+      accountPanel({ x: 8, y: 34, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "org",
     profile: "admin",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "course-count", title: "在售课程", description: "当前可报名课程数量。", tone: "primary" },
@@ -457,12 +475,13 @@ const templateSpecs: TemplateSpec[] = [
         { id: "notices", title: "通知工作", description: "近期机构运营通知。", tone: "neutral" },
         { id: "teacher-status", title: "师资状态", description: "教师审核与在岗状态分布。" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "org",
     profile: "business",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "today-classes", title: "今日课班", description: "今天需要授课的课班数量。", tone: "primary" },
@@ -474,12 +493,13 @@ const templateSpecs: TemplateSpec[] = [
         { id: "my-tasks", title: "我的待办", description: "需要本人处理的课程工作。", tone: "warning" },
         { id: "notices", title: "通知工作", description: "与课程和课班相关的通知。", tone: "neutral" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "platform",
     profile: "admin",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "tenant-count", title: "租户总数", description: "平台当前维护的租户数量。", tone: "primary" },
@@ -493,12 +513,13 @@ const templateSpecs: TemplateSpec[] = [
         { id: "notices", title: "平台通知", description: "平台运营与维护通知。", tone: "neutral" },
         { id: "tenant-distribution", title: "组织分布", description: "租户按组织类型分布。" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
   {
     tenantType: "platform",
     profile: "business",
-    revision: 1,
+    revision: 2,
     widgets: [
       ...metrics([
         { id: "pending-tasks", title: "个人待办", description: "当前需要处理的运营任务。", tone: "primary" },
@@ -510,6 +531,7 @@ const templateSpecs: TemplateSpec[] = [
         { id: "my-tasks", title: "我的待办", description: "按优先级整理的平台任务。", tone: "warning" },
         { id: "notices", title: "服务通知", description: "平台服务与维护通知。", tone: "neutral" },
       ),
+      accountPanel({ x: 8, y: 9, w: 4, h: 6 }),
     ],
   },
 ];
@@ -542,6 +564,8 @@ function defaultHeightPolicy(kind: WorkbenchWidgetKind): WorkbenchWidgetHeightPo
       return { mode: "intrinsic", minHeight: 132, preferredHeight: 148, maxContentHeight: 180 };
     case "user-overview":
       return { mode: "intrinsic", minHeight: 123, preferredHeight: 144, maxContentHeight: 220 };
+    case "account-panel":
+      return { mode: "intrinsic", minHeight: 520, preferredHeight: 600, maxContentHeight: 720 };
     case "list":
     case "schedule":
     case "distribution":

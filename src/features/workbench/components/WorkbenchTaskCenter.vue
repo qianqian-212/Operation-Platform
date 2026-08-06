@@ -1,16 +1,16 @@
 <template>
   <div class="task-center">
     <WorkbenchSecondaryTabs v-model="activeFilter" :options="filterOptions" aria-label="待办状态" />
-    <el-empty v-if="!filteredItems.length" description="暂无相关事项" :image-size="52" />
-    <ul v-else>
+    <el-empty v-if="!filteredItems.length" :description="emptyDescription" :image-size="52" />
+    <ul v-else class="task-list" aria-label="待办列表">
       <li v-for="item in filteredItems" :key="item.id" :class="{ 'is-completed': item.status === 'completed' }">
         <el-checkbox
           :model-value="item.status === 'completed'"
-          :aria-label="`${item.title}标记为完成`"
+          :aria-label="item.status === 'completed' ? `恢复待办：${item.title}` : `标记完成：${item.title}`"
           @change="toggleItem(item.id)"
         />
-        <button type="button" @click="openDetail(item)">
-          <span>
+        <button type="button" class="task-item" @click="openDetail(item)">
+          <span class="task-meta">
             <el-tag size="small" effect="plain" :type="tagType(item.tone)">{{ item.label }}</el-tag>
             <small>{{ item.meta }}</small>
           </span>
@@ -58,6 +58,11 @@ const filteredItems = computed(() => activeFilter.value === "all"
   ? items.value
   : items.value.filter((item) => item.status === activeFilter.value));
 const selectedItem = computed(() => items.value.find((item) => item.id === selectedItemId.value) ?? null);
+const emptyDescription = computed(() => {
+  if (activeFilter.value === "pending") return "暂无待处理事项";
+  if (activeFilter.value === "completed") return "暂无已完成事项";
+  return "暂无事项";
+});
 
 function tagType(tone?: WorkbenchWidgetTone) {
   return ({ primary: "primary", success: "success", warning: "warning", danger: "danger", neutral: "info" } as const)[tone ?? "neutral"];
@@ -85,14 +90,14 @@ function toggleItem(id: string) {
   gap: var(--spacing-12);
 }
 
-.task-center ul {
+.task-list {
   padding: 0;
   margin: 0;
   overflow: auto;
   list-style: none;
 }
 
-.task-center li {
+.task-list li {
   display: flex;
   align-items: center;
   min-height: 56px;
@@ -100,39 +105,50 @@ function toggleItem(id: string) {
   border-bottom: 1px solid var(--color-border);
 }
 
-.task-center li.is-completed strong {
+.task-list li.is-completed strong {
   color: var(--color-secondary);
   text-decoration: line-through;
 }
 
-.task-center li button {
+.task-item {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
   gap: var(--spacing-4);
-  padding: var(--spacing-8) 0;
+  padding: var(--spacing-8) var(--spacing-4);
+  margin-inline: calc(-1 * var(--spacing-4));
   font: inherit;
   text-align: left;
   background: transparent;
   border: 0;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
-.task-center li button > span,
+.task-item:hover strong {
+  color: var(--color-primary);
+}
+
+.task-item:focus-visible {
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 0;
+}
+
+.task-meta,
 .task-detail-meta {
   display: flex;
   align-items: center;
   gap: var(--spacing-8);
 }
 
-.task-center small,
+.task-item small,
 .task-detail-meta span {
   color: var(--color-secondary);
   font-size: var(--font-size-xs);
 }
 
-.task-center strong {
+.task-item strong {
   overflow: hidden;
   color: var(--color-body);
   font-size: var(--font-size-sm);

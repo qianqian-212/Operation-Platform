@@ -58,11 +58,11 @@ test("顶部消息入口复用工作台公开信息并打开抽屉", async ({ pa
   expect(messageBounds!.x + messageBounds!.width).toBeLessThan(userBounds!.x);
 
   await messageEntry.click();
-  const drawer = page.getByRole("dialog", { name: "消息" });
+  const drawer = page.getByRole("dialog", { name: "消息中心" });
   await expect(drawer).toBeVisible();
   await expect(drawer.getByText(/条未读/)).toHaveCount(0);
-  await expect(drawer.locator(".message-category-sticky")).toHaveCSS("position", "sticky");
-  await expect(drawer.getByText("暂无通知公告或公开信息", { exact: true })).toBeVisible();
+  await expect(drawer.locator(".message-category-sticky")).toHaveCount(0);
+  await expect(drawer.getByText("当前机构暂无消息", { exact: true })).toBeVisible();
 
   await drawer.getByRole("button", { name: "查看工作台" }).click();
   await expect(page).toHaveURL(/\/workbench$/);
@@ -72,6 +72,7 @@ test("顶部消息入口复用工作台公开信息并打开抽屉", async ({ pa
   await expect(page.getByRole("button", { name: /教育局 体验区教育局/ })).toBeVisible();
 
   await messageEntry.click();
+  await expect(drawer.locator(".message-category-sticky")).toHaveCSS("position", "sticky");
   await expect(drawer.getByText("关于报送暑期值班安排的通知", { exact: true })).toBeVisible();
   await expect(drawer.getByText("2026 年义务教育招生工作实施方案", { exact: true })).toBeVisible();
   const stickyTabs = drawer.locator(".message-category-sticky");
@@ -84,7 +85,7 @@ test("顶部消息入口复用工作台公开信息并打开抽屉", async ({ pa
   await drawer.getByRole("button", { name: /关于报送暑期值班安排的通知/ }).click();
   await expect(drawer.getByRole("heading", { name: "关于报送暑期值班安排的通知" })).toBeVisible();
   await expect(drawer.getByText("请各单位于本周五前完成暑期值班表在线填报，并确认应急联系人信息。", { exact: true })).toBeVisible();
-  await drawer.getByRole("button", { name: "返回消息" }).click();
+  await drawer.getByRole("button", { name: "返回消息中心" }).click();
 });
 
 test("访问系统页面时自动进入运营平台租户", async ({ page }) => {

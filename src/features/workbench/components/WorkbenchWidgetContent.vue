@@ -17,7 +17,7 @@
         <span>{{ item.meta }}</span>
       </div>
     </li>
-    <li v-if="!data.items.length" class="empty-row">暂无内容</li>
+    <li v-if="!data.items.length" class="empty-row">暂无列表内容</li>
   </ul>
 
   <div v-else-if="data.kind === 'distribution'" class="distribution-content">
@@ -55,9 +55,12 @@
   <WorkbenchQuickApps v-else-if="data.kind === 'quick-links'" :data="data" />
 
   <WorkbenchUserOverview v-else-if="data.kind === 'user-overview'" :data="data" />
+
+  <WorkbenchAccountPanel v-else-if="data.kind === 'account-panel'" :data="data" />
 </template>
 
 <script setup lang="ts">
+import WorkbenchAccountPanel from "@/features/workbench/components/WorkbenchAccountPanel.vue";
 import WorkbenchActivityRank from "@/features/workbench/components/WorkbenchActivityRank.vue";
 import WorkbenchCalendarAgenda from "@/features/workbench/components/WorkbenchCalendarAgenda.vue";
 import WorkbenchBureauFeed from "@/features/workbench/components/WorkbenchBureauFeed.vue";
@@ -89,6 +92,7 @@ defineProps<{
 .metric-content strong {
   color: var(--color-title);
   font-size: 30px;
+  font-variant-numeric: tabular-nums;
   line-height: 36px;
 }
 
@@ -99,6 +103,7 @@ defineProps<{
 
 .metric-content .trend-up { color: var(--color-success-dark-text); }
 .metric-content .trend-down { color: var(--color-error-dark-text); }
+.metric-content .trend-neutral { color: var(--color-secondary); }
 
 .distribution-label {
   display: flex;

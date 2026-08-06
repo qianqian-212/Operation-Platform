@@ -4,18 +4,23 @@
       <strong>{{ data.rank }}</strong>
       <span>当前排名</span>
     </div>
-    <div class="activity-change" :class="{ 'is-down': data.change < 0 }">
+    <div class="activity-change" :class="{ 'is-down': isDown }">
       <span>{{ data.summary }}</span>
-      <strong>{{ Math.abs(data.change) }}</strong>
-      <span aria-hidden="true">{{ data.change < 0 ? "↓" : "↑" }}</span>
+      <strong>
+        <span class="change-direction">{{ isDown ? "下降" : "上升" }}</span>
+        {{ Math.abs(data.change) }}
+      </strong>
+      <span class="change-glyph" aria-hidden="true">{{ isDown ? "↓" : "↑" }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import type { WorkbenchActivityRankData } from "@/features/workbench/types";
 
-defineProps<{ data: WorkbenchActivityRankData }>();
+const props = defineProps<{ data: WorkbenchActivityRankData }>();
+const isDown = computed(() => props.data.change < 0);
 </script>
 
 <style scoped>
@@ -54,7 +59,30 @@ defineProps<{ data: WorkbenchActivityRankData }>();
   font-size: var(--font-size-md);
 }
 
-.activity-change strong { font-size: 24px; }
-.activity-change.is-down { color: var(--color-error-dark-text); }
-.activity-change.is-down strong { color: var(--color-error-dark-text); }
+.activity-change strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-4);
+  font-size: 24px;
+}
+
+.change-direction {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-md);
+}
+
+.change-glyph {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.activity-change.is-down {
+  color: var(--color-error-dark-text);
+}
+
+.activity-change.is-down strong,
+.activity-change.is-down .change-direction {
+  color: var(--color-error-dark-text);
+}
 </style>

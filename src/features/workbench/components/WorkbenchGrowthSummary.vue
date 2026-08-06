@@ -57,6 +57,7 @@ function adjustedValue(value: number) {
 .growth-score > strong {
   color: var(--color-primary);
   font-size: 32px;
+  font-variant-numeric: tabular-nums;
   line-height: 36px;
 }
 

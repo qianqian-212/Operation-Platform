@@ -2,18 +2,19 @@
   <el-drawer
     v-model="visible"
     class="message-center-drawer"
-    title="消息"
+    title="消息中心"
     size="min(400px, 100vw)"
     append-to-body
     @closed="selectedItem = null"
   >
     <template #header>
       <div class="drawer-heading">
-        <h2>消息</h2>
+        <h2>消息中心</h2>
         <el-button
           v-if="!selectedItem && messageStore.unreadCount"
           text
           type="primary"
+          class="mark-all-read"
           @click="markAllRead"
         >
           全部已读
@@ -21,7 +22,7 @@
       </div>
     </template>
 
-    <div v-loading="messageStore.loading" class="message-center-content">
+    <div v-loading="messageStore.loading" class="message-center-content" :class="{ 'is-detail': selectedItem }">
       <p v-if="messageStore.errorMessage" class="message-error" role="alert">
         {{ messageStore.errorMessage }}
       </p>
@@ -30,7 +31,7 @@
         <div class="message-detail-view">
           <button type="button" class="detail-back" @click="selectedItem = null">
             <el-icon><ArrowLeft /></el-icon>
-            返回消息
+            返回消息中心
           </button>
           <article class="message-detail">
             <div class="message-detail-meta">
@@ -44,7 +45,7 @@
       </template>
 
       <template v-else>
-        <div class="message-category-sticky">
+        <div v-if="showCategoryTabs" class="message-category-sticky">
           <WorkbenchSecondaryTabs
             v-model="activeCategory"
             class="message-category-tabs"
@@ -53,12 +54,11 @@
           />
         </div>
         <div v-if="!filteredItems.length && !messageStore.loading" class="message-empty">
-          <el-empty description="暂无通知公告或公开信息" :image-size="72" />
+          <el-empty :description="emptyDescription" :image-size="72" />
         </div>
         <ul v-else class="message-list" aria-label="消息列表">
           <li v-for="item in filteredItems" :key="item.id" :class="{ 'is-unread': item.isUnread }">
             <button type="button" class="message-item" @click="selectMessage(item)">
-              <span class="message-item-marker" aria-hidden="true" />
               <span class="message-item-content">
                 <span class="message-item-topline">
                   <span class="message-category">{{ item.category }}</span>
@@ -74,15 +74,14 @@
       </template>
     </div>
 
-    <template #footer>
+    <template v-if="!selectedItem" #footer>
       <el-button
-        v-if="!selectedItem"
-        class="workbench-link"
+        class="primary-entry-link"
         text
         type="primary"
-        @click="openWorkbench"
+        @click="openPrimaryEntry"
       >
-        查看工作台
+        {{ primaryEntryLabel }}
       </el-button>
     </template>
   </el-drawer>
@@ -94,14 +93,21 @@ import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ArrowLeft } from "@element-plus/icons-vue";
 import WorkbenchSecondaryTabs from "@/features/workbench/components/WorkbenchSecondaryTabs.vue";
-import type { MessageCenterItem } from "@/features/message-center/message-center";
+import {
+  messageCenterEmptyDescription,
+  supportsMessageCenterFeed,
+  type MessageCenterItem,
+} from "@/features/message-center/message-center";
 import { useMessageCenterStore } from "@/stores/message-center";
+import { useNavigationStore } from "@/stores/navigation";
 import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
 const userStore = useUserStore();
+const navigationStore = useNavigationStore();
 const messageStore = useMessageCenterStore();
 const { currentTenant, userInfo } = storeToRefs(userStore);
+const { workbenchConfig, defaultEntryPath } = storeToRefs(navigationStore);
 const activeCategory = ref<"all" | MessageCenterItem["category"]>("all");
 const selectedItem = ref<MessageCenterItem | null>(null);
 const categoryOptions = [
@@ -116,9 +122,17 @@ const context = computed(() => ({
   tenantType: currentTenant.value.type,
 }));
 const contextKey = computed(() => `${context.value.tenantId}:${context.value.userId}`);
+const showCategoryTabs = computed(() => supportsMessageCenterFeed(context.value.tenantType));
+const emptyDescription = computed(() => messageCenterEmptyDescription(
+  context.value.tenantType,
+  activeCategory.value,
+));
 const filteredItems = computed(() => activeCategory.value === "all"
   ? messageStore.items
   : messageStore.items.filter((item) => item.category === activeCategory.value));
+const primaryEntryLabel = computed(() =>
+  workbenchConfig.value.enabled ? "查看工作台" : "打开首页",
+);
 const visible = computed({
   get: () => messageStore.isOpen,
   set: (open: boolean) => {
@@ -144,27 +158,47 @@ function markAllRead() {
   messageStore.markAllRead(context.value);
 }
 
-async function openWorkbench() {
+async function openPrimaryEntry() {
   messageStore.close();
-  await router.push("/workbench");
+  if (workbenchConfig.value.enabled) {
+    await router.push("/workbench");
+    return;
+  }
+  await router.push(defaultEntryPath.value);
 }
 </script>
 
 <style scoped>
+:global(.message-center-drawer.el-drawer) {
+  --message-drawer-inline: var(--spacing-24);
+  --message-drawer-stack: var(--spacing-16);
+}
+
 :global(.message-center-drawer .el-drawer__header) {
-  padding: var(--spacing-20) var(--spacing-24);
+  padding:
+    max(var(--spacing-20), env(safe-area-inset-top, 0px))
+    calc(var(--message-drawer-inline) + 40px)
+    var(--spacing-16)
+    var(--message-drawer-inline);
   margin-bottom: 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 :global(.message-center-drawer .el-drawer__body) {
+  display: flex;
+  flex-direction: column;
   padding: 0;
+  overscroll-behavior: contain;
 }
 
 :global(.message-center-drawer .el-drawer__footer) {
   display: flex;
   justify-content: flex-end;
-  padding: var(--spacing-12) var(--spacing-20);
+  gap: var(--spacing-8);
+  padding:
+    var(--spacing-12)
+    var(--message-drawer-inline)
+    max(var(--spacing-16), env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-border);
 }
 
@@ -172,26 +206,41 @@ async function openWorkbench() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-16);
+  gap: var(--spacing-12);
   width: 100%;
-  padding-right: var(--spacing-16);
+  min-width: 0;
 }
 
 .drawer-heading h2 {
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
   color: var(--color-title);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mark-all-read {
+  flex-shrink: 0;
 }
 
 .message-center-content {
-  min-height: 160px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.message-center-content.is-detail {
+  min-height: 240px;
 }
 
 .message-error {
-  margin: var(--spacing-16) var(--spacing-24);
-  padding: var(--spacing-12);
+  margin: var(--message-drawer-stack) var(--message-drawer-inline);
+  padding: var(--spacing-12) var(--spacing-16);
   color: var(--color-error-dark-text);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-lg);
@@ -203,7 +252,7 @@ async function openWorkbench() {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: var(--spacing-8) var(--spacing-24) 0;
+  padding: var(--spacing-8) var(--message-drawer-inline) 0;
   background: var(--color-white);
   border-bottom: 1px solid var(--color-border);
 }
@@ -222,7 +271,7 @@ async function openWorkbench() {
 
 .message-category-tabs :deep(.secondary-tabs) {
   height: 100%;
-  gap: var(--spacing-24);
+  gap: var(--spacing-20);
 }
 
 .message-category-tabs :deep(.secondary-tab) {
@@ -262,7 +311,12 @@ async function openWorkbench() {
 }
 
 .message-empty {
-  padding: var(--spacing-24);
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: var(--spacing-32) var(--message-drawer-inline);
 }
 
 .message-list {
@@ -271,24 +325,40 @@ async function openWorkbench() {
   list-style: none;
 }
 
-.message-list li {
-  border-bottom: 1px solid var(--color-border);
+.message-list li + li {
+  border-top: 1px solid var(--color-border);
 }
 
 .message-item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   width: 100%;
-  min-height: 82px;
-  gap: var(--spacing-10);
-  padding: var(--spacing-12) var(--spacing-24);
+  min-height: 76px;
+  gap: var(--spacing-12);
+  padding: var(--spacing-14) var(--message-drawer-inline);
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: start;
   background: transparent;
   border: 0;
   cursor: pointer;
-  transition: background-color 180ms ease;
+  transition: background-color 160ms ease;
+}
+
+.message-item::before {
+  position: absolute;
+  top: var(--spacing-16);
+  bottom: var(--spacing-16);
+  inset-inline-start: calc(var(--message-drawer-inline) - var(--spacing-12));
+  width: 2px;
+  background: transparent;
+  border-radius: var(--radius-full);
+  content: "";
+}
+
+.is-unread .message-item::before {
+  background: var(--color-primary);
 }
 
 .message-item:hover {
@@ -301,22 +371,11 @@ async function openWorkbench() {
   outline-offset: -2px;
 }
 
-.message-item-marker {
-  width: 2px;
-  height: 32px;
-  margin-top: var(--spacing-4);
-  flex: 0 0 2px;
-  background: transparent;
-}
-
-.is-unread .message-item-marker {
-  background: var(--color-primary);
-}
-
 .message-item-content {
   display: grid;
   min-width: 0;
   flex: 1;
+  gap: var(--spacing-2);
 }
 
 .message-item-topline {
@@ -335,23 +394,20 @@ async function openWorkbench() {
   line-height: var(--line-height-xs);
 }
 
-.message-category {
-  color: var(--color-secondary);
-}
-
 .message-item-topline time {
   flex-shrink: 0;
 }
 
 .message-item strong {
-  margin-top: var(--spacing-2);
+  display: -webkit-box;
   overflow: hidden;
   color: var(--color-body);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: pretty;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .is-unread .message-item strong {
@@ -360,32 +416,39 @@ async function openWorkbench() {
 }
 
 .message-source {
-  margin-top: var(--spacing-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.message-detail-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  padding: var(--message-drawer-stack) var(--message-drawer-inline) var(--spacing-24);
+}
+
 .detail-back {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  align-self: flex-start;
+  min-height: 36px;
   gap: var(--spacing-4);
-  padding: 0 var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-8);
+  margin-inline-start: calc(-1 * var(--spacing-8));
   color: var(--color-body);
   font: inherit;
   font-size: var(--font-size-sm);
   background: transparent;
   border: 0;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-}
-
-.message-detail-view {
-  padding: var(--spacing-16) var(--spacing-24) var(--spacing-24);
 }
 
 .detail-back:hover {
   color: var(--color-primary);
+  background: var(--color-bg-page);
 }
 
 .detail-back :deep(svg) {
@@ -394,11 +457,15 @@ async function openWorkbench() {
 }
 
 .message-detail {
-  padding: var(--spacing-16) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  padding-block: var(--spacing-8);
 }
 
 .message-detail-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-8);
   color: var(--color-secondary);
@@ -411,11 +478,12 @@ async function openWorkbench() {
 }
 
 .message-detail h3 {
-  margin: var(--spacing-12) 0 var(--spacing-16);
+  margin: 0;
   color: var(--color-title);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-lg);
+  text-wrap: balance;
 }
 
 .message-detail p {
@@ -423,10 +491,11 @@ async function openWorkbench() {
   color: var(--color-body);
   font-size: var(--font-size-md);
   line-height: 1.75;
+  text-wrap: pretty;
 }
 
-.workbench-link {
-  margin-left: auto;
+.primary-entry-link {
+  margin-inline-start: auto;
 }
 
 .sr-only {
@@ -442,6 +511,8 @@ async function openWorkbench() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .message-item { transition: none; }
+  .message-item {
+    transition: none;
+  }
 }
 </style>

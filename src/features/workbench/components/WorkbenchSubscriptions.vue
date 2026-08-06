@@ -1,16 +1,21 @@
 <template>
-  <ul class="subscription-list">
+  <el-empty
+    v-if="!items.length"
+    description="暂无订阅栏目"
+    :image-size="52"
+  />
+  <ul v-else class="subscription-list" aria-label="订阅列表">
     <li v-for="item in items" :key="item.id">
-      <div>
-        <span>
+      <div class="subscription-copy">
+        <span class="subscription-meta">
           <el-tag v-if="item.label" size="small" effect="plain">{{ item.label }}</el-tag>
           <small>{{ item.meta }}</small>
         </span>
-        <strong>{{ item.title }}</strong>
+        <strong :title="item.title">{{ item.title }}</strong>
       </div>
       <el-switch
         v-model="item.subscribed"
-        :aria-label="`${item.subscribed ? '取消订阅' : '订阅'}${item.title}`"
+        :aria-label="`订阅${item.title}`"
         @change="notifyChange(item.title, item.subscribed)"
       />
     </li>
@@ -41,8 +46,9 @@ function notifyChange(title: string, subscribed: boolean) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 48px;
+  min-height: 52px;
   gap: var(--spacing-12);
+  padding-block: var(--spacing-4);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -50,18 +56,18 @@ function notifyChange(title: string, subscribed: boolean) {
   border-bottom: 0;
 }
 
-.subscription-list li > div,
-.subscription-list li > div > span {
+.subscription-copy,
+.subscription-meta {
   display: flex;
   min-width: 0;
 }
 
-.subscription-list li > div {
+.subscription-copy {
   flex-direction: column;
   gap: var(--spacing-4);
 }
 
-.subscription-list li > div > span {
+.subscription-meta {
   align-items: center;
   gap: var(--spacing-8);
 }

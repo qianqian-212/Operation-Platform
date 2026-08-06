@@ -4,10 +4,16 @@
       v-if="moduleOptions.length"
       v-model="activeModuleId"
       :options="moduleOptions"
+      :panel-id="panelId"
       aria-label="快捷导航一级菜单"
     />
 
-    <div class="quick-navigation-grid">
+    <div
+      :id="panelId"
+      class="quick-navigation-grid"
+      role="tabpanel"
+      aria-label="快捷导航页面"
+    >
       <RouterLink
         v-for="item in filteredItems"
         :key="item.id"
@@ -16,7 +22,7 @@
         :target="item.openMode === 'new-tab' ? '_blank' : undefined"
         :rel="item.openMode === 'new-tab' ? 'noopener noreferrer' : undefined"
       >
-        <span class="quick-navigation-icon">
+        <span class="quick-navigation-icon" aria-hidden="true">
           <component :is="resolveMenuIcon(item.icon ?? item.moduleIcon)" />
         </span>
         <span class="quick-link-name">{{ item.name }}</span>
@@ -31,13 +37,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, useId, watch } from "vue";
 import { resolveMenuIcon } from "@/components/menu-icons";
 import WorkbenchSecondaryTabs from "@/features/workbench/components/WorkbenchSecondaryTabs.vue";
 import type { WorkbenchQuickLinkData, WorkbenchQuickLinksData } from "@/features/workbench/types";
 
 const props = defineProps<{ data: WorkbenchQuickLinksData }>();
 const activeModuleId = ref("");
+const panelId = useId();
 
 const moduleOptions = computed(() => {
   const seen = new Set<string>();
@@ -80,9 +87,10 @@ function internalLocation(item: WorkbenchQuickLinkData) {
 .quick-navigation-grid {
   display: grid;
   min-height: 0;
+  flex: 1;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-content: start;
-  gap: var(--spacing-8);
+  gap: var(--spacing-12);
   overflow: auto;
 }
 
@@ -103,12 +111,18 @@ function internalLocation(item: WorkbenchQuickLinkData) {
   transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.quick-navigation-item:hover,
+.quick-navigation-item:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-line-light);
+}
+
 .quick-navigation-item:focus-visible {
   color: var(--color-primary);
   background: var(--color-primary-light);
   border-color: var(--color-primary-line-light);
-  outline: none;
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 2px;
 }
 
 .quick-link-name {
@@ -145,6 +159,12 @@ function internalLocation(item: WorkbenchQuickLinkData) {
 @container (max-width: 460px) {
   .quick-navigation-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-navigation-item {
+    transition: none;
   }
 }
 </style>

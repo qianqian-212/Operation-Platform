@@ -69,7 +69,7 @@ async function copyAccount() {
   justify-content: space-between;
   min-height: 121px;
   gap: var(--spacing-24);
-  padding: 32px;
+  padding: var(--spacing-32);
 }
 
 .user-identity,
@@ -142,28 +142,38 @@ async function copyAccount() {
 }
 
 .account-row :deep(.el-button) {
-  width: 24px;
-  height: 24px;
+  position: relative;
+  width: 32px;
+  height: 32px;
   margin-left: var(--spacing-2);
   color: var(--color-secondary);
 }
 
+.account-row :deep(.el-button:focus-visible) {
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 1px;
+}
+
 .overview-stats {
   flex-shrink: 0;
-  gap: 40px;
+  gap: var(--spacing-32);
 }
 
 .overview-stat {
   display: flex;
   min-width: 48px;
   flex-direction: column;
+  padding: var(--spacing-4);
+  margin: calc(-1 * var(--spacing-4));
   color: inherit;
+  border-radius: var(--radius-sm);
   text-decoration: none;
 }
 
 .overview-stat strong {
   color: var(--color-title);
   font-size: 18px;
+  font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-medium);
   line-height: 27px;
 }
@@ -178,6 +188,11 @@ async function copyAccount() {
 .overview-stat:not(.is-static):hover strong,
 .overview-stat:not(.is-static):hover span {
   color: var(--color-primary);
+}
+
+.overview-stat:not(.is-static):focus-visible {
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 2px;
 }
 
 @container (max-width: 680px) {

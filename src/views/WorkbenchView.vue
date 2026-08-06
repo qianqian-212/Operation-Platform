@@ -1,5 +1,6 @@
 <template>
   <div class="workbench-page">
+    <h1 class="workbench-page-title">工作台</h1>
     <section v-if="!isEditing" class="workbench-actions" aria-label="工作台操作">
       <div class="workbench-version">
         <span class="version-label">{{ layoutMode === "simple" ? "新版工作台" : "经典工作台" }}</span>
@@ -472,9 +473,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .workbench-page {
+  position: relative;
   width: min(100%, 1440px);
   min-height: 100%;
   margin: 0 auto;
+}
+
+.workbench-page-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
 }
 
 .workbench-actions {

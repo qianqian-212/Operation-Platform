@@ -1,8 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { createPinia, setActivePinia } from "pinia";
 import { bureauPublicFeedData } from "@/features/workbench/bureau-public-feed";
-import { toMessageCenterItems } from "@/features/message-center/message-center";
+import {
+  isSourceFeedItemUnread,
+  messageCenterEmptyDescription,
+  resolvePublicFeedMessageId,
+  toMessageCenterItems,
+} from "@/features/message-center/message-center";
+import {
+  loadMessageCenterReadIds,
+  saveMessageCenterReadIds,
+} from "@/features/message-center/message-center-read-storage";
+import { useMessageCenterStore } from "@/stores/message-center";
 
 describe("message center projection", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
   it("uses the same notification and disclosure source as the bureau workbench", () => {
     const items = toMessageCenterItems("bureau");
 
@@ -25,5 +41,39 @@ describe("message center projection", () => {
 
     expect(readItems.find((item) => item.id === "announcements:announcement-1")?.isUnread).toBe(false);
     expect(toMessageCenterItems("school")).toEqual([]);
+    expect(messageCenterEmptyDescription("school", "all")).toBe("当前机构暂无消息");
+    expect(messageCenterEmptyDescription("bureau", "信息公开")).toBe("该分类下暂无消息");
+  });
+
+  it("maps workbench public feed items onto the shared message ids", () => {
+    expect(resolvePublicFeedMessageId("announcement-1")).toBe("announcements:announcement-1");
+    expect(resolvePublicFeedMessageId("disclosure-1")).toBe("information-disclosure:disclosure-1");
+    expect(resolvePublicFeedMessageId("news-1")).toBeNull();
+    expect(isSourceFeedItemUnread(
+      bureauPublicFeedData.announcements[0]!,
+      new Set(["announcements:announcement-1"]),
+    )).toBe(false);
+  });
+
+  it("persists read state across store refresh", () => {
+    const store = useMessageCenterStore();
+    const context = { tenantId: "bureau-001", userId: "user-1", tenantType: "bureau" as const };
+
+    store.refresh(context);
+    expect(store.unreadCount).toBeGreaterThan(0);
+    store.markRead(context, "announcements:announcement-1");
+    expect(store.isRead(context, "announcements:announcement-1")).toBe(true);
+    expect(loadMessageCenterReadIds("bureau-001:user-1").has("announcements:announcement-1")).toBe(true);
+
+    setActivePinia(createPinia());
+    const restored = useMessageCenterStore();
+    restored.refresh(context);
+    expect(restored.isRead(context, "announcements:announcement-1")).toBe(true);
+    expect(restored.items.find((item) => item.id === "announcements:announcement-1")?.isUnread).toBe(false);
+  });
+
+  it("writes and reads the localStorage read-state document", () => {
+    saveMessageCenterReadIds("bureau-001:user-1", new Set(["announcements:announcement-1"]));
+    expect([...loadMessageCenterReadIds("bureau-001:user-1")]).toEqual(["announcements:announcement-1"]);
   });
 });

@@ -9,12 +9,16 @@
         'is-simple': layoutMode === 'simple',
         'is-simple-flow': simpleLayoutType === 'flow',
         'is-user-overview': definition?.kind === 'user-overview',
+        'is-account-panel': definition?.kind === 'account-panel',
         'is-quick-links': definition?.kind === 'quick-links',
         'is-intrinsic-height': definition?.heightPolicy.mode === 'intrinsic',
       },
     ]"
   >
-    <header v-if="editable || definition?.kind !== 'user-overview'" class="widget-header">
+    <header
+      v-if="editable || (definition?.kind !== 'user-overview' && definition?.kind !== 'account-panel')"
+      class="widget-header"
+    >
       <div
         class="widget-title-block"
         :class="{ 'widget-drag-handle': editable }"
@@ -245,6 +249,12 @@ onBeforeUnmount(() => {
   transition: border-color 160ms ease, background-color 160ms ease;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .workbench-widget {
+    transition: none;
+  }
+}
+
 .workbench-widget.is-editing {
   background: color-mix(in srgb, var(--color-primary-light) 18%, var(--color-white));
   border-color: var(--color-primary-line-light);
@@ -262,14 +272,20 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
+.workbench-widget.is-account-panel .widget-body {
+  padding: 0;
+  overflow: auto;
+}
+
 .workbench-widget.is-simple .widget-body {
   overflow: visible;
 }
 
 .workbench-widget.is-simple.is-quick-links .widget-body {
-  height: 350px;
-  flex: none;
-  overflow: hidden;
+  min-height: 280px;
+  max-height: 420px;
+  flex: 1 1 auto;
+  overflow: auto;
 }
 
 .widget-header {

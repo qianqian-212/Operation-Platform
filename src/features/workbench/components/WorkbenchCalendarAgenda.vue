@@ -843,12 +843,19 @@ async function removeEvent(event: WorkbenchCalendarEventData) {
   min-width: 0;
   flex-direction: column;
   gap: var(--spacing-4);
-  padding: 0;
+  padding: var(--spacing-4);
+  margin: calc(-1 * var(--spacing-4));
   font: inherit;
   text-align: left;
   background: transparent;
   border: 0;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.agenda-copy:focus-visible {
+  outline: 2px solid var(--color-primary-line-light);
+  outline-offset: 0;
 }
 
 .agenda-copy strong {

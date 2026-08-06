@@ -21,7 +21,8 @@ export type WorkbenchWidgetKind =
   | "growth"
   | "education-chart"
   | "activity-rank"
-  | "user-overview";
+  | "user-overview"
+  | "account-panel";
 export type WorkbenchWidgetTone = "primary" | "success" | "warning" | "danger" | "neutral";
 export type WorkbenchWidgetSizePreset = "small" | "medium" | "large";
 export type WorkbenchWidgetHeightMode = "intrinsic" | "viewport" | "fixed";
@@ -211,6 +212,35 @@ export interface WorkbenchUserOverviewData {
   stats: WorkbenchUserOverviewStatData[];
 }
 
+export interface WorkbenchAccountOrganizationData {
+  id: string;
+  orgName: string;
+  roleName: string;
+  tenantTypeLabel: string;
+  meta: string;
+  active?: boolean;
+}
+
+export interface WorkbenchAccountGoalData {
+  id: string;
+  title: string;
+  remainingLabel: string;
+  progress: number;
+  tone: WorkbenchWidgetTone;
+  icon: MenuIconKey;
+}
+
+export interface WorkbenchAccountPanelData {
+  kind: "account-panel";
+  name: string;
+  initials: string;
+  account: string;
+  badgeLabel: string;
+  verified: boolean;
+  organizations: WorkbenchAccountOrganizationData[];
+  goals: WorkbenchAccountGoalData[];
+}
+
 export interface WorkbenchRankingItemData {
   id: string;
   name: string;
@@ -345,7 +375,8 @@ export type WorkbenchWidgetData =
   | WorkbenchGrowthData
   | WorkbenchEducationChartData
   | WorkbenchActivityRankData
-  | WorkbenchUserOverviewData;
+  | WorkbenchUserOverviewData
+  | WorkbenchAccountPanelData;
 
 export interface WorkbenchDataContext {
   tenant: TenantInfo;

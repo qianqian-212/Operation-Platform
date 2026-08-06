@@ -62,11 +62,15 @@ describe("workbench templates", () => {
       const admin = getWorkbenchTemplate(tenantType, "admin");
       const business = getWorkbenchTemplate(tenantType, "business");
 
-      expect(admin.widgets).toHaveLength(9);
-      expect(business.widgets).toHaveLength(7);
+      expect(admin.widgets).toHaveLength(10);
+      expect(business.widgets).toHaveLength(8);
+      expect(admin.revision).toBe(2);
+      expect(business.revision).toBe(2);
       expect(admin.widgets.map((item) => item.widgetKey)).not.toEqual(
         business.widgets.map((item) => item.widgetKey),
       );
+      expect(admin.widgets.some((item) => item.widgetKey.endsWith(".account-panel"))).toBe(true);
+      expect(business.widgets.some((item) => item.widgetKey.endsWith(".account-panel"))).toBe(true);
     }
   });
 
@@ -90,11 +94,12 @@ describe("workbench templates", () => {
       "resource-contribution",
       "subject-resources",
       "resource-ranking",
+      "account-panel",
     ];
 
     for (const profile of ["admin", "business"] as const) {
       const bureau = getWorkbenchTemplate("bureau", profile);
-      expect(bureau.revision).toBe(6);
+      expect(bureau.revision).toBe(7);
       expect(portalWidgetIds.every((id) =>
         bureau.widgets.some((item) => item.widgetKey === `bureau.${profile}.${id}`),
       )).toBe(true);
@@ -103,13 +108,15 @@ describe("workbench templates", () => {
     for (const tenantType of tenantTypes.filter((type) => type !== "bureau")) {
       for (const profile of ["admin", "business"] as const) {
         expect(getWorkbenchTemplate(tenantType, profile).widgets.some((item) =>
-          portalWidgetIds.some((id) => item.widgetKey.endsWith(`.${id}`)),
+          portalWidgetIds
+            .filter((id) => id !== "account-panel")
+            .some((id) => item.widgetKey.endsWith(`.${id}`)),
         )).toBe(false);
       }
     }
 
-    expect(getWorkbenchTemplate("bureau", "admin").widgets).toHaveLength(24);
-    expect(getWorkbenchTemplate("bureau", "business").widgets).toHaveLength(21);
+    expect(getWorkbenchTemplate("bureau", "admin").widgets).toHaveLength(25);
+    expect(getWorkbenchTemplate("bureau", "business").widgets).toHaveLength(22);
 
     const businessWidgets = getWorkbenchTemplate("bureau", "business").widgets;
     expect(businessWidgets.find((item) => item.widgetKey.endsWith(".calendar-tasks"))).toMatchObject({

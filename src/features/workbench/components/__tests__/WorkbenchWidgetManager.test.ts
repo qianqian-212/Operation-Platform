@@ -40,9 +40,9 @@ describe("workbench widget controls", () => {
     });
     await flushPromises();
 
-    expect(document.body.textContent).toContain("显示 9/9");
+    expect(document.body.textContent).toContain("显示 10/10");
     const switches = document.body.querySelectorAll<HTMLElement>('[role="switch"]');
-    expect(switches).toHaveLength(9);
+    expect(switches).toHaveLength(10);
 
     switches[0]!.click();
     await flushPromises();
