@@ -28,11 +28,11 @@ describe("workbench store", () => {
 
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
     expect(store.profile).toBe("admin");
-    expect(store.totalCount).toBe(9);
+    expect(store.totalCount).toBe(10);
 
     store.load(school, "user-a", STAFF_ROLE_ID, emptyTree);
     expect(store.profile).toBe("business");
-    expect(store.totalCount).toBe(7);
+    expect(store.totalCount).toBe(8);
   });
 
   it("groups only internal page entries by their configured top-level module", () => {
@@ -105,8 +105,8 @@ describe("workbench store", () => {
     const original = { x: first.x, y: first.y };
 
     store.setVisible(first.widgetKey, false);
-    expect(store.totalCount).toBe(9);
-    expect(store.visibleCount).toBe(8);
+    expect(store.totalCount).toBe(10);
+    expect(store.visibleCount).toBe(9);
     expect(store.items.find((item) => item.widgetKey === first.widgetKey)).toMatchObject({
       visible: false,
       ...original,
@@ -118,7 +118,7 @@ describe("workbench store", () => {
 
     expect(restored.visible).toBe(true);
     expect({ x: restored.x, y: restored.y }).not.toEqual(original);
-    expect(store.totalCount).toBe(9);
+    expect(store.totalCount).toBe(10);
   });
 
   it("expands a classic widget by logical rows and only pushes horizontally intersecting widgets", () => {
