@@ -2,7 +2,11 @@
 import { ref } from "vue";
 import RegionalMapStage from "@/features/digital-twin/components/RegionalMapStage.vue";
 import type { MapDataSource } from "@/features/digital-twin/map-data-source";
-import type { EnergyTowerValueFrame, MapState } from "@/features/digital-twin/map-state";
+import type {
+  EnergyTowerValueFrame,
+  EnergyTowerValueFrameResolver,
+  MapState,
+} from "@/features/digital-twin/map-state";
 import type { DigitalTwinMapTheme } from "@/features/digital-twin/map-themes";
 import type { MapVisualTuning } from "@/features/digital-twin/rendering/map-visual-tuning";
 import type {
@@ -18,6 +22,7 @@ defineProps<{
   visualTuning: Readonly<MapVisualTuning>;
   dataSource: MapDataSource;
   energyTowerValueFrame?: EnergyTowerValueFrame;
+  resolveEnergyTowerValueFrame?: EnergyTowerValueFrameResolver;
 }>();
 
 const emit = defineEmits<{
@@ -59,6 +64,7 @@ defineExpose({
       :visual-tuning="visualTuning"
       :data-source="dataSource"
       :energy-tower-value-frame="energyTowerValueFrame"
+      :resolve-energy-tower-value-frame="resolveEnergyTowerValueFrame"
       @select="emit('select', $event)"
       @scope-change="forwardScopeChange"
       @network-availability-change="emit('networkAvailabilityChange', $event)"

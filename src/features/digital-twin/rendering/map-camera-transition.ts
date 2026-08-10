@@ -23,6 +23,12 @@ export interface MapCameraFraming {
 
 export type MapCameraTransitionStatus = "completed" | "interrupted";
 
+export interface MapCameraTransitionPlayback {
+  readonly ready?: Promise<unknown>;
+  readonly maximumLeadProgress?: number;
+  readonly onProgress?: (progress: number) => void;
+}
+
 interface MapCameraTransitionOptions {
   camera: THREE.PerspectiveCamera;
   controls: OrbitControls;
@@ -72,10 +78,12 @@ export class MapCameraTransition {
     view: MapCameraView,
     framing: MapCameraFraming,
     motionEnabled: boolean,
+    playback?: MapCameraTransitionPlayback,
   ): Promise<MapCameraTransitionStatus> {
     this.cancel();
     if (!motionEnabled) {
       this.apply(view, framing);
+      playback?.onProgress?.(1);
       return Promise.resolve("completed");
     }
 
@@ -95,6 +103,8 @@ export class MapCameraTransition {
     const duration = digitalTwinMotion.cameraDuration;
     this.options.requestHighFrameRate(duration * 1000 + 200);
     return new Promise((resolve) => {
+      let readinessSettled = !playback?.ready;
+      let pausedForReadiness = false;
       const finish = (status: MapCameraTransitionStatus) => {
         if (this.tween === tween) this.tween = undefined;
         this.options.requestRender();
@@ -113,11 +123,36 @@ export class MapCameraTransition {
         duration,
         ease: digitalTwinMotion.cameraEase,
         overwrite: true,
-        onUpdate: () => this.applyValues(values),
+        onUpdate: () => {
+          this.applyValues(values);
+          playback?.onProgress?.(tween.progress());
+          if (
+            readinessSettled
+            || pausedForReadiness
+            || tween.progress() < (
+              playback?.maximumLeadProgress
+                ?? digitalTwinMotion.cameraReadinessLeadProgress
+            )
+          ) return;
+          pausedForReadiness = true;
+          tween.pause();
+        },
         onComplete: () => finish("completed"),
         onInterrupt: () => finish("interrupted"),
       });
       this.tween = tween;
+      void playback?.ready?.then(
+        () => {
+          readinessSettled = true;
+          if (this.tween !== tween || !pausedForReadiness) return;
+          this.options.requestHighFrameRate(duration * 1000 + 200);
+          tween.resume();
+        },
+        () => {
+          readinessSettled = true;
+          if (this.tween === tween) tween.kill();
+        },
+      );
     });
   }
 

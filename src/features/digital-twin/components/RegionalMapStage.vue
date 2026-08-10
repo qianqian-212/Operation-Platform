@@ -2,12 +2,15 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import RegionalThreeMap from "./RegionalThreeMap.vue";
 import type { GeoFeature } from "../geo";
-import type { EnergyTowerValueFrame, MapState } from "../map-state";
+import type {
+  EnergyTowerValueFrame,
+  EnergyTowerValueFrameResolver,
+  MapState,
+} from "../map-state";
 import type { MapDataSource } from "../map-data-source";
 import {
   isContextBandFeature,
   mapGeometryChanged,
-  mapProjectionChanged,
   mapStructureChanged,
 } from "../map-state-transition";
 import {
@@ -27,6 +30,7 @@ const props = defineProps<{
   visualTuning: Readonly<MapVisualTuning>;
   dataSource: MapDataSource;
   energyTowerValueFrame?: EnergyTowerValueFrame;
+  resolveEnergyTowerValueFrame?: EnergyTowerValueFrameResolver;
 }>();
 
 const emit = defineEmits<{
@@ -41,12 +45,17 @@ const emit = defineEmits<{
 
 interface MapRendererApi {
   getCameraView: () => MapCameraView | undefined;
-  previewFeature: (featureCode: string, applyScopeDefaults: boolean) => Promise<void>;
+  indicateFeatureSelection?: (featureCode: string) => void;
   focusFeature: (featureCode: string, applyScopeDefaults: boolean) => Promise<void>;
   animateCameraView: (view: MapCameraView) => Promise<void>;
+  animateCameraViewWhenReady?: (
+    view: MapCameraView,
+    targetMapState: MapState,
+    ready: Promise<unknown>,
+  ) => Promise<void>;
   setSelectedEnergyTower: (energyTowerId?: string) => void;
-  focusCurrentBoundary: () => Promise<void>;
-  restoreMapPresentation: () => void;
+  focusCurrentBoundary?: () => Promise<void>;
+  restoreMapPresentation?: () => void;
   prepareMapState: (mapState: MapState) => Promise<void>;
 }
 
@@ -58,16 +67,18 @@ interface HistoryEntry {
 const mapRenderer = ref<MapRendererApi>();
 const dataSource = computed(() => props.dataSource);
 const currentState = ref<MapState>(dataSource.value.initialState);
+const publishedState = ref<MapState>(dataSource.value.initialState);
+const currentEnergyTowerValueFrame = computed(() => (
+  props.resolveEnergyTowerValueFrame
+    ? props.resolveEnergyTowerValueFrame(currentState.value)
+    : props.energyTowerValueFrame
+));
 const history = ref<HistoryEntry[]>([]);
 const transitioning = ref(false);
 let disposed = false;
 const navigationCoordinator = new MapNavigationCoordinator((busy) => {
   transitioning.value = busy;
 });
-
-function nextVisualFrame() {
-  return new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-}
 
 function reportLoadError(error: unknown) {
   emit(
@@ -76,11 +87,28 @@ function reportLoadError(error: unknown) {
   );
 }
 
-function settleTask(task: Promise<void>) {
-  return task.then(
-    () => ({ ok: true as const }),
-    (error: unknown) => ({ ok: false as const, error }),
-  );
+function createDeferredReadiness() {
+  let resolvePromise!: () => void;
+  let rejectPromise!: (reason?: unknown) => void;
+  let settled = false;
+  const ready = new Promise<void>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+  return {
+    ready,
+    resolve: () => {
+      if (settled) return;
+      settled = true;
+      resolvePromise();
+    },
+    reject: (reason?: unknown) => {
+      if (settled) return;
+      settled = true;
+      rejectPromise(reason);
+    },
+    isSettled: () => settled,
+  };
 }
 const visibleLocations = computed(() => dataSource.value.filterLocations(
   props.locations,
@@ -90,6 +118,14 @@ const institutionNetworkAvailable = computed(() => dataSource.value.institutionN
   currentState.value,
   visibleLocations.value,
 ));
+const publishedLocations = computed(() => dataSource.value.filterLocations(
+  props.locations,
+  publishedState.value,
+));
+const publishedNetworkAvailable = computed(() => dataSource.value.institutionNetworkAvailable(
+  publishedState.value,
+  publishedLocations.value,
+));
 
 async function focusRegion(feature: GeoFeature, origin: MapNavigationOrigin = "user") {
   const code = feature.properties.code;
@@ -98,35 +134,19 @@ async function focusRegion(feature: GeoFeature, origin: MapNavigationOrigin = "u
   const navigation = navigationCoordinator.begin(origin);
   if (!navigation) return false;
   const previousCameraView = mapRenderer.value?.getCameraView();
-  const previewAllowed = currentState.value.scope === "province"
-    || currentState.value.terminal
-    || Boolean(
-      currentState.value.contextInteractive
-      || currentState.value.externalInteractive,
-    );
   try {
     const previousState = currentState.value;
+    mapRenderer.value?.indicateFeatureSelection?.(code);
     const loadStatePromise = dataSource.value.loadChildState(previousState, feature, {
       signal: navigation.signal,
     });
-    const applyScopeDefaults = !previousState.terminal;
-    const previewTask = settleTask(previewAllowed
-      ? mapRenderer.value?.previewFeature(code, applyScopeDefaults) ?? Promise.resolve()
-      : Promise.resolve());
     const nextState = await loadStatePromise;
     if (disposed || !navigation.isCurrent()) return false;
     if (!nextState) {
-      const previewResult = await previewTask;
-      if (!previewResult.ok) throw previewResult.error;
-      if (disposed || !navigation.isCurrent()) return false;
-      if (previewAllowed && previousCameraView) {
-        await mapRenderer.value?.animateCameraView(previousCameraView);
-      }
-      mapRenderer.value?.restoreMapPresentation();
+      mapRenderer.value?.restoreMapPresentation?.();
       return false;
     }
     const geometryChanged = mapGeometryChanged(previousState, nextState);
-    const projectionChanged = mapProjectionChanged(previousState, nextState);
     const structureChanged = mapStructureChanged(previousState, nextState);
     const contextSibling = isContextBandFeature(previousState, code);
     if (structureChanged) {
@@ -148,28 +168,23 @@ async function focusRegion(feature: GeoFeature, origin: MapNavigationOrigin = "u
     currentState.value = nextState;
     await nextTick();
     if (disposed || !navigation.isCurrent()) return false;
-    if (geometryChanged && projectionChanged) {
-      const previewResult = await previewTask;
-      if (!previewResult.ok) throw previewResult.error;
-      await mapRenderer.value?.focusCurrentBoundary();
-    }
-    else if (!previewAllowed) {
+    if (mapRenderer.value?.focusCurrentBoundary) {
+      await mapRenderer.value.focusCurrentBoundary();
+    } else {
       await mapRenderer.value?.focusFeature(code, previousState.scope === "district");
     }
-    else {
-      const previewResult = await previewTask;
-      if (!previewResult.ok) throw previewResult.error;
-    }
     if (disposed || !navigation.isCurrent()) return false;
+    publishedState.value = nextState;
     return true;
   } catch (error) {
     if (disposed || !navigation.isCurrent() || navigation.signal.aborted) {
       return false;
     }
-    if (previewAllowed && previousCameraView) {
+    if (previousCameraView) {
       await mapRenderer.value?.animateCameraView(previousCameraView);
     }
-    mapRenderer.value?.restoreMapPresentation();
+    mapRenderer.value?.restoreMapPresentation?.();
+    publishedState.value = currentState.value;
     reportLoadError(error);
     return false;
   } finally {
@@ -193,19 +208,24 @@ async function restoreHistoryEntry(
   commitHistory: () => void,
 ) {
   const currentCameraView = mapRenderer.value?.getCameraView();
+  const readiness = previous.cameraView && mapRenderer.value?.animateCameraViewWhenReady
+    ? createDeferredReadiness()
+    : undefined;
+  const cameraPromise = previous.cameraView && readiness
+    ? mapRenderer.value!.animateCameraViewWhenReady!(
+        previous.cameraView,
+        previous.state,
+        readiness.ready,
+      )
+    : undefined;
   try {
-    const cameraPromise = previous.cameraView
-      ? mapRenderer.value?.animateCameraView(previous.cameraView) ?? Promise.resolve()
-      : Promise.resolve();
-    // Give the camera transition its first paint before projection or business
-    // layers are prepared. A dense school layer must never delay return feedback.
-    if (previous.cameraView) await nextVisualFrame();
-    if (disposed || !navigation.isCurrent()) return false;
     try {
       await mapRenderer.value?.prepareMapState(previous.state);
     } catch (error) {
+      readiness?.reject(error);
+      await cameraPromise;
       if (currentCameraView) await mapRenderer.value?.animateCameraView(currentCameraView);
-      mapRenderer.value?.restoreMapPresentation();
+      mapRenderer.value?.restoreMapPresentation?.();
       reportLoadError(error);
       return false;
     }
@@ -213,10 +233,17 @@ async function restoreHistoryEntry(
     commitHistory();
     currentState.value = previous.state;
     await nextTick();
-    await cameraPromise;
+    readiness?.resolve();
+    if (previous.cameraView) {
+      await (cameraPromise ?? mapRenderer.value?.animateCameraView(previous.cameraView));
+    }
     if (disposed || !navigation.isCurrent()) return false;
+    publishedState.value = previous.state;
     return true;
   } finally {
+    if (!readiness?.isSettled()) {
+      readiness?.reject(new DOMException("地图导航已取消", "AbortError"));
+    }
     navigation.finish();
   }
 }
@@ -271,10 +298,10 @@ async function goBackAutomatically() {
 }
 
 watch(
-  [currentState, visibleLocations, institutionNetworkAvailable],
+  [publishedState, publishedLocations, publishedNetworkAvailable],
   () => {
-    emit("scopeChange", currentState.value, visibleLocations.value);
-    emit("networkAvailabilityChange", institutionNetworkAvailable.value);
+    emit("scopeChange", publishedState.value, publishedLocations.value);
+    emit("networkAvailabilityChange", publishedNetworkAvailable.value);
   },
   { immediate: true },
 );
@@ -306,7 +333,7 @@ defineExpose({
     <RegionalThreeMap
       ref="mapRenderer"
       :map-state="currentState"
-      :energy-tower-value-frame="energyTowerValueFrame"
+      :energy-tower-value-frame="currentEnergyTowerValueFrame"
       :theme="theme"
       :data-layer-mode="dataLayerMode"
       :visual-tuning="visualTuning"

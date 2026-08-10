@@ -27,7 +27,6 @@ vi.mock("../rendering/regional-map-engine", () => ({
     animateCameraView = engineMocks.animateCameraView;
     dispose = engineMocks.dispose;
     getCameraView = vi.fn();
-    previewFeature = vi.fn(() => Promise.resolve());
     focusFeature = vi.fn(() => Promise.resolve());
     setDataLayerMode = vi.fn();
     setVisualTuning = engineMocks.setVisualTuning;

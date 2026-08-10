@@ -866,6 +866,31 @@ describe("regional map render budget", () => {
     contextSpy.mockRestore();
   });
 
+  it("drives tower growth from navigation progress without a second reveal clock", () => {
+    const layer = new EnergyTowerLayer(
+      initialMapState,
+      rongchengEducationLocations,
+      projection,
+      theme,
+      defaultMapVisualTuning,
+    );
+    const firstTower = layer.root.children[0] as THREE.Group;
+
+    expect(firstTower.scale.z).toBe(0.001);
+    expect(layer.synchronizeEntranceProgress(0.1)).toBe(true);
+    const synchronizedScale = firstTower.scale.z;
+    expect(synchronizedScale).toBeGreaterThan(0.001);
+
+    layer.animate(0.1);
+    expect(firstTower.scale.z).toBe(synchronizedScale);
+
+    expect(layer.synchronizeEntranceProgress(0.25)).toBe(true);
+    expect(firstTower.scale.z).toBeGreaterThan(synchronizedScale);
+    layer.finishSynchronizedEntrance(true);
+    expect(firstTower.scale.z).toBeGreaterThan(0.5);
+    layer.dispose();
+  });
+
   it("cycles one child tower card, pauses on hover, and scrolls long school lists", () => {
     const gradient = { addColorStop: vi.fn() };
     const context = {

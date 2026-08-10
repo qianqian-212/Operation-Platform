@@ -6,4 +6,5 @@ export const digitalTwinMotion = {
   countEase: "power2.out",
   cameraDuration: 1.05,
   cameraEase: "power3.inOut",
+  cameraReadinessLeadProgress: 0.18,
 } as const;

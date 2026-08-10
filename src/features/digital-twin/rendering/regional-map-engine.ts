@@ -251,6 +251,7 @@ export class RegionalMapEngine {
   private institutionLayer?: InstitutionLayer;
   private connectionLayer?: ConnectionLayer;
   private energyTowerLayer?: EnergyTowerLayer;
+  private energyTowerEntranceProgress?: number;
   private suspendedDynamicLayers?: DynamicLayerBundle;
   private readonly exitingEnergyTowerLayers: EnergyTowerLayer[] = [];
   private readonly exitingScopePresentations: ExitingScopePresentation[] = [];
@@ -819,6 +820,9 @@ export class RegionalMapEngine {
         this.visualTuning,
       );
       this.energyTowerLayer.setSelected(this.selectedEnergyTowerId);
+      if (this.energyTowerEntranceProgress !== undefined) {
+        this.energyTowerLayer.synchronizeEntranceProgress(this.energyTowerEntranceProgress);
+      }
       anchorDynamicOverlay(
         this.energyTowerLayer.root,
         this.regionLayer?.getCurrentActiveSurfaceZ() ?? regionTopZ,
@@ -1824,6 +1828,7 @@ export class RegionalMapEngine {
     featureCode: string,
     applyTownshipDefaults: boolean,
     updatePresentation: boolean,
+    synchronizeEnergyTowers = false,
   ): Promise<void> {
     const activeFeature = this.mapState.geoData.features.find(
       (item) => item.properties.code === featureCode,
@@ -1870,25 +1875,38 @@ export class RegionalMapEngine {
       this.camera.position.z,
       this.visualTuning,
     );
+    if (synchronizeEnergyTowers) this.beginEnergyTowerEntrance();
     return this.cameraTransition.animate({
       fov: this.visualTuning.cameraFov,
       position: [position.x, position.y, position.z],
       target: [framedTarget.x, framedTarget.y, framedTarget.z],
-    }, mapScreenFraming(this.mapState, this.visualTuning), this.motionEnabled).then((status) => {
+    }, mapScreenFraming(this.mapState, this.visualTuning), this.motionEnabled, {
+      onProgress: synchronizeEnergyTowers
+        ? (progress) => this.updateEnergyTowerEntrance(progress)
+        : undefined,
+    }).then((status) => {
+      if (synchronizeEnergyTowers) this.finishEnergyTowerEntrance(status === "completed");
       if (status === "interrupted") return;
       this.pauseAutoRotation();
       this.syncVisualTuningFromCamera();
     });
   }
 
-  previewFeature(featureCode: string, applyTownshipDefaults: boolean): Promise<void> {
-    // A click is preceded by pointer hover. Clear that transient emphasis so
-    // the parent shell stays visually stable while the child layer prepares.
+  indicateFeatureSelection(featureCode: string) {
+    this.cameraTransition.cancel();
     this.regionLayer?.setHovered();
     this.peerRegionLayer?.setHovered();
     this.contextLayer?.setHovered();
     this.externalContextLayer?.setHovered();
-    return this.transitionToFeature(featureCode, applyTownshipDefaults, false);
+    if (this.regionLayer?.hasFeature(featureCode)) {
+      this.regionLayer.setFocus(featureCode, this.visualTuning);
+    } else if (
+      this.mapState.contextPresentation === "peers"
+      && this.peerRegionLayer?.hasFeature(featureCode)
+    ) {
+      this.peerRegionLayer.setFocus(featureCode, this.visualTuning);
+    }
+    this.requestHighFrameRate(scopeFrameBoostDuration);
   }
 
   focusFeature(featureCode: string, applyTownshipDefaults: boolean): Promise<void> {
@@ -1899,8 +1917,23 @@ export class RegionalMapEngine {
     const feature = boundaryFeatureForMapState(this.mapState);
     const featureCode = feature?.properties.code;
     return typeof featureCode === "string"
-      ? this.focusFeature(featureCode, true)
+      ? this.transitionToFeature(featureCode, true, true, true)
       : Promise.resolve();
+  }
+
+  private beginEnergyTowerEntrance() {
+    this.energyTowerEntranceProgress = 0;
+    this.energyTowerLayer?.synchronizeEntranceProgress(0);
+  }
+
+  private updateEnergyTowerEntrance(progress: number) {
+    this.energyTowerEntranceProgress = progress;
+    this.energyTowerLayer?.synchronizeEntranceProgress(progress);
+  }
+
+  private finishEnergyTowerEntrance(completed: boolean) {
+    this.energyTowerEntranceProgress = undefined;
+    this.energyTowerLayer?.finishSynchronizedEntrance(completed);
   }
 
   restoreMapPresentation() {
@@ -1925,6 +1958,31 @@ export class RegionalMapEngine {
       this.controls.minDistance = this.mapState.contextInteractive
         ? 140
         : minimumCameraDistanceForScope(this.mapState.scope);
+      this.controls.update();
+      this.syncVisualTuningFromCamera();
+    });
+  }
+
+  animateCameraViewWhenReady(
+    view: MapCameraView,
+    targetMapState: MapState,
+    ready: Promise<unknown>,
+  ) {
+    this.pauseAutoRotation();
+    this.beginEnergyTowerEntrance();
+    return this.cameraTransition.animate(
+      view,
+      mapScreenFraming(targetMapState, this.visualTuning),
+      this.motionEnabled,
+      {
+        ready,
+        onProgress: (progress) => this.updateEnergyTowerEntrance(progress),
+      },
+    ).then((status) => {
+      this.finishEnergyTowerEntrance(status === "completed");
+      if (status === "interrupted") return;
+      this.pauseAutoRotation();
+      this.controls.minDistance = minimumCameraDistanceForScope(targetMapState.scope);
       this.controls.update();
       this.syncVisualTuningFromCamera();
     });

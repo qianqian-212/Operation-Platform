@@ -186,13 +186,16 @@ watch(
 
 defineExpose({
   getCameraView: () => engine?.getCameraView(),
-  previewFeature: (featureCode: string, applyScopeDefaults: boolean) => (
-    engine?.previewFeature(featureCode, applyScopeDefaults) ?? Promise.resolve()
-  ),
+  indicateFeatureSelection: (featureCode: string) => engine?.indicateFeatureSelection(featureCode),
   focusFeature: (featureCode: string, applyScopeDefaults: boolean) => (
     engine?.focusFeature(featureCode, applyScopeDefaults) ?? Promise.resolve()
   ),
   animateCameraView: (view: MapCameraView) => engine?.animateCameraView(view) ?? Promise.resolve(),
+  animateCameraViewWhenReady: (
+    view: MapCameraView,
+    targetMapState: MapState,
+    ready: Promise<unknown>,
+  ) => engine?.animateCameraViewWhenReady(view, targetMapState, ready) ?? Promise.resolve(),
   resetCameraView: () => engine?.animateCameraView(defaultRegionalMapCameraView) ?? Promise.resolve(),
   focusCurrentBoundary: () => engine?.focusCurrentBoundary() ?? Promise.resolve(),
   restoreMapPresentation: () => engine?.restoreMapPresentation(),

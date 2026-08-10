@@ -47,3 +47,8 @@ export interface MapState {
   /** Optional display label for coverage-population towers; defaults to 覆盖人数. */
   readonly energyTowerMetricLabel?: string;
 }
+
+/** Resolves business metric values for the map state currently being rendered. */
+export type EnergyTowerValueFrameResolver = (
+  mapState: MapState,
+) => EnergyTowerValueFrame | undefined;

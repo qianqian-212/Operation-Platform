@@ -201,6 +201,7 @@ export class EnergyTowerLayer implements TuningAwareMapSceneLayer {
   private labelCycleElapsed = 0;
   private reveal = 0;
   private targetReveal = 1;
+  private synchronizedEntrance = false;
   private readonly scope: MapState["scope"];
   private readonly usesCoveragePopulation: boolean;
   private theme: DigitalTwinMapTheme;
@@ -478,14 +479,16 @@ export class EnergyTowerLayer implements TuningAwareMapSceneLayer {
 
   animate(delta: number) {
     const previousReveal = this.reveal;
-    const next = THREE.MathUtils.lerp(
-      this.reveal,
-      this.targetReveal,
-      1 - Math.exp(
-        -this.tuning.energyTowerRevealRate * THREE.MathUtils.clamp(delta, 0, 0.1),
-      ),
-    );
-    this.reveal = Math.abs(next - this.targetReveal) < 0.002 ? this.targetReveal : next;
+    if (!this.synchronizedEntrance) {
+      const next = THREE.MathUtils.lerp(
+        this.reveal,
+        this.targetReveal,
+        1 - Math.exp(
+          -this.tuning.energyTowerRevealRate * THREE.MathUtils.clamp(delta, 0, 0.1),
+        ),
+      );
+      this.reveal = Math.abs(next - this.targetReveal) < 0.002 ? this.targetReveal : next;
+    }
     if (this.reveal !== previousReveal) this.applyReveal();
     let heightChanged = false;
     const heightStep = 1 - Math.exp(-7.5 * THREE.MathUtils.clamp(delta, 0, 0.1));
@@ -519,6 +522,24 @@ export class EnergyTowerLayer implements TuningAwareMapSceneLayer {
       }
     }
     return this.reveal !== this.targetReveal || heightChanged || labelChanged;
+  }
+
+  synchronizeEntranceProgress(progress: number) {
+    if (!this.synchronizedEntrance && this.reveal >= 0.998) return false;
+    this.synchronizedEntrance = true;
+    this.targetReveal = 1;
+    const normalizedProgress = THREE.MathUtils.clamp(progress, 0, 1);
+    const revealProgress = 1 - Math.pow(1 - normalizedProgress, 2);
+    if (this.reveal === revealProgress) return false;
+    this.reveal = revealProgress;
+    this.applyReveal();
+    return true;
+  }
+
+  finishSynchronizedEntrance(completed: boolean) {
+    if (!this.synchronizedEntrance) return;
+    this.synchronizedEntrance = false;
+    if (completed) this.settle(true);
   }
 
   updateCoverageValues(
@@ -575,10 +596,12 @@ export class EnergyTowerLayer implements TuningAwareMapSceneLayer {
   }
 
   startExit() {
+    this.synchronizedEntrance = false;
     this.targetReveal = 0;
   }
 
   settle(visible: boolean) {
+    this.synchronizedEntrance = false;
     this.targetReveal = visible ? 1 : 0;
     this.reveal = this.targetReveal;
     this.applyReveal();

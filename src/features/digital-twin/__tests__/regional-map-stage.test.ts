@@ -12,6 +12,7 @@ import {
 import { getDigitalTwinMapTheme } from "../map-themes";
 import { institutionNetworkScopes } from "../map-presentation-policy";
 import { defaultMapVisualTuning } from "../rendering/map-visual-tuning";
+import type { EnergyTowerValueFrame, MapState } from "../map-state";
 import {
   clearSmartSportsMapCacheForTests,
   smartSportsMapDataSource,
@@ -157,6 +158,102 @@ describe("RegionalMapStage", () => {
     wrapper.unmount();
   });
 
+  it("starts the full camera transition only after target geometry is ready", async () => {
+    let releasePreparation: (() => void) | undefined;
+    let releaseCamera: (() => void) | undefined;
+    const indicateFeatureSelection = vi.fn();
+    const prepareMapState = vi.fn(() => new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    }));
+    const focusCurrentBoundary = vi.fn(() => new Promise<void>((resolve) => {
+      releaseCamera = resolve;
+    }));
+    const resolveEnergyTowerValueFrame = vi.fn((mapState: MapState): EnergyTowerValueFrame => ({
+      values: { [mapState.code]: mapState.code === "440100" ? 32_000 : 96_000 },
+      total: mapState.code === "440100" ? 32_000 : 96_000,
+      metricLabel: "覆盖人数",
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: { code: "440103", name: "荔湾区", level: "district" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[[112, 22], [114, 22], [114, 24], [112, 24], [112, 22]]],
+          },
+        }],
+      }),
+    }));
+    const rendererStub = defineComponent({
+      name: "RegionalThreeMap",
+      props: {
+        mapState: { type: Object, required: true },
+        energyTowerValueFrame: { type: Object, default: undefined },
+      },
+      setup(_, { expose }) {
+        expose({
+          getCameraView: () => parentCamera,
+          indicateFeatureSelection,
+          focusFeature: vi.fn(() => Promise.resolve()),
+          focusCurrentBoundary,
+          prepareMapState,
+          animateCameraView: vi.fn(() => Promise.resolve()),
+          restoreMapPresentation: vi.fn(),
+        });
+        return () => h("div", { class: "renderer-stub" });
+      },
+    });
+    const wrapper = mount(RegionalMapStage, {
+      props: {
+        locations: [],
+        theme: getDigitalTwinMapTheme("lime"),
+        dataLayerMode: "energy-towers",
+        visualTuning: defaultMapVisualTuning,
+        dataSource: smartSportsMapDataSource,
+        resolveEnergyTowerValueFrame,
+      },
+      global: { stubs: { RegionalThreeMap: rendererStub } },
+    });
+    const guangzhou = smartSportsMapDataSource.initialState.geoData.features.find(
+      (feature) => feature.properties.code === "440100",
+    )!;
+
+    wrapper.findComponent(rendererStub).vm.$emit("feature-select", guangzhou);
+    await flushPromises();
+
+    expect(indicateFeatureSelection).toHaveBeenCalledWith("440100");
+    expect(prepareMapState).toHaveBeenCalledOnce();
+    expect(focusCurrentBoundary).not.toHaveBeenCalled();
+    let scopeEvents = wrapper.emitted("scopeChange") ?? [];
+    expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "440000" });
+
+    releasePreparation?.();
+    await flushPromises();
+
+    expect(focusCurrentBoundary).toHaveBeenCalledOnce();
+    expect(wrapper.findComponent(rendererStub).props("mapState")).toMatchObject({
+      code: "440100",
+    });
+    expect(wrapper.findComponent(rendererStub).props("energyTowerValueFrame")).toEqual({
+      values: { "440100": 32_000 },
+      total: 32_000,
+      metricLabel: "覆盖人数",
+    });
+    scopeEvents = wrapper.emitted("scopeChange") ?? [];
+    expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "440000" });
+
+    releaseCamera?.();
+    await flushPromises();
+
+    scopeEvents = wrapper.emitted("scopeChange") ?? [];
+    expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "440100" });
+    expect(wrapper.get(".map-stage").attributes("aria-busy")).toBe("false");
+    wrapper.unmount();
+  });
+
   it("matches the spatial trail when a school is selected from map search", async () => {
     const focusFeature = vi.fn(() => Promise.resolve());
     const rendererStub = defineComponent({
@@ -199,15 +296,17 @@ describe("RegionalMapStage", () => {
 
   it("switches focused siblings in place and animates back to the exact parent camera", async () => {
     const focusFeature = vi.fn();
-    const previewFeature = vi.fn();
+    const indicateFeatureSelection = vi.fn();
+    const focusCurrentBoundary = vi.fn(() => Promise.resolve());
     const animateCameraView = vi.fn();
     const rendererStub = defineComponent({
       name: "RegionalThreeMap",
       setup(_, { expose }) {
         expose({
           getCameraView: () => parentCamera,
-          previewFeature,
+          indicateFeatureSelection,
           focusFeature,
+          focusCurrentBoundary,
           prepareMapState: vi.fn(() => Promise.resolve()),
           animateCameraView,
         });
@@ -237,7 +336,8 @@ describe("RegionalMapStage", () => {
     expect(drilldownEvents?.[drilldownEvents.length - 1]?.[0]).toMatchObject({
       code: "445202001",
     });
-    expect(focusFeature).toHaveBeenCalledWith("445202001", true);
+    expect(focusFeature).not.toHaveBeenCalled();
+    expect(focusCurrentBoundary).toHaveBeenCalledOnce();
 
     const sibling = initialMapState.geoData.features.find(
       (feature) => feature.properties.code === "445202002",
@@ -249,7 +349,8 @@ describe("RegionalMapStage", () => {
     expect(siblingEvents?.[siblingEvents.length - 1]?.[0]).toMatchObject({
       code: "445202002",
     });
-    expect(previewFeature).toHaveBeenLastCalledWith("445202002", false);
+    expect(indicateFeatureSelection).toHaveBeenLastCalledWith("445202002");
+    expect(focusCurrentBoundary).toHaveBeenCalledTimes(2);
 
     wrapper.findComponent(rendererStub).vm.$emit("scope-back");
     await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
@@ -269,6 +370,11 @@ describe("RegionalMapStage", () => {
     let cameraView = parentCamera;
     const prepareMapState = vi.fn(() => Promise.reject(new Error("图层预构建失败")));
     const animateCameraView = vi.fn(() => Promise.resolve());
+    const animateCameraViewWhenReady = vi.fn((
+      _view: MapCameraView,
+      _state: unknown,
+      ready: Promise<unknown>,
+    ) => ready.then(() => undefined, () => undefined));
     const restoreMapPresentation = vi.fn();
     const rendererStub = defineComponent({
       name: "RegionalThreeMap",
@@ -279,6 +385,7 @@ describe("RegionalMapStage", () => {
           focusFeature: vi.fn(() => Promise.resolve()),
           prepareMapState,
           animateCameraView,
+          animateCameraViewWhenReady,
           restoreMapPresentation,
         });
         return () => h("div", { class: "renderer-stub" });
@@ -307,8 +414,13 @@ describe("RegionalMapStage", () => {
     expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({
       code: township.properties.code,
     });
-    expect(animateCameraView).toHaveBeenNthCalledWith(1, parentCamera);
-    expect(animateCameraView).toHaveBeenNthCalledWith(2, childCamera);
+    expect(animateCameraViewWhenReady).toHaveBeenCalledWith(
+      parentCamera,
+      expect.objectContaining({ code: "445202" }),
+      expect.any(Promise),
+    );
+    expect(animateCameraView).toHaveBeenCalledOnce();
+    expect(animateCameraView).toHaveBeenCalledWith(childCamera);
     expect(restoreMapPresentation).toHaveBeenCalledOnce();
     expect(wrapper.emitted("loadError")).toEqual([["图层预构建失败"]]);
     expect(wrapper.get(".map-stage").attributes("aria-busy")).toBe("false");
@@ -408,9 +520,7 @@ describe("RegionalMapStage", () => {
 
     expect(wrapper.get(".map-stage").attributes("aria-busy")).toBe("true");
     let scopeEvents = wrapper.emitted("scopeChange") ?? [];
-    expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({
-      code: township.properties.code,
-    });
+    expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "445202" });
 
     wrapper.findComponent(rendererStub).vm.$emit("scope-back");
     await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
@@ -429,7 +539,7 @@ describe("RegionalMapStage", () => {
 
   it("keeps peer cities as an extruded navigation level and returns directly to Guangdong", async () => {
     const focusFeature = vi.fn(() => Promise.resolve());
-    const previewFeature = vi.fn(() => Promise.resolve());
+    const indicateFeatureSelection = vi.fn();
     const focusCurrentBoundary = vi.fn(() => Promise.resolve());
     const prepareMapState = vi.fn(() => Promise.resolve());
     const animateCameraView = vi.fn(() => Promise.resolve());
@@ -438,7 +548,7 @@ describe("RegionalMapStage", () => {
       setup(_, { expose }) {
         expose({
           getCameraView: () => parentCamera,
-          previewFeature,
+          indicateFeatureSelection,
           focusFeature,
           focusCurrentBoundary,
           prepareMapState,
@@ -478,18 +588,19 @@ describe("RegionalMapStage", () => {
 
     wrapper.findComponent(rendererStub).vm.$emit("feature-select", guangzhou);
     await flushPromises();
-    expect(previewFeature).toHaveBeenLastCalledWith("440100", true);
+    expect(indicateFeatureSelection).toHaveBeenLastCalledWith("440100");
     expect(focusFeature).not.toHaveBeenCalled();
     expect(prepareMapState).toHaveBeenCalledWith(expect.objectContaining({ code: "440100" }));
-    expect(focusCurrentBoundary).not.toHaveBeenCalled();
+    expect(focusCurrentBoundary).toHaveBeenCalledOnce();
     let scopeEvents = wrapper.emitted("scopeChange") ?? [];
     expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "440100" });
 
     wrapper.findComponent(rendererStub).vm.$emit("feature-select", shenzhen);
     await flushPromises();
-    expect(previewFeature).toHaveBeenLastCalledWith("440300", true);
+    expect(indicateFeatureSelection).toHaveBeenLastCalledWith("440300");
     expect(focusFeature).not.toHaveBeenCalled();
     expect(prepareMapState).toHaveBeenLastCalledWith(expect.objectContaining({ code: "440300" }));
+    expect(focusCurrentBoundary).toHaveBeenCalledTimes(2);
     scopeEvents = wrapper.emitted("scopeChange") ?? [];
     expect(scopeEvents[scopeEvents.length - 1]?.[0]).toMatchObject({ code: "440300" });
 

@@ -5,6 +5,7 @@ import DigitalTwinMapWorkspace from "@/features/digital-twin/components/DigitalT
 import { useDigitalTwinDashboardSession } from "@/features/digital-twin/use-digital-twin-dashboard-session";
 import SmartSportsDashboardHud from "@/features/smart-sports-dashboard/components/SmartSportsDashboardHud.vue";
 import type { MapDataSource } from "@/features/digital-twin/map-data-source";
+import type { MapState } from "@/features/digital-twin/map-state";
 import { smartSportsMapFramingOffsetY } from "@/features/digital-twin/rendering/map-visual-tuning";
 import type { EducationLocation } from "@/features/digital-twin/types";
 import type { SmartSportsDashboardTabId } from "@/features/smart-sports-dashboard/smart-sports-dashboard-data";
@@ -67,11 +68,13 @@ const sportsDateRange = ref<[string, string]>([
 ]);
 const activeSportsDashboard = ref<SmartSportsDashboardTabId>("overview");
 const sportsTitle = computed(() => `${props.mapDataSource.initialState.regionName}智慧体育大脑`);
-const energyTowerValueFrame = computed(() => createSmartSportsEnergyTowerValueFrame(
-  activeSportsDashboard.value,
-  activeMapState.value,
-  sportsDateRange.value,
-));
+function resolveEnergyTowerValueFrame(mapState: MapState) {
+  return createSmartSportsEnergyTowerValueFrame(
+    activeSportsDashboard.value,
+    mapState,
+    sportsDateRange.value,
+  );
+}
 </script>
 
 <template>
@@ -106,7 +109,7 @@ const energyTowerValueFrame = computed(() => createSmartSportsEnergyTowerValueFr
         :data-layer-mode="dataLayerMode"
         :visual-tuning="mapVisualTuning"
         :data-source="props.mapDataSource"
-        :energy-tower-value-frame="energyTowerValueFrame"
+        :resolve-energy-tower-value-frame="resolveEnergyTowerValueFrame"
         @select="selectLocation"
         @scope-change="handleScopeChange"
         @network-availability-change="handleNetworkAvailabilityChange"

@@ -40,13 +40,21 @@ const targetView: MapCameraView = {
 describe("MapCameraTransition", () => {
   it("applies a reduced-motion view atomically", async () => {
     const context = createTransition();
+    const onProgress = vi.fn();
 
-    const completion = context.transition.animate(targetView, { x: -108, y: -30 }, false);
+    const completion = context.transition.animate(
+      targetView,
+      { x: -108, y: -30 },
+      false,
+      { onProgress },
+    );
 
     await expect(completion).resolves.toBe("completed");
     expect(context.transition.getView()).toEqual(targetView);
     expect(context.getFraming()).toEqual({ x: -108, y: -30 });
     expect(context.requestHighFrameRate).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenCalledOnce();
+    expect(onProgress).toHaveBeenCalledWith(1);
   });
 
   it("settles an interrupted transition promise so navigation cannot deadlock", async () => {
