@@ -194,4 +194,21 @@ describe("virtualPortraitRawDataSource", () => {
     expect([...previousVersions].every((version) => version.includes("2024-2025-second"))).toBe(true);
     expect(previousVersions).not.toEqual(currentVersions);
   });
+
+  it("keeps distinct evaluation-form labels when querying a whole academic year", async () => {
+    const dataset = await runtimeStudentGrowthPortraitRepository.query({
+      tenantId: "local-demo",
+      academicYears: ["2025-2026"],
+      domains: ["five-education"],
+    });
+    const formLabels = [...new Set(dataset.distributions
+      .filter((distribution) => distribution.key.startsWith("five-education-dimension-"))
+      .map((distribution) => distribution.group?.label)
+      .filter((label): label is string => Boolean(label)))];
+
+    expect(formLabels.length).toBe(6);
+    expect(formLabels.some((label) => label.includes("第一学期"))).toBe(true);
+    expect(formLabels.some((label) => label.includes("第二学期"))).toBe(true);
+    expect(formLabels.every((label) => !/^小学$|^初中$|^高中$/.test(label))).toBe(true);
+  });
 });

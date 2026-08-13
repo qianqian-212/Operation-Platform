@@ -227,12 +227,34 @@ export const pageRegistry: PageRegistryItem[] = [
   ),
   page(
     "bureau-student-growth-portrait",
-    "学生成长画像",
+    "学生成长概览",
     "/bureau/education-governance/student-growth-portrait",
     bureau,
     () => import("@/views/bureau/education-governance/StudentGrowthPortraitView.vue"),
     {
-      description: "面向区域教育管理者的连续学生发展分析页面，通过同页锚点串联区域总览、五育评价、运动健康、荣誉、行为、实践、日常评价与数据覆盖。",
+      description: "面向区域教育管理者的连续学生发展概览页面，通过同页锚点串联区域总览、综合评价概览、运动健康、荣誉、行为、实践、日常评价与数据覆盖。",
+    },
+  ),
+  page(
+    "bureau-student-growth-archive",
+    "学生成长档案",
+    "/bureau/education-governance/student-growth-archive",
+    bureau,
+    () => import("@/views/bureau/education-governance/StudentGrowthArchiveView.vue"),
+    {
+      description: "面向区域教育管理者的辖区学校学生花名册，按学校查看学生列表并进入个人档案。",
+    },
+  ),
+  page(
+    "bureau-student-growth-archive-detail",
+    "学生个人档案",
+    "/bureau/education-governance/student-growth-archive/:studentId",
+    bureau,
+    () => import("@/views/bureau/education-governance/StudentGrowthArchiveDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-student-growth-archive",
+      description: "学生个人成长档案详情页；首期为开发中占位。",
     },
   ),
 

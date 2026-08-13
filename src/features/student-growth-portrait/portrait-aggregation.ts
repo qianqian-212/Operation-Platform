@@ -278,10 +278,21 @@ function evaluationDistribution(
 }
 
 function evaluationFormShortLabel(formVersion: string) {
-  if (formVersion.includes("/primary/")) return "小学";
-  if (formVersion.includes("/junior/")) return "初中";
-  if (formVersion.includes("/senior/")) return "高中";
-  return formVersion;
+  const stageLabel = formVersion.includes("/primary/")
+    ? "小学"
+    : formVersion.includes("/junior/")
+      ? "初中"
+      : formVersion.includes("/senior/")
+        ? "高中"
+        : null;
+  const leaf = formVersion.split("/").pop() ?? "";
+  const periodMatch = leaf.match(/^(\d{4})-(\d{4})-(first|second)(?:-v\d+)?$/);
+  if (stageLabel && periodMatch) {
+    const yearLabel = `${periodMatch[1]}—${periodMatch[2]}`;
+    const termLabel = periodMatch[3] === "first" ? "第一学期" : "第二学期";
+    return `${stageLabel} · ${yearLabel}学年${termLabel}`;
+  }
+  return stageLabel ?? formVersion;
 }
 
 function evaluationDimensionDistributions(

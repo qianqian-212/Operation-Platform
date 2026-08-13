@@ -46,9 +46,10 @@ import { useUserStore } from "@/stores/user";
 const router = useRouter();
 const userStore = useUserStore();
 const activeAnchor = ref<(typeof portraitAnchors)[number]["key"]>("regional-overview");
+const timeGrain = ref<"semester" | "academic-year">("semester");
+const periodKey = ref("2025-2026:first");
 const stage = ref("全部学段");
 const grade = ref("全部年级");
-const term = ref("2025—2026上学期");
 const academicSubject = ref("");
 const nationalAlignmentPanels = ref<string[]>([]);
 const comprehensiveDataset = ref<PortraitDataset>();
@@ -74,32 +75,112 @@ function openSmartSportsCockpit() {
   window.open(href, "_blank", "noopener,noreferrer");
 }
 
-const termPeriods = {
-  "2025—2026下学期": {
-    current: { academicYear: "2025-2026", term: "second" },
-    yearOverYear: { academicYear: "2024-2025", term: "second" },
+const academicYearOptions = ["2025-2026", "2024-2025"] as const;
+const timeGrainOptions = [
+  { value: "semester" as const, label: "按学期" },
+  { value: "academic-year" as const, label: "按学年" },
+];
+
+function formatAcademicYearLabel(year: string) {
+  return year.replace("-", "—");
+}
+
+function semesterPeriodKey(year: string, term: "first" | "second") {
+  return `${year}:${term}` as const;
+}
+
+function parseSemesterPeriodKey(key: string): { academicYear: string; term: "first" | "second" } {
+  const [academicYear, term] = key.split(":");
+  if (!academicYear || (term !== "first" && term !== "second")) {
+    return { academicYear: "2025-2026", term: "first" };
+  }
+  return { academicYear, term };
+}
+
+const semesterPeriodOptions = academicYearOptions.flatMap((year) => ([
+  {
+    value: semesterPeriodKey(year, "first"),
+    label: `${formatAcademicYearLabel(year)}学年第一学期`,
   },
-  "2025—2026上学期": {
-    current: { academicYear: "2025-2026", term: "first" },
-    yearOverYear: { academicYear: "2024-2025", term: "first" },
+  {
+    value: semesterPeriodKey(year, "second"),
+    label: `${formatAcademicYearLabel(year)}学年第二学期`,
   },
-  "2024—2025下学期": {
-    current: { academicYear: "2024-2025", term: "second" },
-    yearOverYear: { academicYear: "2023-2024", term: "second" },
-  },
-} as const;
+]));
+
+const academicYearPeriodOptions = academicYearOptions.map((year) => ({
+  value: year,
+  label: `${formatAcademicYearLabel(year)}学年`,
+}));
+
+const periodOptions = computed(() => (
+  timeGrain.value === "semester" ? semesterPeriodOptions : academicYearPeriodOptions
+));
 
 type PortraitFilterScope = {
+  timeGrain: "semester" | "academic-year";
+  academicYear: string;
+  term: "first" | "second";
   stage: string;
   grade: string;
-  term: keyof typeof termPeriods;
 };
 
+function resolvePeriodSelection(
+  grain: PortraitFilterScope["timeGrain"],
+  key: string,
+): Pick<PortraitFilterScope, "academicYear" | "term"> {
+  if (grain === "academic-year") {
+    return {
+      academicYear: academicYearOptions.includes(key as typeof academicYearOptions[number])
+        ? key
+        : academicYearOptions[0],
+      term: "first",
+    };
+  }
+  return parseSemesterPeriodKey(key);
+}
+
 const appliedScope = ref<PortraitFilterScope>({
+  timeGrain: timeGrain.value,
+  ...resolvePeriodSelection(timeGrain.value, periodKey.value),
   stage: stage.value,
   grade: grade.value,
-  term: term.value as keyof typeof termPeriods,
 });
+
+function previousAcademicYear(year: string) {
+  const [start, end] = year.split("-").map(Number);
+  if (!start || !end) return year;
+  return `${start - 1}-${end - 1}`;
+}
+
+function formatPeriodLabel(scope: Pick<PortraitFilterScope, "timeGrain" | "academicYear" | "term">) {
+  const yearLabel = formatAcademicYearLabel(scope.academicYear);
+  if (scope.timeGrain === "academic-year") return `${yearLabel}学年`;
+  return `${yearLabel}学年${scope.term === "first" ? "第一学期" : "第二学期"}`;
+}
+
+function syncPeriodKeyForGrain(grain: PortraitFilterScope["timeGrain"]) {
+  if (grain === "semester") {
+    const year = academicYearOptions.includes(periodKey.value as typeof academicYearOptions[number])
+      ? periodKey.value
+      : parseSemesterPeriodKey(periodKey.value).academicYear;
+    const nextKey = semesterPeriodKey(year, "first");
+    periodKey.value = semesterPeriodOptions.some((option) => option.value === nextKey)
+      ? nextKey
+      : semesterPeriodOptions[0]!.value;
+    return;
+  }
+  const year = academicYearOptions.includes(periodKey.value as typeof academicYearOptions[number])
+    ? periodKey.value
+    : parseSemesterPeriodKey(periodKey.value).academicYear;
+  periodKey.value = academicYearPeriodOptions.some((option) => option.value === year)
+    ? year
+    : academicYearPeriodOptions[0]!.value;
+}
+
+function onTimeGrainChange() {
+  syncPeriodKeyForGrain(timeGrain.value);
+}
 
 const anchorIcons = {
   "regional-overview": LayoutDashboard,
@@ -115,7 +196,7 @@ const anchorIcons = {
 const regionalQualityTopics = [
   {
     key: "five-education",
-    title: "五育评价",
+    title: "综合评价概览",
     description: "按各学段评价表观察覆盖率与等级构成，不作跨校评分。",
     primaryMetricKey: "five-education-evaluation-coverage-rate",
   },
@@ -165,7 +246,7 @@ const calculationMetricGroups = [
     ],
   },
   {
-    domain: "五育评价",
+    domain: "综合评价",
     metricKeys: [
       "five-education-evaluation-coverage-rate",
       "five-education-evaluated-student-count",
@@ -226,7 +307,7 @@ const calculationMetricGroups = [
 const distributionCalculationRows = [
   {
     key: "five-education-level-distribution",
-    domain: "五育评价",
+    domain: "综合评价",
     label: "一级指标评价等级占比",
     calculation: "同一学期、评价表版本和一级指标内，某评价等级的有效评价结果数 ÷ 该一级指标全部有效评价结果数。",
   },
@@ -370,7 +451,7 @@ function metricCalculationExample(metric: PortraitMetric | undefined) {
 }
 
 const filterScopeLabel = computed(() => (
-  `${appliedScope.value.stage} · ${appliedScope.value.grade} · ${appliedScope.value.term}`
+  `${formatPeriodLabel(appliedScope.value)} · ${appliedScope.value.stage} · ${appliedScope.value.grade}`
 ));
 const academicCoverageWarning = computed(() => {
   const latestByGrade = new Map<string, (typeof trendSummaries.value)[number]>();
@@ -451,32 +532,39 @@ function goToAnchor(anchor: (typeof portraitAnchors)[number]["key"]) {
 }
 
 async function applyFilters() {
+  const period = resolvePeriodSelection(timeGrain.value, periodKey.value);
   const nextScope: PortraitFilterScope = {
+    timeGrain: timeGrain.value,
+    academicYear: period.academicYear,
+    term: period.term,
     stage: stage.value,
     grade: grade.value,
-    term: term.value as keyof typeof termPeriods,
   };
   if (await loadComprehensiveDataset(nextScope)) {
-    ElMessage.success(`已更新统计范围：${nextScope.stage} · ${nextScope.grade}`);
+    ElMessage.success(`已更新统计范围：${formatPeriodLabel(nextScope)} · ${nextScope.stage} · ${nextScope.grade}`);
   }
 }
 
 async function resetFilters() {
+  timeGrain.value = "semester";
+  periodKey.value = "2025-2026:first";
   stage.value = "全部学段";
   grade.value = "全部年级";
-  term.value = "2025—2026上学期";
   academicSubject.value = "";
   ElMessage.info("已恢复默认统计范围");
+  const period = resolvePeriodSelection(timeGrain.value, periodKey.value);
   await loadComprehensiveDataset({
+    timeGrain: timeGrain.value,
+    academicYear: period.academicYear,
+    term: period.term,
     stage: stage.value,
     grade: grade.value,
-    term: term.value as keyof typeof termPeriods,
   });
 }
 
 function comprehensiveQuery(
-  period: { academicYear: string; term: "first" | "second" },
   scope: PortraitFilterScope,
+  period: { academicYear: string; term?: "first" | "second" },
   includeStudentScope = true,
 ): PortraitQuery {
   const stageMap: Record<string, EducationStage> = {
@@ -487,9 +575,11 @@ function comprehensiveQuery(
   const query: PortraitQuery = {
     tenantId: "bureau-local-demo",
     academicYears: [period.academicYear],
-    terms: [period.term],
     domains: ["academic", ...regionalQualityTopics.map((topic) => topic.key)],
   };
+  if (scope.timeGrain === "semester" && period.term) {
+    query.terms = [period.term];
+  }
   const selectedStage = stageMap[scope.stage];
   if (includeStudentScope && selectedStage) query.educationStages = [selectedStage];
   if (includeStudentScope && scope.grade !== "全部年级") query.grades = [scope.grade];
@@ -503,18 +593,23 @@ async function loadComprehensiveDataset(scope: PortraitFilterScope): Promise<boo
   comprehensiveLoading.value = true;
   comprehensiveError.value = "";
   try {
-    const selectedPeriod = termPeriods[scope.term];
+    const currentPeriod = scope.timeGrain === "semester"
+      ? { academicYear: scope.academicYear, term: scope.term }
+      : { academicYear: scope.academicYear };
+    const yearOverYearPeriod = scope.timeGrain === "semester"
+      ? { academicYear: previousAcademicYear(scope.academicYear), term: scope.term }
+      : { academicYear: previousAcademicYear(scope.academicYear) };
     const [currentDataset, yearAgoDataset, populationDataset] = await Promise.all([
       runtimeStudentGrowthPortraitRepository.query(
-        comprehensiveQuery(selectedPeriod.current, scope),
+        comprehensiveQuery(scope, currentPeriod),
         controller.signal,
       ),
       runtimeStudentGrowthPortraitRepository.query(
-        comprehensiveQuery(selectedPeriod.yearOverYear, scope),
+        comprehensiveQuery(scope, yearOverYearPeriod),
         controller.signal,
       ),
       runtimeStudentGrowthPortraitRepository.query(
-        comprehensiveQuery(selectedPeriod.current, scope, false),
+        comprehensiveQuery(scope, currentPeriod, false),
         controller.signal,
       ),
     ]);
@@ -574,7 +669,38 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="student-growth-portrait-page" :style="portraitStickyStyle">
-    <PageFilterBar ref="portraitFilter" class="portrait-filter" aria-label="学生发展画像统计范围">
+    <PageFilterBar ref="portraitFilter" class="portrait-filter" aria-label="学生成长概览统计范围">
+      <label class="portrait-filter__field">
+        <span>统计周期：</span>
+        <ElSelect
+          v-model="timeGrain"
+          aria-label="统计周期"
+          class="portrait-filter__select"
+          @change="onTimeGrainChange"
+        >
+          <ElOption
+            v-for="option in timeGrainOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </ElSelect>
+      </label>
+      <label class="portrait-filter__field portrait-filter__field--period">
+        <span>{{ timeGrain === "semester" ? "学期：" : "学年：" }}</span>
+        <ElSelect
+          v-model="periodKey"
+          :aria-label="timeGrain === 'semester' ? '学期' : '学年'"
+          class="portrait-filter__select"
+        >
+          <ElOption
+            v-for="option in periodOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </ElSelect>
+      </label>
       <label class="portrait-filter__field">
         <span>学段：</span>
         <ElSelect
@@ -596,14 +722,6 @@ onBeforeUnmount(() => {
           <ElOption v-for="option in gradeOptions" :key="option" :label="option" :value="option" />
         </ElSelect>
       </label>
-      <label class="portrait-filter__field portrait-filter__field--term">
-        <span>学期：</span>
-        <ElSelect v-model="term" aria-label="学期" class="portrait-filter__select portrait-filter__select--term">
-          <ElOption label="2025—2026下学期" value="2025—2026下学期" />
-          <ElOption label="2025—2026上学期" value="2025—2026上学期" />
-          <ElOption label="2024—2025下学期" value="2024—2025下学期" />
-        </ElSelect>
-      </label>
       <template #actions>
         <ElButton
           type="primary"
@@ -618,7 +736,7 @@ onBeforeUnmount(() => {
     </PageFilterBar>
 
     <div class="student-growth-portrait-page__workspace">
-      <nav class="portrait-anchor-nav" aria-label="学生成长画像内容锚点">
+      <nav class="portrait-anchor-nav" aria-label="学生成长概览内容锚点">
         <a
           v-for="anchor in portraitAnchors"
           :key="anchor.key"
@@ -830,7 +948,7 @@ onBeforeUnmount(() => {
                 <p>仅列出当前页面已经使用的统计指标；运动健康沿用智慧体育字段口径，不在此重复。</p>
               </div>
             </header>
-            <ElTable :data="calculationRows" row-key="key" stripe aria-label="学生成长画像指标计算口径">
+            <ElTable :data="calculationRows" row-key="key" stripe aria-label="学生成长概览指标计算口径">
               <ElTableColumn prop="domain" column-key="domain" label="数据领域" width="120" />
               <ElTableColumn prop="label" column-key="metric" label="指标" min-width="190" />
               <ElTableColumn prop="calculation" column-key="calculation" label="计算方式" min-width="520" />
@@ -879,6 +997,7 @@ onBeforeUnmount(() => {
 }
 
 .portrait-filter__field--term { width: 230px; }
+.portrait-filter__field--period { width: 320px; }
 .portrait-filter__field > span { flex: none; white-space: nowrap; }
 .portrait-filter__select { min-width: 0; flex: 1; }
 
@@ -1324,7 +1443,8 @@ onBeforeUnmount(() => {
   .portrait-national-dimensions { grid-template-columns: 1fr; }
   .portrait-national-alignment__title { align-items: flex-start; flex-direction: column; }
   .portrait-filter__field,
-  .portrait-filter__field--term { width: 100%; }
+  .portrait-filter__field--term,
+  .portrait-filter__field--period { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

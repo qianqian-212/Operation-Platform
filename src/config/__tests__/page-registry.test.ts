@@ -70,9 +70,9 @@ describe("page registry", () => {
     });
   });
 
-  it("registers the bureau student growth portrait as an available shell page", () => {
+  it("registers the bureau student growth overview as an available shell page", () => {
     expect(pageRegistryByKey.get("bureau-student-growth-portrait")).toMatchObject({
-      title: "学生成长画像",
+      title: "学生成长概览",
       path: "/bureau/education-governance/student-growth-portrait",
       tenantTypes: ["bureau"],
       status: "available",
@@ -80,6 +80,25 @@ describe("page registry", () => {
       openMode: "current",
     });
     expect(pageRegistryByKey.has("bureau-new-student-growth-portrait")).toBe(false);
+  });
+
+  it("registers the bureau student growth archive list and detail pages", () => {
+    expect(pageRegistryByKey.get("bureau-student-growth-archive")).toMatchObject({
+      title: "学生成长档案",
+      path: "/bureau/education-governance/student-growth-archive",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-student-growth-archive-detail")).toMatchObject({
+      title: "学生个人档案",
+      path: "/bureau/education-governance/student-growth-archive/:studentId",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-student-growth-archive",
+    });
   });
 
   it("registers a reusable menu-scoped developing placeholder page", () => {

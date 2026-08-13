@@ -488,15 +488,15 @@ const fiveEducationDimensionDistributions = computed(() => (
 const fiveEducationDistributionExplanationItems = [
   {
     label: "数据来源",
-    value: "来自评价表管理；当前学期每张已发布且适用的表对应一张热力图。",
+    value: "来自评价表管理；当前统计范围内每张已发布且适用的表对应一张热力图。",
   },
   {
     label: "表内结构",
     value: "横轴为一级指标，纵轴为评价等级，格子汇总最底层评价项结果。",
   },
   {
-    label: "学期切换",
-    value: "切换学期后重新读取该学期的评价表和结果；表数量与结构可以变化。",
+    label: "周期切换",
+    value: "按学期只读该学期评价表；按学年会同时出现各学期版本。同名学段若有多个学期版本，标题会标注学年学期，不合并为一张表。",
   },
   {
     label: "计算方式",
@@ -504,7 +504,7 @@ const fiveEducationDistributionExplanationItems = [
   },
   {
     label: "学校横评",
-    value: "仅比较同学期、同评价表、同一级指标和同等级，且在籍学生不少于 10 人、数据覆盖率不低于 80% 的学校；悬浮时显示最高、最低学校名称。",
+    value: "仅比较同评价表、同一级指标和同等级，且在籍学生不少于 10 人、数据覆盖率不低于 80% 的学校；悬浮时显示最高、最低学校名称。",
   },
   {
     label: "计算示例",
@@ -778,7 +778,10 @@ const fiveEducationHeatmaps = computed(() => {
 });
 
 const fiveEducationFormNames = computed(() => (
-  fiveEducationHeatmaps.value.map((heatmap) => `${heatmap.label}评价表`)
+  fiveEducationHeatmaps.value.map((heatmap) => ({
+    key: heatmap.key,
+    label: `${heatmap.label}评价表`,
+  }))
 ));
 
 const practiceChartOption = computed<EChartsCoreOption>(() => {
@@ -1262,15 +1265,15 @@ function metricCalculationDetail(metric: PortraitMetric) {
                   <button
                     type="button"
                     class="regional-quality-domain__form-trigger"
-                    aria-label="查看当前学期评价表"
+                    aria-label="查看当前范围评价表"
                   >
                     查看评价表
                   </button>
                 </template>
                 <div class="regional-quality-domain__form-list">
-                  <strong>当前学期评价表</strong>
-                  <span v-for="formName in fiveEducationFormNames" :key="formName">
-                    {{ formName }}
+                  <strong>当前范围评价表</strong>
+                  <span v-for="form in fiveEducationFormNames" :key="form.key">
+                    {{ form.label }}
                   </span>
                 </div>
               </ElPopover>
@@ -1334,7 +1337,7 @@ function metricCalculationDetail(metric: PortraitMetric) {
           <div class="regional-quality-domain__five-education-heatmap-canvas">
             <PortraitChart
               :option="heatmap.option"
-              :ariaLabelText="`五育评价${heatmap.label}评价表一级指标评价等级热力图`"
+              :ariaLabelText="`综合评价概览${heatmap.label}评价表一级指标评价等级热力图`"
             />
           </div>
         </section>

@@ -36,7 +36,7 @@ export interface StudentGrowthPageCapability {
 
 export const studentGrowthTopicCapabilityMatrix: readonly StudentGrowthTopicCapability[] = [
   { key: "overview", label: "区域总览", description: "展示数据覆盖、区域汇总与学校差异。", status: "enabled" },
-  { key: "five-education", label: "五育评价", description: "展示目标完成和结构化评价结果。", status: "enabled" },
+  { key: "five-education", label: "综合评价概览", description: "展示目标完成和结构化评价结果。", status: "enabled" },
   {
     key: "academic",
     label: "学业发展",

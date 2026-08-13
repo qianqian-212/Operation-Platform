@@ -8,13 +8,13 @@ async function switchToBureauTenant(page: Page) {
   await page.getByRole("menuitem", { name: "体验区教育局", exact: true }).click();
 }
 
-test("学生成长画像连续展示八段可追溯区域分析并通过锚点定位", async ({ page }) => {
+test("学生成长概览连续展示八段可追溯区域分析并通过锚点定位", async ({ page }) => {
   await switchToBureauTenant(page);
   await page.goto("/bureau/education-governance/student-growth-portrait");
 
   await expect(page.locator(".student-growth-portrait-page__intro")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "学生成长画像", exact: true })).toHaveCount(0);
-  const navigation = page.getByRole("navigation", { name: "学生成长画像内容锚点" });
+  await expect(page.getByRole("heading", { name: "学生成长概览", exact: true })).toHaveCount(0);
+  const navigation = page.getByRole("navigation", { name: "学生成长概览内容锚点" });
   const filterBar = page.locator(".portrait-filter");
   await expect(filterBar).toHaveCSS("position", "sticky");
   await expect(filterBar).toHaveCSS("top", "0px");
@@ -27,7 +27,7 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
 
   for (const heading of [
     "区域发展总览",
-    "五育评价",
+    "综合评价概览",
     "运动健康",
     "荣誉发展",
     "行为习惯",
@@ -38,7 +38,7 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
   }
   await expect(page.getByRole("img", {
-    name: /五育评价.+评价表一级指标评价等级热力图/,
+    name: /综合评价概览.+评价表一级指标评价等级热力图/,
   })).toHaveCount(3);
   await expect(page.getByRole("heading", { name: "专题与发展报告", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^导出/ })).toHaveCount(0);
@@ -49,7 +49,7 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
   await expect(page.getByRole("heading", { name: "学校发展画像" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "成长支持成效" })).toHaveCount(0);
   for (const label of [
-    "五育评价对比维度",
+    "综合评价概览对比维度",
     "运动健康对比维度",
     "荣誉发展对比维度",
     "行为习惯对比维度",
@@ -134,7 +134,7 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
 
   await page.getByRole("combobox", { name: "学期", exact: true }).focus();
   await page.getByRole("combobox", { name: "学期", exact: true }).press("ArrowDown");
-  await page.getByRole("option", { name: "2024—2025下学期", exact: true }).click();
+  await page.getByRole("option", { name: "2024—2025学年第二学期", exact: true }).click();
   await page.getByRole("button", { name: "查询", exact: true }).click();
   await expect(fiveEducationMetric).toContainText("同比 暂无可比");
 
@@ -170,18 +170,18 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
   await expect(page.getByRole("combobox", { name: "区域趋势年级" })).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "区域趋势科目" })).toHaveCount(0);
 
-  await navigation.getByRole("link", { name: /五育评价/ }).click();
+  await navigation.getByRole("link", { name: /综合评价概览/ }).click();
   await expect(page.locator("#five-education")).toBeInViewport();
-  await expect(page.getByRole("img", { name: "五育评价年级对比" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "综合评价概览年级对比" })).toBeVisible();
   await expect(page.locator("#five-education")).toContainText("成长评价覆盖率");
   await expect(page.locator("#five-education")).toContainText("参评学生数");
   await expect(page.locator("#five-education")).toContainText("评价结果数");
   await expect(page.locator("#five-education")).toContainText("使用评价表");
   await expect(page.getByRole("img", {
-    name: "五育评价初中评价表一级指标评价等级热力图",
+    name: "综合评价概览初中 · 2025—2026学年第一学期评价表一级指标评价等级热力图",
   })).toBeVisible();
   await page.getByRole("button", { name: "一级指标评价等级构成说明：统计说明" }).hover();
-  await expect(page.locator(".el-popper:visible").getByText("学期切换")).toBeVisible();
+  await expect(page.locator(".el-popper:visible").getByText("周期切换")).toBeVisible();
   await expect(page.locator(".el-popper:visible").getByText(
     "某等级占比 = 该等级评价数 ÷ 本指标全部评价数。",
   )).toBeVisible();
@@ -191,18 +191,18 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
   )).toBeVisible();
   await page.mouse.move(500, 400);
   await expect(page.locator(".el-popper:visible")).toHaveCount(0);
-  await page.getByRole("button", { name: "查看当前学期评价表" }).hover();
-  await expect(page.locator(".el-popper:visible").getByText("当前学期评价表")).toBeVisible();
-  await expect(page.locator(".el-popper:visible").getByText("初中评价表")).toBeVisible();
-  await expect(page.locator(".el-popper:visible").getByText("小学评价表")).toHaveCount(0);
-  await expect(page.locator(".el-popper:visible").getByText("高中评价表")).toHaveCount(0);
+  await page.getByRole("button", { name: "查看当前范围评价表" }).hover();
+  await expect(page.locator(".el-popper:visible").getByText("当前范围评价表")).toBeVisible();
+  await expect(page.locator(".el-popper:visible").getByText("初中 · 2025—2026学年第一学期评价表")).toBeVisible();
+  await expect(page.locator(".el-popper:visible").getByText("小学 · 2025—2026学年第一学期评价表")).toHaveCount(0);
+  await expect(page.locator(".el-popper:visible").getByText("高中 · 2025—2026学年第一学期评价表")).toHaveCount(0);
   await page.mouse.move(0, 0);
   await expect(page.locator("#five-education")).toContainText("同比");
   await expect(page.locator("#five-education")).not.toContainText("数据完整 · 覆盖");
-  await expect(page.getByRole("radiogroup", { name: "五育评价对比维度" })).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "综合评价概览对比维度" })).toBeVisible();
   await page.locator("#five-education").getByText("按学校", { exact: true }).click();
-  await expect(page.getByRole("img", { name: "五育评价学校对比" })).toBeVisible();
-  await page.locator("#five-education").getByRole("button", { name: "五育评价观察口径：观察口径" }).hover();
+  await expect(page.getByRole("img", { name: "综合评价概览学校对比" })).toBeVisible();
+  await page.locator("#five-education").getByRole("button", { name: "综合评价概览观察口径：观察口径" }).hover();
   const fiveEducationObservation = page.locator(".el-popper:visible").filter({
     hasText: "至少有一条有效成长评价的学生数",
   });
@@ -301,7 +301,7 @@ test("学生成长画像连续展示八段可追溯区域分析并通过锚点�
   await expect(page.getByRole("heading", { name: "数据来源说明" })).toBeVisible();
   await expect(page.locator("#data-coverage")).toContainText("各校单个学生的个人档案模块与学生成长数据");
   await expect(page.locator("#data-coverage")).toContainText("参照智慧体育大屏现有字段体系");
-  const calculationTable = page.locator('[aria-label="学生成长画像指标计算口径"]');
+  const calculationTable = page.locator('[aria-label="学生成长概览指标计算口径"]');
   await expect(calculationTable).toBeVisible();
   await expect(calculationTable.locator("tbody tr")).toHaveCount(42);
   await expect(calculationTable).toContainText("区域平均得分率");
