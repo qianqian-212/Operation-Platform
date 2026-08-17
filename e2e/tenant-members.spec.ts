@@ -111,7 +111,7 @@ test("当前用户成员角色变更后 Header 与工作台按新角色生效", 
   await saveMemberDialog(page);
   await expectMemberSaved(page);
   await expect(page.locator(".el-dialog:visible")).toHaveCount(0);
-  await page.locator(".el-drawer__close-btn").click();
+  await page.locator(".el-drawer").filter({ hasText: "成员管理" }).locator(".el-drawer__close-btn").click();
   await expect(page.getByText("体育东路小学海明学校 · 成员管理", { exact: true })).toBeHidden();
 
   await page.getByRole("button", { name: "运营平台 运营平台" }).click();
@@ -119,19 +119,22 @@ test("当前用户成员角色变更后 Header 与工作台按新角色生效", 
 
   await expect(page).toHaveURL(/\/workbench$/);
   await expectHeaderRole(page, "管理员");
-  await expect(page.getByRole("heading", { name: "在校学生" })).toBeVisible();
-  await expect(page.locator(".grid-stack-item")).toHaveCount(9);
+  await expect(page.getByRole("heading", { name: "校园数据" })).toBeVisible();
+  await expect(page.getByText("在校学生", { exact: true })).toBeVisible();
+  await expect(page.locator(".grid-stack-item")).toHaveCount(8);
 
   await page.getByRole("button", { name: "切换当前角色" }).click();
   await page.getByRole("menuitem", { name: "老师", exact: true }).click();
 
   await expectHeaderRole(page, "老师");
-  await expect(page.getByRole("heading", { name: "今日课程" })).toBeVisible();
-  await expect(page.locator(".grid-stack-item")).toHaveCount(7);
+  await expect(page.getByRole("heading", { name: "校园数据" })).toBeVisible();
+  await expect(page.getByText("今日课程", { exact: true })).toBeVisible();
+  await expect(page.locator(".grid-stack-item")).toHaveCount(6);
 
   await page.reload();
   await expectHeaderRole(page, "老师");
-  await expect(page.getByRole("heading", { name: "今日课程" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "校园数据" })).toBeVisible();
+  await expect(page.getByText("今日课程", { exact: true })).toBeVisible();
 });
 
 test("当前用户失去管理员角色后立即离开系统管理页", async ({ page }) => {
@@ -153,7 +156,8 @@ test("当前用户失去管理员角色后立即离开系统管理页", async ({
 
   await expect(page).toHaveURL(/\/workbench$/);
   await expectHeaderRole(page, "职员");
-  await expect(page.getByRole("heading", { name: "个人待办" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "平台数据" })).toBeVisible();
+  await expect(page.getByText("个人待办", { exact: true })).toBeVisible();
 });
 
 test("删除组织后同步清理该组织成员数据", async ({ page }) => {

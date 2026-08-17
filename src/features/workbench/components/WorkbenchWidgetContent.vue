@@ -1,24 +1,13 @@
 <template>
-  <div v-if="data.kind === 'metric'" class="metric-content">
-    <strong>{{ data.value }}</strong>
-    <span :class="`trend-${data.trendTone}`">{{ data.trend }}</span>
-  </div>
+  <WorkbenchStatsOverview v-if="data.kind === 'stats'" :data="data" />
 
   <WorkbenchTrendChart v-else-if="data.kind === 'trend'" :data="data" />
 
-  <ul v-else-if="data.kind === 'list' || data.kind === 'schedule'" class="widget-list">
-    <li v-for="item in data.items" :key="item.id">
-      <span class="list-marker" :class="`tone-${item.tone ?? 'neutral'}`" />
-      <div>
-        <div class="list-title">
-          <span v-if="item.label" class="list-label">{{ item.label }}</span>
-          <strong>{{ item.title }}</strong>
-        </div>
-        <span>{{ item.meta }}</span>
-      </div>
-    </li>
-    <li v-if="!data.items.length" class="empty-row">暂无列表内容</li>
-  </ul>
+  <WorkbenchItemCards
+    v-else-if="data.kind === 'list' || data.kind === 'schedule'"
+    :items="data.items"
+    empty-text="暂无列表内容"
+  />
 
   <div v-else-if="data.kind === 'distribution'" class="distribution-content">
     <div v-for="item in data.items" :key="item.label" class="distribution-row">
@@ -40,7 +29,7 @@
     :context="calendarContext"
   />
 
-  <WorkbenchTaskCenter v-else-if="data.kind === 'task-center'" :data="data" />
+  <WorkbenchTaskCenter v-else-if="data.kind === 'inbox'" :data="data" />
 
   <WorkbenchBureauFeed v-else-if="data.kind === 'feed'" :data="data" />
 
@@ -57,15 +46,20 @@
   <WorkbenchUserOverview v-else-if="data.kind === 'user-overview'" :data="data" />
 
   <WorkbenchAccountPanel v-else-if="data.kind === 'account-panel'" :data="data" />
+
+  <WorkbenchEtoneduAgent v-else-if="data.kind === 'agent'" :data="data" />
 </template>
 
 <script setup lang="ts">
+import WorkbenchStatsOverview from "@/features/workbench/components/WorkbenchStatsOverview.vue";
 import WorkbenchAccountPanel from "@/features/workbench/components/WorkbenchAccountPanel.vue";
+import WorkbenchEtoneduAgent from "@/features/workbench/components/WorkbenchEtoneduAgent.vue";
 import WorkbenchActivityRank from "@/features/workbench/components/WorkbenchActivityRank.vue";
 import WorkbenchCalendarAgenda from "@/features/workbench/components/WorkbenchCalendarAgenda.vue";
 import WorkbenchBureauFeed from "@/features/workbench/components/WorkbenchBureauFeed.vue";
 import WorkbenchEducationChart from "@/features/workbench/components/WorkbenchEducationChart.vue";
 import WorkbenchGrowthSummary from "@/features/workbench/components/WorkbenchGrowthSummary.vue";
+import WorkbenchItemCards from "@/features/workbench/components/WorkbenchItemCards.vue";
 import WorkbenchQuickApps from "@/features/workbench/components/WorkbenchQuickApps.vue";
 import WorkbenchRankingList from "@/features/workbench/components/WorkbenchRankingList.vue";
 import WorkbenchSubscriptions from "@/features/workbench/components/WorkbenchSubscriptions.vue";
@@ -81,117 +75,12 @@ defineProps<{
 </script>
 
 <style scoped>
-.metric-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100%;
-  gap: var(--spacing-8);
-}
-
-.metric-content strong {
-  color: var(--color-title);
-  font-size: 30px;
-  font-variant-numeric: tabular-nums;
-  line-height: 36px;
-}
-
-.metric-content span {
-  color: var(--color-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.metric-content .trend-up { color: var(--color-success-dark-text); }
-.metric-content .trend-down { color: var(--color-error-dark-text); }
-.metric-content .trend-neutral { color: var(--color-secondary); }
-
 .distribution-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.widget-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.widget-list li {
-  display: flex;
-  align-items: center;
-  min-height: 38px;
-  gap: var(--spacing-10);
-  padding: var(--spacing-6) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.widget-list li:last-child {
-  border-bottom: 0;
-}
-
-.widget-list li > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 0;
-  flex: 1;
-  gap: var(--spacing-12);
-}
-
-.widget-list strong {
-  overflow: hidden;
+  margin-bottom: var(--spacing-6);
   color: var(--color-body);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.list-title {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: var(--spacing-8);
-}
-
-.widget-list .list-label {
-  flex-shrink: 0;
-  padding: 0 var(--spacing-6);
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
-  line-height: 20px;
-  background: var(--color-bg-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.widget-list span {
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
-}
-
-.list-marker {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  background: var(--color-secondary);
-  border-radius: var(--radius-full);
-}
-
-.tone-primary { background: var(--color-primary); }
-.tone-success { background: var(--color-success-dark-text); }
-.tone-warning { background: var(--color-warning); }
-.tone-danger { background: var(--color-error); }
-.tone-neutral { background: var(--color-secondary); }
-
-.widget-list .empty-row {
-  justify-content: center;
-  color: var(--color-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -201,12 +90,6 @@ defineProps<{
   justify-content: center;
   height: 100%;
   gap: var(--spacing-14);
-}
-
-.distribution-label {
-  margin-bottom: var(--spacing-6);
-  color: var(--color-body);
-  font-size: var(--font-size-sm);
 }
 
 .distribution-label strong {
@@ -227,4 +110,9 @@ defineProps<{
   border-radius: inherit;
 }
 
+.tone-primary { background: var(--color-primary); }
+.tone-success { background: var(--color-success-dark-text); }
+.tone-warning { background: var(--color-warning); }
+.tone-danger { background: var(--color-error); }
+.tone-neutral { background: var(--color-secondary); }
 </style>

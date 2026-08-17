@@ -9,6 +9,7 @@ import {
 import { defaultTenantShellConfig } from "@/features/shell-config/default-shell-config";
 import { ADMIN_ROLE_ID, type RoleRecord } from "@/features/access-control/types";
 import { createDefaultTenantConfiguration } from "@/features/tenant-config/default-tenant-configuration";
+import type { MenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type {
   MenuConfigRecord,
   MenuRecordInput,
@@ -325,6 +326,13 @@ export const useMenuConfigStore = defineStore("menu-config", () => {
     return update(id, input);
   }
 
+  function setIconAccent(id: string, iconAccent: MenuIconAccent | null) {
+    const existing = records.value.find((record) => record.id === id);
+    if (!existing) return;
+    const input: MenuRecordInput = { ...existing, iconAccent };
+    return update(id, input);
+  }
+
   function updateWorkbench(input: Partial<WorkbenchConfig>) {
     const current = shellConfig.value.workbench;
     const label = input.label !== undefined ? input.label.trim() : current.label;
@@ -436,6 +444,7 @@ export const useMenuConfigStore = defineStore("menu-config", () => {
     roleIdsForRecord,
     setRecordRoleVisibility,
     setVisible,
+    setIconAccent,
     updateWorkbench,
     canMove,
     move,

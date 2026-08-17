@@ -75,6 +75,7 @@ describe("MenuEditorDrawer", () => {
     expect(document.body.querySelector('[data-field="page-key"]')).toBeNull();
     expect(document.body.querySelector('[data-field="external-url"]')).not.toBeNull();
     expect(document.body.querySelector('[data-field="external-open-mode"]')).not.toBeNull();
+    expect(document.body.querySelector('[aria-label="图标背景色"]')).not.toBeNull();
     wrapper.unmount();
   });
 });

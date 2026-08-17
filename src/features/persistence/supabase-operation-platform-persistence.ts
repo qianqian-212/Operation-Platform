@@ -21,7 +21,12 @@ import type {
   UserWorkbenchLayout,
   WorkbenchLayoutContext,
   WorkbenchTemplate,
+  WorkbenchWidgetAssignment,
 } from "@/features/workbench/types";
+import {
+  cloneWorkbenchWidgetAssignment,
+  createDefaultWorkbenchWidgetAssignment,
+} from "@/features/workbench/workbench-widget-assignment";
 import type { TenantInfo, UserInfo } from "@/types/user";
 
 const EMPTY_USER: UserInfo = {
@@ -70,6 +75,7 @@ export class SupabaseOperationPlatformPersistence implements OperationPlatformPe
   private activeRoles = new Map<string, string>();
   private visualizationThemes = new Map<string, string>();
   private workbenchLayouts = new Map<string, UserWorkbenchLayout>();
+  private workbenchWidgetAssignment: WorkbenchWidgetAssignment | null = null;
   private loadedTenants = new Set<string>();
   private tenantLoadRequests = new Map<string, Promise<void>>();
   private configurationSaveStates = new Map<string, ConfigurationSaveState>();
@@ -117,6 +123,9 @@ export class SupabaseOperationPlatformPersistence implements OperationPlatformPe
     const workbenchLayouts = new Map(
       [...bootstrap.workbenchLayouts].map(([key, layout]) => [key, cloneWorkbenchLayout(layout)]),
     );
+    const workbenchWidgetAssignment = bootstrap.workbenchWidgetAssignment
+      ? cloneWorkbenchWidgetAssignment(bootstrap.workbenchWidgetAssignment)
+      : createDefaultWorkbenchWidgetAssignment();
     if (generation === this.generation) {
       this.userInfo = userInfo;
       this.tenants = tenants;
@@ -126,6 +135,7 @@ export class SupabaseOperationPlatformPersistence implements OperationPlatformPe
       this.activeRoles = activeRoles;
       this.visualizationThemes = visualizationThemes;
       this.workbenchLayouts = workbenchLayouts;
+      this.workbenchWidgetAssignment = workbenchWidgetAssignment;
       this.loadedTenants = new Set(configurations.keys());
       this.tenantLoadRequests.clear();
     }
@@ -147,6 +157,7 @@ export class SupabaseOperationPlatformPersistence implements OperationPlatformPe
     this.activeRoles.clear();
     this.visualizationThemes.clear();
     this.workbenchLayouts.clear();
+    this.workbenchWidgetAssignment = null;
     this.loadedTenants.clear();
     this.tenantLoadRequests.clear();
     this.configurationSaveStates.clear();
@@ -415,5 +426,28 @@ export class SupabaseOperationPlatformPersistence implements OperationPlatformPe
     );
     this.workbenchLayouts.delete(remoteWorkbenchLayoutKey(context.tenant.id, context.profile));
     return createDefaultWorkbenchLayout(context, template);
+  }
+
+  loadWorkbenchWidgetAssignment() {
+    return {
+      assignment: cloneWorkbenchWidgetAssignment(
+        this.workbenchWidgetAssignment ?? createDefaultWorkbenchWidgetAssignment(),
+      ),
+      recoveryNotice: null,
+    };
+  }
+
+  async saveWorkbenchWidgetAssignment(assignment: WorkbenchWidgetAssignment) {
+    await supabaseOperationPlatformRepository.saveWorkbenchWidgetAssignment(assignment);
+    const saved = cloneWorkbenchWidgetAssignment(assignment);
+    this.workbenchWidgetAssignment = saved;
+    return cloneWorkbenchWidgetAssignment(saved);
+  }
+
+  async resetWorkbenchWidgetAssignment() {
+    await supabaseOperationPlatformRepository.resetWorkbenchWidgetAssignment();
+    const assignment = createDefaultWorkbenchWidgetAssignment();
+    this.workbenchWidgetAssignment = assignment;
+    return cloneWorkbenchWidgetAssignment(assignment);
   }
 }

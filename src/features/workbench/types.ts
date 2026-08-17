@@ -1,5 +1,6 @@
 import type { TenantInfo, TenantType } from "@/types/user";
 import type { MenuIconKey } from "@/types/navigation";
+import type { MenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 
 export const WORKBENCH_LAYOUT_VERSION = 5;
 export const WORKBENCH_GRID_COLUMNS = 12;
@@ -9,8 +10,10 @@ export const SIMPLE_WORKBENCH_SPANS = [2, 3, 6] as const;
 export const FLOW_WORKBENCH_SPANS = [3, 6] as const;
 
 export type WorkbenchProfile = "admin" | "business";
+export type WorkbenchWidgetScope = "common" | "domain";
 export type WorkbenchWidgetKind =
-  | "metric"
+  | "stats"
+  | "inbox"
   | "trend"
   | "list"
   | "schedule"
@@ -22,7 +25,8 @@ export type WorkbenchWidgetKind =
   | "education-chart"
   | "activity-rank"
   | "user-overview"
-  | "account-panel";
+  | "account-panel"
+  | "agent";
 export type WorkbenchWidgetTone = "primary" | "success" | "warning" | "danger" | "neutral";
 export type WorkbenchWidgetSizePreset = "small" | "medium" | "large";
 export type WorkbenchWidgetHeightMode = "intrinsic" | "viewport" | "fixed";
@@ -77,8 +81,9 @@ export interface WorkbenchWidgetDefinition {
   description: string;
   kind: WorkbenchWidgetKind;
   dataKey: string;
-  tenantType: TenantType;
-  profile: WorkbenchProfile;
+  scope: WorkbenchWidgetScope;
+  compatibleTenantTypes: readonly TenantType[];
+  compatibleProfiles: readonly WorkbenchProfile[];
   tone: WorkbenchWidgetTone;
   minSize: WorkbenchWidgetSize;
   maxSize: WorkbenchWidgetSize;
@@ -140,11 +145,18 @@ export interface WorkbenchLayoutLoadResult {
   recoveryNotice: string | null;
 }
 
-export interface WorkbenchMetricData {
-  kind: "metric";
+export interface WorkbenchStatsItemData {
+  id: string;
+  label: string;
   value: string;
   trend: string;
   trendTone: "up" | "down" | "neutral";
+}
+
+export interface WorkbenchStatsData {
+  kind: "stats";
+  title: string;
+  items: WorkbenchStatsItemData[];
 }
 
 export interface WorkbenchTrendData {
@@ -187,6 +199,7 @@ export interface WorkbenchQuickLinkData {
   openMode?: "current" | "new-tab";
   tenantId?: string;
   icon: MenuIconKey | null;
+  iconAccent: MenuIconAccent | null;
   moduleId: string;
   moduleName: string;
   moduleIcon: MenuIconKey | null;
@@ -239,6 +252,10 @@ export interface WorkbenchAccountPanelData {
   verified: boolean;
   organizations: WorkbenchAccountOrganizationData[];
   goals: WorkbenchAccountGoalData[];
+}
+
+export interface WorkbenchAgentData {
+  kind: "agent";
 }
 
 export interface WorkbenchRankingItemData {
@@ -330,13 +347,19 @@ export interface WorkbenchFeedData {
   items: WorkbenchFeedItemData[];
 }
 
-export interface WorkbenchTaskItemData extends WorkbenchListItemData {
+export type WorkbenchInboxCategory = "notice" | "todo" | "daily";
+
+export interface WorkbenchInboxItemData extends WorkbenchListItemData {
+  category: WorkbenchInboxCategory;
   status: "pending" | "completed";
+  unread?: boolean;
+  summary?: string;
+  source?: string;
 }
 
-export interface WorkbenchTaskCenterData {
-  kind: "task-center";
-  items: WorkbenchTaskItemData[];
+export interface WorkbenchInboxData {
+  kind: "inbox";
+  items: WorkbenchInboxItemData[];
 }
 
 export interface WorkbenchSubscriptionItemData extends WorkbenchListItemData {
@@ -362,7 +385,7 @@ export interface WorkbenchGrowthData {
 }
 
 export type WorkbenchWidgetData =
-  | WorkbenchMetricData
+  | WorkbenchStatsData
   | WorkbenchTrendData
   | WorkbenchListData
   | WorkbenchDistributionData
@@ -370,13 +393,32 @@ export type WorkbenchWidgetData =
   | WorkbenchRankingData
   | WorkbenchCalendarData
   | WorkbenchFeedData
-  | WorkbenchTaskCenterData
+  | WorkbenchInboxData
   | WorkbenchSubscriptionsData
   | WorkbenchGrowthData
   | WorkbenchEducationChartData
   | WorkbenchActivityRankData
   | WorkbenchUserOverviewData
-  | WorkbenchAccountPanelData;
+  | WorkbenchAccountPanelData
+  | WorkbenchAgentData;
+
+export const WORKBENCH_WIDGET_ASSIGNMENT_VERSION = 1;
+
+export interface WorkbenchWidgetAvailability {
+  tenantTypes: TenantType[];
+  profiles: WorkbenchProfile[];
+}
+
+export interface WorkbenchWidgetAssignment {
+  version: typeof WORKBENCH_WIDGET_ASSIGNMENT_VERSION;
+  revision: number;
+  widgets: Record<string, WorkbenchWidgetAvailability>;
+}
+
+export interface WorkbenchWidgetAssignmentLoadResult {
+  assignment: WorkbenchWidgetAssignment;
+  recoveryNotice: string | null;
+}
 
 export interface WorkbenchDataContext {
   tenant: TenantInfo;

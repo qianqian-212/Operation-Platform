@@ -1,5 +1,5 @@
 <template>
-  <header class="app-header">
+  <header class="app-header" :class="{ 'is-workbench': isWorkbenchRoute }">
     <div class="header-brand">
       <div class="brand-logo">
         <svg
@@ -165,6 +165,15 @@ function externalRel(target: Extract<MenuTarget, { kind: "external" }>) {
   position: relative;
   z-index: 10;
   flex-shrink: 0;
+}
+
+.app-header.is-workbench {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+.app-header.is-workbench .header-brand {
+  border-right-color: transparent;
 }
 
 .header-brand {

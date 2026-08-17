@@ -6,7 +6,7 @@
 
 - 四类租户切换；当前机构按用户保存在浏览器登录会话中，刷新恢复，退出登录后清除。
 - 四级菜单、页面注册表、动态路由、租户级 RBAC、成员多角色和管理员保护。
-- 经典 Bento 工作台与新版流式/双列工作台；布局按租户、用户和角色隔离保存。
+- 经典 Bento 工作台与新版流式/双列工作台，公共组件含 Etonedu Agent、数据概览，以及学校/教育局/机构共用的消息与待办中心；布局按租户、用户和角色隔离保存。
 - 组织、成员、角色、菜单、机构审核、校园门禁、日程等管理页面。
 - 全局 AI 运营助手，支持页面上下文、Markdown/KaTeX 和流式回复。
 - 组织管理支持为学校、教育局和其他机构配置省、市或区县行政区；行政区编码、层级和完整路径随组织真实保存。两套数据大屏都以当前组织配置为地图根范围，不能返回或切换到根范围之外。
@@ -76,7 +76,9 @@ VITE_AUTH_PROVIDER=local
 | `src/config/page-registry.ts` | 页面资源、路径、租户范围和打开方式的事实源 |
 | `src/features/persistence/` | 应用持久化契约及 Supabase/localStorage Adapter |
 | `src/features/tenant-config/` | 菜单、工作台入口和角色的租户聚合配置 |
-| `src/features/workbench/workbench-templates.ts` | 固定工作台组件清单与默认布局 |
+| `src/features/workbench/workbench-widget-catalog.ts` | 工作台组件目录：稳定 ID、公共/领域范围与兼容组织类型 |
+| `src/features/workbench/workbench-templates.ts` | 各组织类型 × 角色的默认工作台编排 |
+| `src/features/workbench/workbench-widget-assignment.ts` | 平台级组件授权：在兼容范围内决定组件出现在哪些组织类型 |
 | `src/features/student-growth-portrait/` | 学生成长概览的数据契约、指标字典、虚拟原始数据、聚合仓库及 `page/` 页面模块 |
 | `src/features/digital-twin/` | 共享地图引擎、状态机、Provider、主题、动效、通用图表、页面壳和会话能力 |
 | `src/features/regional-education-overview/` | 区域菜单、区域 HUD、状态栏、学业分析和区域地图适配器 |
@@ -99,6 +101,7 @@ Supabase 主要表：
 | 租户菜单、入口和角色 | `tenant_configurations` |
 | 激活角色与可视化主题 | `user_tenant_preferences` |
 | 个人工作台 | `workbench_layouts` |
+| 工作台组件授权 | `workbench_widget_assignments` |
 | 日程 | `calendar_events` |
 | AI 会话与消息 | `ai_conversations`、`ai_messages` |
 | 机构审核 | `org_review_applications` |

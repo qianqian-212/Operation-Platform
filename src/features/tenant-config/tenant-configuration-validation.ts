@@ -1,5 +1,6 @@
 import { pageRegistryByKey } from "@/config/page-registry";
 import { ADMIN_ROLE_ID, type RoleRecord } from "@/features/access-control/types";
+import { isMenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import { validateMenuRecord } from "@/features/menu-config/menu-validation";
 import type { MenuConfigRecord, MenuItemType } from "@/features/menu-config/types";
 import type { TenantConfiguration } from "@/features/tenant-config/types";
@@ -23,6 +24,7 @@ function isMenuRecord(value: unknown, tenantId: string): value is MenuConfigReco
     MENU_TYPES.has(item.type as MenuItemType) &&
     typeof item.name === "string" &&
     isNullableString(item.icon) &&
+    (item.iconAccent === undefined || item.iconAccent === null || isMenuIconAccent(item.iconAccent)) &&
     isNullableString(item.pageKey) &&
     isNullableString(item.externalUrl) &&
     isNullableString(item.externalOpenMode) &&

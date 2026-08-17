@@ -1,4 +1,5 @@
 import type { MenuIconKey } from "@/types/navigation";
+import type { MenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 
 export type MenuItemType = "module" | "directory" | "page" | "external";
 export type ExternalOpenMode = "current" | "new-tab";
@@ -11,6 +12,7 @@ export interface MenuConfigRecord {
   type: MenuItemType;
   name: string;
   icon: MenuIconKey | null;
+  iconAccent?: MenuIconAccent | null;
   pageKey: string | null;
   externalUrl: string | null;
   externalOpenMode: ExternalOpenMode | null;

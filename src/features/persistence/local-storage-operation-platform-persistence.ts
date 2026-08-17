@@ -4,6 +4,7 @@ import { tenantConfigurationRepository } from "@/features/tenant-config/local-st
 import { tenantMemberRepository } from "@/features/tenant-members/local-storage-tenant-member-repository";
 import { tenantRepository } from "@/features/tenant/local-storage-tenant-repository";
 import { workbenchLayoutRepository } from "@/features/workbench/local-storage-workbench-layout-repository";
+import { workbenchWidgetAssignmentRepository } from "@/features/workbench/local-storage-workbench-widget-assignment-repository";
 import type { OperationPlatformPersistence } from "@/features/persistence/operation-platform-persistence";
 import type { TenantConfiguration } from "@/features/tenant-config/types";
 import type { TenantMemberRecord } from "@/features/tenant-members/types";
@@ -11,6 +12,7 @@ import type {
   UserWorkbenchLayout,
   WorkbenchLayoutContext,
   WorkbenchTemplate,
+  WorkbenchWidgetAssignment,
 } from "@/features/workbench/types";
 import type { TenantInfo } from "@/types/user";
 
@@ -151,5 +153,17 @@ export class LocalStorageOperationPlatformPersistence implements OperationPlatfo
 
   async resetWorkbenchLayout(context: WorkbenchLayoutContext, template: WorkbenchTemplate) {
     return workbenchLayoutRepository.reset(context, template);
+  }
+
+  loadWorkbenchWidgetAssignment() {
+    return workbenchWidgetAssignmentRepository.list();
+  }
+
+  async saveWorkbenchWidgetAssignment(assignment: WorkbenchWidgetAssignment) {
+    return workbenchWidgetAssignmentRepository.replace(assignment);
+  }
+
+  async resetWorkbenchWidgetAssignment() {
+    return workbenchWidgetAssignmentRepository.reset();
   }
 }

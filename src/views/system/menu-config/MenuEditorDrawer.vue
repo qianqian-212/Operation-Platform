@@ -36,6 +36,11 @@
         <MenuIconSelect v-model="form.icon" />
       </el-form-item>
 
+      <el-form-item label="图标背景色">
+        <MenuIconAccentSelect v-model="form.iconAccent" />
+        <p class="field-help">用于工作台快捷导航。未选择时按菜单名称和图标语义自动配色。</p>
+      </el-form-item>
+
       <div v-if="form.type === 'page'" data-field="page-key">
         <el-form-item label="关联页面" required>
           <el-select v-model="form.pageKey" filterable placeholder="请选择已注册页面">
@@ -117,6 +122,7 @@ import {
   pageRegistry,
   pageResourceOptionLabel,
 } from "@/config/page-registry";
+import MenuIconAccentSelect from "@/components/MenuIconAccentSelect.vue";
 import MenuIconSelect from "@/components/MenuIconSelect.vue";
 import { collectDescendantIds } from "@/features/menu-config/menu-tree";
 import {
@@ -130,6 +136,7 @@ import type {
   MenuItemType,
   MenuRecordInput,
 } from "@/features/menu-config/types";
+import type { MenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type { TenantInfo } from "@/types/user";
 
 export interface RoleVisibilityOption {
@@ -158,11 +165,16 @@ const props = withDefaults(
 const emit = defineEmits<{ save: [input: MenuRecordInput, visibleRoleIds: string[]] }>();
 const visible = defineModel<boolean>({ required: true });
 
-const form = reactive<MenuRecordInput>({
+type MenuEditorForm = Omit<MenuRecordInput, "iconAccent"> & {
+  iconAccent: MenuIconAccent | null;
+};
+
+const form = reactive<MenuEditorForm>({
   parentId: null,
   type: "module",
   name: "",
   icon: null,
+  iconAccent: null,
   pageKey: null,
   externalUrl: null,
   externalOpenMode: null,
@@ -319,6 +331,7 @@ function resetForm() {
   );
   form.name = source?.name ?? "";
   form.icon = source?.icon ?? null;
+  form.iconAccent = source?.iconAccent ?? null;
   form.pageKey = source?.pageKey ?? null;
   form.externalUrl = source?.externalUrl ?? null;
   form.externalOpenMode = source?.externalOpenMode ?? null;

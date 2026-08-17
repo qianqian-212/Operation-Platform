@@ -17,7 +17,11 @@ import {
   type WorkbenchWidgetPosition,
   type WorkbenchWidgetSettings,
 } from "@/features/workbench/types";
-import { workbenchWidgetRegistry } from "@/features/workbench/workbench-templates";
+import {
+  isWorkbenchWidgetCompatible,
+  migrateLegacyWorkbenchWidgetKey,
+  workbenchWidgetRegistry,
+} from "@/features/workbench/workbench-widget-catalog";
 
 export function resolveWorkbenchProfile(roleIds: string | readonly string[] | null): WorkbenchProfile {
   const activeRoleIds = Array.isArray(roleIds) ? roleIds : roleIds ? [roleIds] : [];
@@ -125,7 +129,7 @@ export function isValidWorkbenchSettings(
   if (definition.kind === "trend") {
     return settings.kind === "trend" && (settings.range === "7d" || settings.range === "30d");
   }
-  if (definition.kind === "list" || definition.kind === "schedule") {
+  if (definition.kind === "list" || definition.kind === "schedule" || definition.kind === "inbox") {
     return settings.kind === "list" && (settings.limit === 5 || settings.limit === 10);
   }
   if (definition.kind === "quick-links") {
@@ -195,13 +199,53 @@ function definitionForTemplateItem(
 ) {
   const definition = workbenchWidgetRegistry.get(item.widgetKey);
   if (!definition) return null;
-  if (
-    definition.tenantType !== template.tenantType ||
-    definition.profile !== template.profile
-  ) {
+  if (!isWorkbenchWidgetCompatible(definition, template.tenantType, template.profile)) {
     return null;
   }
   return definition;
+}
+
+function migrateStoredItemKeys<T extends { widgetKey: string }>(
+  items: readonly T[],
+  context: WorkbenchLayoutContext,
+): T[] {
+  const seen = new Set<string>();
+  const migrated: T[] = [];
+  for (const item of items) {
+    const widgetKey = migrateLegacyWorkbenchWidgetKey(
+      item.widgetKey,
+      context.tenant.type,
+      context.profile,
+    );
+    if (seen.has(widgetKey)) continue;
+    seen.add(widgetKey);
+    migrated.push({ ...item, widgetKey });
+  }
+  return migrated;
+}
+
+function normalizeMigratedLayoutItem(
+  item: WorkbenchLayoutItem,
+  definition: WorkbenchWidgetDefinition,
+): WorkbenchLayoutItem {
+  if (item.widgetKey === "stats-overview") {
+    return {
+      ...item,
+      x: 0,
+      w: 12,
+      settings: { kind: "none" },
+    };
+  }
+  if (item.widgetKey === "message-todo-center") {
+    const width = Math.max(item.w, definition.minSize.w);
+    return {
+      ...item,
+      w: width,
+      x: Math.min(item.x, WORKBENCH_GRID_COLUMNS - width),
+      settings: item.settings.kind === "list" ? item.settings : { kind: "list", limit: 5 },
+    };
+  }
+  return item;
 }
 
 export function validateWorkbenchTemplate(template: WorkbenchTemplate) {
@@ -393,7 +437,7 @@ function bottomY(items: readonly WorkbenchLayoutItem[]) {
   return items.reduce((max, item) => Math.max(max, item.y + item.h), 0);
 }
 
-function appendNewTemplateItems(
+export function appendNewTemplateItems(
   existing: WorkbenchLayoutItem[],
   missing: readonly WorkbenchLayoutItem[],
 ) {
@@ -425,27 +469,29 @@ export function reconcileStoredWorkbenchLayout(
   template: WorkbenchTemplate,
 ): UserWorkbenchLayout | null {
   if (!isStoredLayoutEnvelope(value, context)) return null;
+  const storedItems = migrateStoredItemKeys(value.items, context);
   const templateByKey = new Map(template.widgets.map((item) => [item.widgetKey, item]));
   const seen = new Set<string>();
   const retainedLegacy: WorkbenchLayoutItem[] = [];
   const isCurrentVersion = value.version === WORKBENCH_LAYOUT_VERSION;
 
-  for (const item of value.items) {
-    if (seen.has(item.widgetKey)) return null;
+  for (const item of storedItems) {
+    if (seen.has(item.widgetKey)) continue;
     seen.add(item.widgetKey);
     if (!templateByKey.has(item.widgetKey)) continue;
     const definition = definitionForTemplateItem(item, template);
+    if (!definition) continue;
+    const normalized = normalizeMigratedLayoutItem(item, definition);
     if (
-      !definition ||
-      !isPositionInsideGrid(item) ||
+      !isPositionInsideGrid(normalized) ||
       !(isCurrentVersion
-        ? isClassicSizeAllowed(item, definition)
-        : isTemplateSizeAllowed(item, definition)) ||
-      !isValidWorkbenchSettings(item.settings, definition)
+        ? isClassicSizeAllowed(normalized, definition)
+        : isTemplateSizeAllowed(normalized, definition)) ||
+      !isValidWorkbenchSettings(normalized.settings, definition)
     ) {
-      return null;
+      continue;
     }
-    retainedLegacy.push(cloneWorkbenchItem(item));
+    retainedLegacy.push(cloneWorkbenchItem(normalized));
   }
 
   if (hasVisibleOverlap(retainedLegacy)) return null;
@@ -463,12 +509,8 @@ export function reconcileStoredWorkbenchLayout(
     if (!Array.isArray(value.simpleItems) || !value.simpleItems.every(isStoredSimpleItem)) {
       return null;
     }
-    const simpleKeys = new Set<string>();
-    for (const item of value.simpleItems) {
-      if (simpleKeys.has(item.widgetKey)) return null;
-      simpleKeys.add(item.widgetKey);
-    }
-    storedSimpleItems = value.simpleItems;
+    const migratedSimpleItems = migrateStoredItemKeys(value.simpleItems, context);
+    storedSimpleItems = migratedSimpleItems;
   } else if (value.version === 3) {
     if (value.mode !== "classic" && value.mode !== "simple") return null;
     if (value.simpleLayoutType !== "flow" && value.simpleLayoutType !== "columns") return null;
@@ -476,7 +518,7 @@ export function reconcileStoredWorkbenchLayout(
     if (!Array.isArray(value.simpleItems) || !value.simpleItems.every(isVersionThreeSimpleItem)) {
       return null;
     }
-    storedSimpleItems = value.simpleItems.map((item) => {
+    storedSimpleItems = migrateStoredItemKeys(value.simpleItems.map((item) => {
       const legacy = item as Record<string, unknown>;
       return {
         widgetKey: legacy.widgetKey as string,
@@ -487,18 +529,23 @@ export function reconcileStoredWorkbenchLayout(
         span: legacy.span === 6 ? 6 : 3,
         column: legacy.column as "primary" | "secondary",
       };
-    });
+    }), context);
     assignColumnOrders(storedSimpleItems);
   } else if (value.version === 2) {
     if (value.mode !== "classic" && value.mode !== "simple") return null;
     if (!Array.isArray(value.simpleItems) || !value.simpleItems.every(isVersionTwoSimpleItem)) {
       return null;
     }
-    storedSimpleItems = value.simpleItems.map((item) => {
+    storedSimpleItems = migrateStoredItemKeys(value.simpleItems.map((item) => {
       const legacy = item as Record<string, unknown>;
-      const classicItem = classicByKey.get(legacy.widgetKey as string);
+      const widgetKey = migrateLegacyWorkbenchWidgetKey(
+        legacy.widgetKey as string,
+        context.tenant.type,
+        context.profile,
+      );
+      const classicItem = classicByKey.get(widgetKey);
       return {
-        widgetKey: legacy.widgetKey as string,
+        widgetKey,
         visible: legacy.visible as boolean,
         settings: cloneWorkbenchSettings(legacy.settings as WorkbenchWidgetSettings),
         order: legacy.order as number,
@@ -506,7 +553,7 @@ export function reconcileStoredWorkbenchLayout(
         span: legacy.span === 6 ? 6 : 3,
         column: classicItem ? simpleColumnFromClassicItem(classicItem) : "primary",
       };
-    });
+    }), context);
     assignColumnOrders(storedSimpleItems);
   } else {
     storedSimpleItems = createSimpleItems(classicItems);

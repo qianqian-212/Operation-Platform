@@ -70,6 +70,10 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import WorkbenchWidgetCard from "@/features/workbench/components/WorkbenchWidgetCard.vue";
 import {
+  beginWorkbenchDragSession,
+  type WorkbenchDragSession,
+} from "@/features/workbench/workbench-drag-auto-scroll";
+import {
   MEDIUM_WORKBENCH_COLUMNS,
   projectWorkbenchItemsToMediumGrid,
 } from "@/features/workbench/workbench-responsive-layout";
@@ -102,7 +106,7 @@ interface WidthResizeState {
   maxWidth: number;
 }
 
-const GRID_GAP = 12;
+const GRID_GAP = 16;
 const EMPTY_ROW_HEIGHT = 160;
 const gridElement = ref<HTMLElement | null>(null);
 const containerWidth = ref(0);
@@ -112,6 +116,7 @@ const dropPreview = ref<WorkbenchLayoutItem | null>(null);
 const widthResizeState = ref<WidthResizeState | null>(null);
 const workbenchStore = useWorkbenchStore();
 let gridResizeObserver: ResizeObserver | null = null;
+let dragSession: WorkbenchDragSession | null = null;
 
 const responsiveMode = computed<ResponsiveMode>(() => {
   if (containerWidth.value >= 1200) return "desktop";
@@ -200,6 +205,7 @@ function handleDragStart(event: DragEvent, widgetKey: string) {
   draggedWidgetKey.value = widgetKey;
   event.dataTransfer?.setData("text/plain", widgetKey);
   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  startDragSession();
 }
 
 function pointerPlacement(event: DragEvent, item: WorkbenchLayoutItem) {
@@ -240,7 +246,19 @@ function handleGridDrop(event: DragEvent) {
   resetDragState();
 }
 
+function startDragSession() {
+  dragSession?.stop();
+  const origin = gridElement.value;
+  if (!origin) return;
+  dragSession = beginWorkbenchDragSession({
+    origin,
+    onPointer: handleGridDragOver,
+  });
+}
+
 function resetDragState() {
+  dragSession?.stop();
+  dragSession = null;
   draggedWidgetKey.value = "";
   dropPreview.value = null;
 }
@@ -294,6 +312,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  dragSession?.stop();
   gridResizeObserver?.disconnect();
   window.removeEventListener("pointermove", handleWidthResize);
   window.removeEventListener("pointerup", finishWidthResize);
@@ -302,7 +321,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .workbench-grid {
-  --classic-grid-gap: 12px;
+  --classic-grid-gap: var(--workbench-widget-gap);
   position: relative;
   display: grid;
   min-height: 120px;
@@ -338,7 +357,7 @@ onBeforeUnmount(() => {
   );
   background-size: calc(100% / 12) 100%;
   border: 1px solid color-mix(in srgb, var(--color-primary-line) 45%, transparent);
-  border-radius: var(--radius-lg);
+  border-radius: var(--workbench-widget-radius);
 }
 
 .classic-drop-placeholder {
@@ -352,7 +371,7 @@ onBeforeUnmount(() => {
   font-weight: var(--font-weight-medium);
   background: color-mix(in srgb, var(--color-primary-light) 82%, var(--color-white));
   border: 1px dashed var(--color-primary-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--workbench-widget-radius);
   pointer-events: none;
 }
 

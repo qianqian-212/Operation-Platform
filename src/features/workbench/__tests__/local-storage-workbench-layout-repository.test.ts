@@ -193,8 +193,8 @@ describe("workbench layout repository", () => {
     expect(result.layout.version).toBe(5);
     expect(result.layout.mode).toBe("classic");
     expect(result.layout.items[0]).toMatchObject({ visible: false, y: 0, h: 1 });
-    expect(result.layout.items.find((item) => item.widgetKey.endsWith(".attendance-trend")))
-      .toMatchObject({ y: 1, h: 1 });
+    expect(result.layout.items.find((item) => item.widgetKey === "school.attendance-trend"))
+      .toMatchObject({ y: 2, h: 1 });
     expect(validateWorkbenchLayout(result.layout, activeContext, template)).toBe(true);
   });
 

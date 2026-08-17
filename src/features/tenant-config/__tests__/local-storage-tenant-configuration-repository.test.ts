@@ -196,4 +196,34 @@ describe("tenant configuration repository", () => {
       expect(localStorage.getItem(key)).toBe(value);
     }
   });
+
+  it("adds newly required platform system pages to stored tenant configuration", () => {
+    const platform: TenantInfo = {
+      id: "platform-aggregate",
+      name: "运营平台",
+      shortName: "运营平台",
+      type: "platform",
+      enabled: true,
+    };
+    const repository = new LocalStorageTenantConfigurationRepository(localStorage);
+    const configuration = repository.list(platform).configuration;
+    const removed = configuration.menuRecords.find(
+      (record) => record.pageKey === "system-workbench-widgets",
+    );
+    configuration.menuRecords = configuration.menuRecords.filter(
+      (record) => record.pageKey !== "system-workbench-widgets",
+    );
+    configuration.roles = configuration.roles.map((role) => ({
+      ...role,
+      menuIds: role.menuIds.filter((menuId) => menuId !== removed?.id),
+    }));
+    repository.replace(platform, configuration);
+
+    const reloaded = repository.list(platform);
+    expect(
+      reloaded.configuration.menuRecords.some(
+        (record) => record.pageKey === "system-workbench-widgets",
+      ),
+    ).toBe(true);
+  });
 });

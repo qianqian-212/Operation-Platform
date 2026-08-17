@@ -303,6 +303,14 @@ export const pageRegistry: PageRegistryItem[] = [
     () => import("@/views/system/menu-config/MenuConfigView.vue"),
     { requiresAdmin: true },
   ),
+  page(
+    "system-workbench-widgets",
+    "工作台组件管理",
+    "/system/workbench-widgets",
+    platform,
+    () => import("@/views/system/workbench-widgets/WorkbenchWidgetCatalogView.vue"),
+    { requiresAdmin: true },
+  ),
 ];
 
 export const pageRegistryByKey = new Map(pageRegistry.map((item) => [item.key, item]));

@@ -38,5 +38,16 @@ test("新增一级模块后刷新页面仍然保留", async ({ page }) => {
   await expect(
     page.getByRole("treeitem").filter({ hasText: moduleName }),
   ).toBeVisible();
-  await expect(page.getByText("共 5 条业务菜单记录", { exact: true })).toBeVisible();
+  await expect(page.getByText("共 6 条业务菜单记录", { exact: true })).toBeVisible();
+});
+
+test("工作台组件管理页按兼容范围授权组织类型", async ({ page }) => {
+  await page.goto("/system/workbench-widgets");
+
+  await expect(page.getByText("工作台组件管理", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("row", { name: /个人面板/ })).toBeVisible();
+
+  const trendRow = page.getByRole("row", { name: /学生到校率变化趋势/ });
+  await expect(trendRow.getByRole("checkbox", { name: "学校" })).toBeEnabled();
+  await expect(trendRow.getByRole("checkbox", { name: "教育局" })).toBeDisabled();
 });

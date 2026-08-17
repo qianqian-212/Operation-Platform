@@ -517,6 +517,10 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-xs);
 }
 
+.workbench-page.is-dragging-widget .editor-toolbar {
+  pointer-events: none;
+}
+
 .editor-toolbar {
   position: sticky;
   top: 0;

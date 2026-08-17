@@ -1,4 +1,6 @@
 import { cloneTenantTemplate } from "@/config/menu-templates";
+import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
+import { isMenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type { MenuConfigRecord, MenuItemType } from "@/features/menu-config/types";
 import type {
   MenuRepositoryLoadResult,
@@ -51,6 +53,7 @@ function isRecord(value: unknown, tenantId: string): value is MenuConfigRecord {
     MENU_TYPES.has(item.type as MenuItemType) &&
     typeof item.name === "string" &&
     isNullableString(item.icon) &&
+    (item.iconAccent === undefined || item.iconAccent === null || isMenuIconAccent(item.iconAccent)) &&
     isNullableString(item.pageKey) &&
     isNullableString(item.externalUrl) &&
     isNullableString(item.externalOpenMode) &&
@@ -65,78 +68,6 @@ function isValidRecordSet(value: unknown, tenantId: string): value is MenuConfig
   const ids = new Set(value.map((item) => item.id));
   if (ids.size !== value.length) return false;
   return value.every((item) => item.parentId === null || ids.has(item.parentId));
-}
-
-function rootModuleFor(record: MenuConfigRecord, records: readonly MenuConfigRecord[]) {
-  const byId = new Map(records.map((item) => [item.id, item]));
-  let current: MenuConfigRecord | undefined = record;
-  const visited = new Set<string>();
-
-  while (current?.parentId) {
-    if (visited.has(current.id)) return null;
-    visited.add(current.id);
-    current = byId.get(current.parentId);
-  }
-  return current?.type === "module" ? current : null;
-}
-
-function migratePlatformSystemMenus(tenant: TenantInfo, records: readonly MenuConfigRecord[]) {
-  if (tenant.type !== "platform") return cloneRecords(records);
-
-  const nextRecords = cloneRecords(records);
-  const requiredPageKeys = [
-    "system-organization-management",
-    "system-role-management",
-    "system-menu-config",
-  ];
-  const template = cloneTenantTemplate(tenant);
-  const templateModule =
-    template.find((record) => record.type === "module" && record.name === "系统管理") ??
-    template.find((record) => record.type === "module");
-  if (!templateModule) return nextRecords;
-
-  const existingMenuConfig = nextRecords.find(
-    (record) => record.type === "page" && record.pageKey === "system-menu-config",
-  );
-  let systemModule =
-    nextRecords.find((record) => record.type === "module" && record.name === "系统管理") ??
-    (existingMenuConfig ? rootModuleFor(existingMenuConfig, nextRecords) : null);
-
-  if (!systemModule) {
-    systemModule = {
-      ...templateModule,
-      id: crypto.randomUUID(),
-      tenantId: tenant.id,
-      parentId: null,
-    };
-    nextRecords.push(systemModule);
-  }
-
-  let nextSort =
-    Math.max(
-      0,
-      ...nextRecords
-        .filter((record) => record.parentId === systemModule.id)
-        .map((record) => record.sort),
-    ) + 10;
-
-  for (const pageKey of requiredPageKeys) {
-    if (nextRecords.some((record) => record.type === "page" && record.pageKey === pageKey)) {
-      continue;
-    }
-    const templatePage = template.find((record) => record.type === "page" && record.pageKey === pageKey);
-    if (!templatePage) continue;
-    nextRecords.push({
-      ...templatePage,
-      id: crypto.randomUUID(),
-      tenantId: tenant.id,
-      parentId: systemModule.id,
-      sort: nextSort,
-    });
-    nextSort += 10;
-  }
-
-  return nextRecords;
 }
 
 export class LocalStorageTenantMenuRepository implements TenantMenuRepository {
@@ -160,7 +91,7 @@ export class LocalStorageTenantMenuRepository implements TenantMenuRepository {
       ) {
         return this.recoverInvalidData(tenant, raw);
       }
-      const records = migratePlatformSystemMenus(tenant, parsed.records);
+      const records = ensurePlatformSystemMenus(tenant, parsed.records);
       if (records.length !== parsed.records.length) {
         return { records: this.replace(tenant, records), recoveryNotice: null };
       }

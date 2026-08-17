@@ -8,7 +8,9 @@ function isPrimaryPanel(item: WorkbenchLayoutItem) {
   return kind === "trend"
     || kind === "schedule"
     || kind === "calendar"
-    || item.widgetKey.endsWith(".quick-apps");
+    || kind === "agent"
+    || kind === "stats"
+    || (kind === "quick-links" && item.w >= 8);
 }
 
 function responsiveWidths(items: readonly WorkbenchLayoutItem[]) {

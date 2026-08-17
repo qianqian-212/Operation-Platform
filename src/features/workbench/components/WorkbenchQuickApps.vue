@@ -17,12 +17,12 @@
       <RouterLink
         v-for="item in filteredItems"
         :key="item.id"
-        class="quick-navigation-item"
+        class="quick-navigation-item workbench-surface-card"
         :to="internalLocation(item)"
         :target="item.openMode === 'new-tab' ? '_blank' : undefined"
         :rel="item.openMode === 'new-tab' ? 'noopener noreferrer' : undefined"
       >
-        <span class="quick-navigation-icon" aria-hidden="true">
+        <span class="quick-navigation-icon" :class="`accent-${accentFor(item)}`" aria-hidden="true">
           <component :is="resolveMenuIcon(item.icon ?? item.moduleIcon)" />
         </span>
         <span class="quick-link-name">{{ item.name }}</span>
@@ -40,6 +40,7 @@
 import { computed, ref, useId, watch } from "vue";
 import { resolveMenuIcon } from "@/components/menu-icons";
 import WorkbenchSecondaryTabs from "@/features/workbench/components/WorkbenchSecondaryTabs.vue";
+import { resolveMenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type { WorkbenchQuickLinkData, WorkbenchQuickLinksData } from "@/features/workbench/types";
 
 const props = defineProps<{ data: WorkbenchQuickLinksData }>();
@@ -68,6 +69,15 @@ watch(
   },
   { immediate: true },
 );
+
+function accentFor(item: WorkbenchQuickLinkData) {
+  return resolveMenuIconAccent({
+    accent: item.iconAccent,
+    icon: item.icon ?? item.moduleIcon,
+    name: item.name,
+    moduleName: item.moduleName,
+  });
+}
 
 function internalLocation(item: WorkbenchQuickLinkData) {
   if (item.openMode === "current" || !item.tenantId) return item.target;
@@ -104,23 +114,15 @@ function internalLocation(item: WorkbenchQuickLinkData) {
   color: var(--color-title);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
   text-decoration: none;
-  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.quick-navigation-item:hover {
+.quick-navigation-item:hover,
+.quick-navigation-item:focus-visible {
   color: var(--color-primary);
-  background: var(--color-primary-light);
-  border-color: var(--color-primary-line-light);
 }
 
 .quick-navigation-item:focus-visible {
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  border-color: var(--color-primary-line-light);
   outline: 2px solid var(--color-primary-line-light);
   outline-offset: 2px;
 }
@@ -135,15 +137,22 @@ function internalLocation(item: WorkbenchQuickLinkData) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  color: var(--color-primary);
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  color: var(--color-white);
+  background: var(--menu-icon-accent-blue);
+  border-radius: var(--radius-lg);
 }
 
+.quick-navigation-icon.accent-red { background: var(--menu-icon-accent-red); }
+.quick-navigation-icon.accent-yellow { background: var(--menu-icon-accent-yellow); }
+.quick-navigation-icon.accent-cyan { background: var(--menu-icon-accent-cyan); }
+.quick-navigation-icon.accent-green { background: var(--menu-icon-accent-green); }
+
 .quick-navigation-icon :deep(svg) {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .quick-navigation-grid :deep(.el-empty) {
@@ -159,12 +168,6 @@ function internalLocation(item: WorkbenchQuickLinkData) {
 @container (max-width: 460px) {
   .quick-navigation-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .quick-navigation-item {
-    transition: none;
   }
 }
 </style>

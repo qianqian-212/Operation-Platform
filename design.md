@@ -334,7 +334,7 @@ grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
 - 行分割线使用 `--color-border`。
 - 可使用斑马纹，但不要同时叠加强 Hover、卡片边框和多色背景。
 - 状态列使用文字加状态点或 `StatusTag`。
-- 数字列按业务含义右对齐；名称和描述左对齐；序号可居中。
+- 名称、描述和普通数字等左对齐；序号可居中；金额等特殊数值列右对齐。
 - 空数据使用 `ElEmpty`，加载使用 `v-loading` 或 Skeleton。
 
 #### 表格基础属性契约

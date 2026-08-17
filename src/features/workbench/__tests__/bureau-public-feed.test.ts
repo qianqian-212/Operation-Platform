@@ -4,9 +4,9 @@ import { MockWorkbenchDataSource } from "@/features/workbench/mock-workbench-dat
 import { workbenchWidgetRegistry } from "@/features/workbench/workbench-templates";
 
 describe("bureau public feed", () => {
-  it("provides the same announcement feed to the workbench", async () => {
+  it("folds announcements into the shared inbox", async () => {
     const data = await new MockWorkbenchDataSource().load(
-      workbenchWidgetRegistry.get("bureau.admin.announcements")!,
+      workbenchWidgetRegistry.get("message-todo-center")!,
       { kind: "list", limit: 5 },
       {
         tenant: { id: "bureau-test", name: "测试教育局", shortName: "测试教育局", type: "bureau" },
@@ -16,6 +16,10 @@ describe("bureau public feed", () => {
       [],
     );
 
-    expect(data).toEqual({ kind: "feed", items: bureauPublicFeedData.announcements });
+    expect(data.kind).toBe("inbox");
+    if (data.kind !== "inbox") return;
+    expect(data.items.some((item) =>
+      item.title === bureauPublicFeedData.announcements[0]?.title && item.category === "notice",
+    )).toBe(true);
   });
 });

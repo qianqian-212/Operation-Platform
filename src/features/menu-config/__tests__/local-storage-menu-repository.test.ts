@@ -139,6 +139,7 @@ describe("LocalStorageTenantMenuRepository", () => {
         expect.objectContaining({ pageKey: "system-organization-management" }),
         expect.objectContaining({ pageKey: "system-role-management" }),
         expect.objectContaining({ pageKey: "system-menu-config" }),
+        expect.objectContaining({ pageKey: "system-workbench-widgets" }),
       ]),
     );
   });

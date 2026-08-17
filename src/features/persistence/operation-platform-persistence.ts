@@ -5,6 +5,8 @@ import type {
   WorkbenchLayoutContext,
   WorkbenchLayoutLoadResult,
   WorkbenchTemplate,
+  WorkbenchWidgetAssignment,
+  WorkbenchWidgetAssignmentLoadResult,
 } from "@/features/workbench/types";
 import type { TenantInfo, UserInfo } from "@/types/user";
 
@@ -78,4 +80,10 @@ export interface OperationPlatformPersistence {
     context: WorkbenchLayoutContext,
     template: WorkbenchTemplate,
   ): Promise<UserWorkbenchLayout>;
+
+  loadWorkbenchWidgetAssignment(): WorkbenchWidgetAssignmentLoadResult;
+  saveWorkbenchWidgetAssignment(
+    assignment: WorkbenchWidgetAssignment,
+  ): Promise<WorkbenchWidgetAssignment>;
+  resetWorkbenchWidgetAssignment(): Promise<WorkbenchWidgetAssignment>;
 }

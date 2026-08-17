@@ -5,6 +5,7 @@
       <div class="type-column">类型</div>
       <div class="target-column">上级 / 关联目标</div>
       <div class="icon-column">图标</div>
+      <div class="accent-column">图标背景</div>
       <div class="sort-column">排序</div>
       <div class="visible-column">显示</div>
       <div class="action-column">操作</div>
@@ -152,6 +153,14 @@
               <span>{{ data.icon ? menuIconLabel(data.icon) : "—" }}</span>
             </button>
           </div>
+          <div class="menu-tree-cell accent-column" @click.stop @dblclick.stop>
+            <MenuIconAccentSelect
+              :model-value="accentValue(data)"
+              compact
+              :aria-label="`${data.name}图标背景色`"
+              @update:model-value="(value) => handleAccentChange(data, value)"
+            />
+          </div>
           <div class="menu-tree-cell sort-column">
             <el-input-number
               v-if="isInlineEditing(data)"
@@ -218,6 +227,7 @@ import {
 } from "@/config/page-registry";
 import { menuIconLabel, resolveMenuIcon } from "@/components/menu-icons";
 import { MenuValidationError } from "@/features/menu-config/menu-validation";
+import type { MenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type {
   MenuConfigRecord,
   MenuRecordInput,
@@ -226,6 +236,7 @@ import type {
 import { useMenuConfigStore } from "@/stores/menu-config";
 import { useNavigationStore } from "@/stores/navigation";
 import type { TenantInfo } from "@/types/user";
+import MenuIconAccentSelect from "@/components/MenuIconAccentSelect.vue";
 import MenuIconSelect from "@/components/MenuIconSelect.vue";
 import MenuTypeTag from "./MenuTypeTag.vue";
 import { useMenuTreeDragDrop } from "./use-menu-tree-drag-drop";
@@ -281,6 +292,7 @@ function emptyInlineDraft(): MenuRecordInput {
     type: "module",
     name: "",
     icon: null,
+    iconAccent: null,
     pageKey: null,
     externalUrl: null,
     externalOpenMode: null,
@@ -336,6 +348,7 @@ function startInlineEdit(row: MenuConfigRecord) {
     type: row.type,
     name: row.name,
     icon: row.icon,
+    iconAccent: row.iconAccent ?? null,
     pageKey: row.pageKey,
     externalUrl: row.externalUrl,
     externalOpenMode: row.externalOpenMode,
@@ -399,6 +412,22 @@ async function saveInlineEdit(row: MenuConfigRecord) {
   }
 }
 
+function accentValue(row: MenuConfigRecord) {
+  return isInlineEditing(row) ? inlineDraft.value.iconAccent ?? null : row.iconAccent ?? null;
+}
+
+async function handleAccentChange(row: MenuConfigRecord, value: MenuIconAccent | null) {
+  try {
+    if (isInlineEditing(row)) {
+      inlineDraft.value.iconAccent = value;
+      return;
+    }
+    await menuConfigStore.setIconAccent(row.id, value);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "图标背景色更新失败");
+  }
+}
+
 async function handleVisibleChange(row: MenuConfigRecord, value: boolean | string | number) {
   try {
     const visible = Boolean(value);
@@ -435,11 +464,12 @@ async function handleVisibleChange(row: MenuConfigRecord, value: boolean | strin
     100px
     minmax(280px, 1.2fr)
     140px
+    160px
     80px
     70px
     190px;
   align-items: center;
-  min-width: 1140px;
+  min-width: 1300px;
 }
 
 .menu-tree-header {
@@ -457,7 +487,7 @@ async function handleVisibleChange(row: MenuConfigRecord, value: boolean | strin
 }
 
 .menu-draggable-tree {
-  min-width: 1140px;
+  min-width: 1300px;
 }
 
 :deep(.menu-draggable-tree .el-tree-node__content) {
@@ -548,6 +578,8 @@ async function handleVisibleChange(row: MenuConfigRecord, value: boolean | strin
 
 .sort-column,
 .visible-column { justify-content: center; }
+
+.accent-column { flex-wrap: nowrap; }
 
 .action-column {
   justify-content: flex-end;

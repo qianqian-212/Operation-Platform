@@ -161,6 +161,7 @@ describe("tenant menu templates", () => {
         expect.objectContaining({ type: "page", name: "组织管理", pageKey: "system-organization-management" }),
         expect.objectContaining({ type: "page", name: "角色管理", pageKey: "system-role-management" }),
         expect.objectContaining({ type: "page", name: "菜单配置", pageKey: "system-menu-config" }),
+        expect.objectContaining({ type: "page", name: "工作台组件管理", pageKey: "system-workbench-widgets" }),
       ]),
     );
     expect(tenantMenuTemplates.platform.some((item) => item.name === "权限管理")).toBe(false);

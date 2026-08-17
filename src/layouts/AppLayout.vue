@@ -1,5 +1,5 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'is-workbench-shell': isWorkbenchRoute }">
     <Transition name="module-rail-slide" appear>
       <div v-if="!isWorkbenchRoute" class="module-rail-slot">
         <AppModuleRail />
@@ -44,8 +44,8 @@ import { useNavigationStore } from "@/stores/navigation";
 import { useUserStore } from "@/stores/user";
 
 const route = useRoute();
-const AiAssistantSidebar = defineAsyncComponent(() =>
-  import("@/features/ai-assistant/components/AiAssistantSidebar.vue")
+const AiAssistantSidebar = defineAsyncComponent(
+  () => import("@/features/ai-assistant/components/AiAssistantSidebar.vue"),
 );
 const router = useRouter();
 const navigationStore = useNavigationStore();
@@ -92,6 +92,14 @@ watch(
   overflow: hidden;
 }
 
+.app-layout.is-workbench-shell {
+  background-color: var(--color-bg);
+  background-image: url("@/assets/workbench/workbench-bg.webp");
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 .app-shell {
   display: flex;
   flex: 1;
@@ -114,6 +122,10 @@ watch(
   min-width: 0;
   overflow: auto;
   background-color: var(--color-bg);
+}
+
+.app-layout.is-workbench-shell .app-content {
+  background-color: transparent;
 }
 
 .app-content-inner {
@@ -151,7 +163,10 @@ watch(
 
 .assistant-panel-enter-active,
 .assistant-panel-leave-active {
-  transition: width 180ms ease, min-width 180ms ease, flex-basis 180ms ease;
+  transition:
+    width 180ms ease,
+    min-width 180ms ease,
+    flex-basis 180ms ease;
 }
 
 .assistant-panel-enter-from,

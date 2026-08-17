@@ -193,5 +193,6 @@ function bootstrapFixture(
     activeRoles: new Map(),
     visualizationThemes: new Map(),
     workbenchLayouts: new Map(),
+    workbenchWidgetAssignment: null,
   };
 }

@@ -112,6 +112,18 @@ describe("menu configuration store", () => {
     expect(store.records.find((record) => record.id === moduleRecord.id)?.name).toBe("重命名模块");
   });
 
+  it("updates a record icon accent without rewriting the rest of the menu", async () => {
+    const store = useMenuConfigStore();
+    store.load(schoolA);
+    const moduleRecord = store.records.find((record) => record.type === "module")!;
+
+    await store.setIconAccent(moduleRecord.id, "red");
+
+    const updated = store.records.find((record) => record.id === moduleRecord.id);
+    expect(updated?.iconAccent).toBe("red");
+    expect(updated?.name).toBe(moduleRecord.name);
+  });
+
   it("removes a menu and every descendant", async () => {
     const store = useMenuConfigStore();
     store.load(schoolA);

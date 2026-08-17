@@ -108,9 +108,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 import WorkbenchDropPlaceholder from "@/features/workbench/components/WorkbenchDropPlaceholder.vue";
 import WorkbenchWidgetCard from "@/features/workbench/components/WorkbenchWidgetCard.vue";
+import {
+  beginWorkbenchDragSession,
+  type WorkbenchDragSession,
+} from "@/features/workbench/workbench-drag-auto-scroll";
 import type {
   SimpleWorkbenchColumn,
   SimpleWorkbenchColumnRatio,
@@ -147,6 +151,7 @@ const dropTargetKey = ref("");
 const dropTargetColumn = ref<SimpleWorkbenchColumn | "">("");
 const dropPlacement = ref<SimpleWorkbenchDropPlacement>("end");
 const draggedHeight = ref(120);
+let dragSession: WorkbenchDragSession | null = null;
 const orderedItems = computed(() =>
   [...props.items].sort((first, second) => props.layoutType === "columns"
     ? first.columnOrder - second.columnOrder
@@ -192,6 +197,7 @@ function handleDragStart(event: DragEvent, widgetKey: string) {
   draggedHeight.value = Math.round(itemElement?.getBoundingClientRect().height ?? 120);
   event.dataTransfer?.setData("text/plain", widgetKey);
   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  startDragSession(event.currentTarget);
 }
 
 function handleItemDragOver(
@@ -230,20 +236,32 @@ function handlePlaceholderDrop() {
   handleDrop(dropTargetKey.value, dropTargetColumn.value, dropPlacement.value);
 }
 
+function startDragSession(currentTarget: EventTarget | null) {
+  dragSession?.stop();
+  if (!(currentTarget instanceof HTMLElement)) return;
+  dragSession = beginWorkbenchDragSession({ origin: currentTarget });
+}
+
 function resetDragState() {
+  dragSession?.stop();
+  dragSession = null;
   draggedWidgetKey.value = "";
   dropTargetKey.value = "";
   dropTargetColumn.value = "";
   dropPlacement.value = "end";
   draggedHeight.value = 120;
 }
+
+onBeforeUnmount(() => {
+  dragSession?.stop();
+});
 </script>
 
 <style scoped>
 .simple-flow-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-12);
+  gap: var(--workbench-widget-gap);
 }
 
 .simple-grid-item {
@@ -269,7 +287,7 @@ function resetDragState() {
 .simple-columns-grid {
   display: grid;
   align-items: stretch;
-  gap: var(--spacing-12);
+  gap: var(--workbench-widget-gap);
 }
 
 .simple-columns-grid.ratio-4-2 {
@@ -285,7 +303,7 @@ function resetDragState() {
   flex-direction: column;
   min-width: 0;
   min-height: 160px;
-  gap: var(--spacing-12);
+  gap: var(--workbench-widget-gap);
   border-radius: var(--radius-lg);
 }
 
@@ -324,7 +342,7 @@ function resetDragState() {
   font-size: var(--font-size-sm);
   background: color-mix(in srgb, var(--color-primary-light) 72%, var(--color-white));
   border: 1px dashed var(--color-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--workbench-widget-radius);
   box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--color-primary) 5%, transparent);
 }
 

@@ -45,6 +45,11 @@ describe("page registry", () => {
       tenantTypes: ["platform"],
       requiresAdmin: true,
     });
+    expect(pageRegistryByKey.get("system-workbench-widgets")).toMatchObject({
+      path: "/system/workbench-widgets",
+      tenantTypes: ["platform"],
+      requiresAdmin: true,
+    });
     expect(pageRegistryByKey.has("system-permission-management")).toBe(false);
   });
 

@@ -61,73 +61,93 @@ describe("workbench templates", () => {
     for (const tenantType of tenantTypes.filter((type) => type !== "bureau")) {
       const admin = getWorkbenchTemplate(tenantType, "admin");
       const business = getWorkbenchTemplate(tenantType, "business");
+      const expectedAdmin = tenantType === "platform" ? 7 : 8;
+      const expectedBusiness = tenantType === "platform" ? 5 : 6;
 
-      expect(admin.widgets).toHaveLength(10);
-      expect(business.widgets).toHaveLength(8);
-      expect(admin.revision).toBe(2);
-      expect(business.revision).toBe(2);
+      expect(admin.widgets).toHaveLength(expectedAdmin);
+      expect(business.widgets).toHaveLength(expectedBusiness);
+      expect(admin.revision).toBe(5);
+      expect(business.revision).toBe(5);
       expect(admin.widgets.map((item) => item.widgetKey)).not.toEqual(
         business.widgets.map((item) => item.widgetKey),
       );
-      expect(admin.widgets.some((item) => item.widgetKey.endsWith(".account-panel"))).toBe(true);
-      expect(business.widgets.some((item) => item.widgetKey.endsWith(".account-panel"))).toBe(true);
+      expect(admin.widgets[0]).toMatchObject({ widgetKey: "etonedu-agent", x: 0, y: 0, w: 12, h: 3 });
+      expect(business.widgets[0]).toMatchObject({ widgetKey: "etonedu-agent", x: 0, y: 0, w: 12, h: 3 });
+      expect(admin.widgets.some((item) => item.widgetKey === "stats-overview")).toBe(true);
+      expect(business.widgets.some((item) => item.widgetKey === "stats-overview")).toBe(true);
+      expect(admin.widgets.some((item) => item.widgetKey === "account-panel")).toBe(true);
+      expect(business.widgets.some((item) => item.widgetKey === "account-panel")).toBe(true);
+      expect(admin.widgets.some((item) => item.widgetKey === "quick-links")).toBe(true);
+      expect(business.widgets.some((item) => item.widgetKey === "quick-links")).toBe(true);
+      expect(admin.widgets.some((item) => item.widgetKey === "message-todo-center"))
+        .toBe(tenantType !== "platform");
+      expect(business.widgets.some((item) => item.widgetKey === "message-todo-center"))
+        .toBe(tenantType !== "platform");
     }
   });
 
   it("adds portal and education resource widgets only to education bureau profiles", () => {
-    const portalWidgetIds = [
-      "user-overview",
-      "quick-apps",
-      "bureau-news",
-      "information-disclosure",
-      "teaching-app-ranking",
+    const bureauWidgetKeys = [
+      "etonedu-agent",
+      "stats-overview",
+      "bureau.user-overview",
+      "quick-links",
+      "bureau.bureau-news",
+      "bureau.information-disclosure",
+      "bureau.teaching-app-ranking",
       "message-todo-center",
-      "calendar-tasks",
-      "personal-growth",
-      "subscriptions",
-      "announcements",
-      "grade-applications",
-      "application-types",
-      "activity-rank",
-      "resource-sharing",
-      "resource-growth",
-      "resource-contribution",
-      "subject-resources",
-      "resource-ranking",
+      "bureau.calendar-tasks",
+      "bureau.personal-growth",
+      "bureau.subscriptions",
+      "bureau.grade-applications",
+      "bureau.application-types",
+      "bureau.activity-rank",
+      "bureau.resource-sharing",
+      "bureau.resource-growth",
+      "bureau.resource-contribution",
+      "bureau.subject-resources",
+      "bureau.resource-ranking",
       "account-panel",
     ];
+    const bureauOnlyKeys = bureauWidgetKeys.filter(
+      (key) =>
+        key !== "account-panel"
+        && key !== "quick-links"
+        && key !== "etonedu-agent"
+        && key !== "stats-overview"
+        && key !== "message-todo-center",
+    );
 
     for (const profile of ["admin", "business"] as const) {
       const bureau = getWorkbenchTemplate("bureau", profile);
-      expect(bureau.revision).toBe(7);
-      expect(portalWidgetIds.every((id) =>
-        bureau.widgets.some((item) => item.widgetKey === `bureau.${profile}.${id}`),
+      expect(bureau.revision).toBe(10);
+      expect(bureau.widgets[0]).toMatchObject({ widgetKey: "etonedu-agent", y: 0, w: 12, h: 3 });
+      expect(bureauWidgetKeys.every((key) =>
+        bureau.widgets.some((item) => item.widgetKey === key),
       )).toBe(true);
     }
 
     for (const tenantType of tenantTypes.filter((type) => type !== "bureau")) {
       for (const profile of ["admin", "business"] as const) {
         expect(getWorkbenchTemplate(tenantType, profile).widgets.some((item) =>
-          portalWidgetIds
-            .filter((id) => id !== "account-panel")
-            .some((id) => item.widgetKey.endsWith(`.${id}`)),
+          bureauOnlyKeys.includes(item.widgetKey),
         )).toBe(false);
       }
     }
 
-    expect(getWorkbenchTemplate("bureau", "admin").widgets).toHaveLength(25);
-    expect(getWorkbenchTemplate("bureau", "business").widgets).toHaveLength(22);
+    expect(getWorkbenchTemplate("bureau", "admin").widgets).toHaveLength(22);
+    expect(getWorkbenchTemplate("bureau", "business").widgets).toHaveLength(20);
 
     const businessWidgets = getWorkbenchTemplate("bureau", "business").widgets;
-    expect(businessWidgets.find((item) => item.widgetKey.endsWith(".calendar-tasks"))).toMatchObject({
-      y: 4,
+    expect(businessWidgets.find((item) => item.widgetKey === "bureau.calendar-tasks")).toMatchObject({
+      y: 7,
       h: 5,
     });
-    expect(businessWidgets.find((item) => item.widgetKey.endsWith(".quick-apps"))).toMatchObject({
-      y: 9,
+    expect(businessWidgets.find((item) => item.widgetKey === "quick-links")).toMatchObject({
+      y: 12,
     });
-    expect(businessWidgets.find((item) => item.widgetKey.endsWith(".grade-applications"))).toMatchObject({
-      y: 21,
+    expect(businessWidgets.find((item) => item.widgetKey === "bureau.grade-applications")).toMatchObject({
+      y: 24,
     });
   });
 
@@ -140,7 +160,7 @@ describe("workbench templates", () => {
 
   it("uses the active tenant context when producing mock widget data", async () => {
     const source = new MockWorkbenchDataSource();
-    const definition = workbenchWidgetRegistry.get("school.admin.student-count")!;
+    const definition = workbenchWidgetRegistry.get("stats-overview")!;
     const firstTenant: TenantInfo = {
       id: "school-001",
       name: "学校一",
@@ -162,10 +182,10 @@ describe("workbench templates", () => {
       [],
     );
 
-    expect(first.kind).toBe("metric");
-    expect(second.kind).toBe("metric");
-    if (first.kind === "metric" && second.kind === "metric") {
-      expect(first.value).not.toBe(second.value);
+    expect(first.kind).toBe("stats");
+    expect(second.kind).toBe("stats");
+    if (first.kind === "stats" && second.kind === "stats") {
+      expect(first.items[0]?.value).not.toBe(second.items[0]?.value);
     }
   });
 
@@ -182,37 +202,37 @@ describe("workbench templates", () => {
 
     const results = await Promise.all([
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.teaching-app-ranking")!,
+        workbenchWidgetRegistry.get("bureau.teaching-app-ranking")!,
         { kind: "none" },
         context,
         [],
       ),
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.calendar-tasks")!,
+        workbenchWidgetRegistry.get("bureau.calendar-tasks")!,
         { kind: "none" },
         context,
         [],
       ),
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.personal-growth")!,
+        workbenchWidgetRegistry.get("bureau.personal-growth")!,
         { kind: "none" },
         context,
         [],
       ),
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.grade-applications")!,
+        workbenchWidgetRegistry.get("bureau.grade-applications")!,
         { kind: "none" },
         context,
         [],
       ),
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.resource-ranking")!,
+        workbenchWidgetRegistry.get("bureau.resource-ranking")!,
         { kind: "none" },
         context,
         [],
       ),
       source.load(
-        workbenchWidgetRegistry.get("bureau.business.user-overview")!,
+        workbenchWidgetRegistry.get("bureau.user-overview")!,
         { kind: "none" },
         {
           ...context,

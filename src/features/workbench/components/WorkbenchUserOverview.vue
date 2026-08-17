@@ -5,7 +5,7 @@
       <div class="user-details">
         <div class="user-name-row">
           <strong>{{ data.name }}</strong>
-          <span class="role-tag">{{ data.roleName }}</span>
+          <el-tag size="small" type="primary">{{ data.roleName }}</el-tag>
         </div>
         <div class="account-row">
           <span>账号 ID：{{ data.account }}</span>
@@ -108,6 +108,10 @@ async function copyAccount() {
   gap: var(--spacing-8);
 }
 
+.user-name-row :deep(.el-tag) {
+  flex-shrink: 0;
+}
+
 .user-name-row strong {
   overflow: hidden;
   color: var(--color-title);
@@ -115,16 +119,6 @@ async function copyAccount() {
   font-weight: var(--font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.role-tag {
-  flex-shrink: 0;
-  padding: 0 var(--spacing-8);
-  color: var(--color-body);
-  font-size: var(--font-size-xs);
-  line-height: 22px;
-  background: var(--color-bg-muted);
-  border-radius: var(--radius-sm);
 }
 
 .account-row {

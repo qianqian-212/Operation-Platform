@@ -10,90 +10,86 @@
         'is-simple-flow': simpleLayoutType === 'flow',
         'is-user-overview': definition?.kind === 'user-overview',
         'is-account-panel': definition?.kind === 'account-panel',
+        'is-agent': definition?.kind === 'agent',
+        'is-stats': definition?.kind === 'stats',
         'is-quick-links': definition?.kind === 'quick-links',
         'is-intrinsic-height': definition?.heightPolicy.mode === 'intrinsic',
       },
     ]"
   >
-    <header
-      v-if="editable || (definition?.kind !== 'user-overview' && definition?.kind !== 'account-panel')"
-      class="widget-header"
-    >
-      <div
-        class="widget-title-block"
-        :class="{ 'widget-drag-handle': editable }"
-        :draggable="editable"
-        @dragstart="emit('dragStart', $event)"
-        @dragend="emit('dragEnd')"
-      >
-        <span v-if="editable" class="drag-indicator" aria-hidden="true">
-          <el-icon><Rank /></el-icon>
-        </span>
-        <div>
-          <h2>{{ definition?.title ?? "工作台组件" }}</h2>
-          <p v-if="editable">{{ definition?.description }}</p>
-        </div>
-      </div>
-
-      <div v-if="editable" class="widget-actions">
-        <el-button
-          v-if="hasSettings"
-          text
-          circle
-          aria-label="组件设置"
-          @click="emit('openSettings')"
-        >
-          <el-icon><Setting /></el-icon>
-        </el-button>
-        <el-dropdown trigger="click" @command="handleCommand">
-          <el-button text circle aria-label="组件操作">
-            <el-icon><MoreFilled /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu v-if="layoutMode === 'simple' && simpleLayoutType === 'columns'">
-              <el-dropdown-item command="move-backward">向前移动</el-dropdown-item>
-              <el-dropdown-item command="move-forward">向后移动</el-dropdown-item>
-              <el-dropdown-item divided command="move-primary">移到主列</el-dropdown-item>
-              <el-dropdown-item command="move-secondary">移到辅列</el-dropdown-item>
-              <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
-            </el-dropdown-menu>
-            <el-dropdown-menu v-else-if="layoutMode === 'simple'">
-              <el-dropdown-item command="move-backward">向前移动</el-dropdown-item>
-              <el-dropdown-item command="move-forward">向后移动</el-dropdown-item>
-              <el-dropdown-item divided command="span-3">半行 · 双列</el-dropdown-item>
-              <el-dropdown-item command="span-6">整行 · 单列</el-dropdown-item>
-              <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
-            </el-dropdown-menu>
-            <el-dropdown-menu v-else>
-              <el-dropdown-item command="move-left">向左移动</el-dropdown-item>
-              <el-dropdown-item command="move-right">向右移动</el-dropdown-item>
-              <el-dropdown-item command="move-up">向上移动</el-dropdown-item>
-              <el-dropdown-item command="move-down">向下移动</el-dropdown-item>
-              <el-dropdown-item divided command="size-small">窄宽度</el-dropdown-item>
-              <el-dropdown-item command="size-medium">标准宽度</el-dropdown-item>
-              <el-dropdown-item command="size-large">宽宽度</el-dropdown-item>
-              <el-dropdown-item
-                divided
-                command="row-span-1"
-                :disabled="classicRowSpan === 1"
-              >
-                占 1 行
-              </el-dropdown-item>
-              <el-dropdown-item command="row-span-2" :disabled="classicRowSpan === 2">
-                跨 2 行
-              </el-dropdown-item>
-              <el-dropdown-item command="row-span-3" :disabled="classicRowSpan === 3">
-                跨 3 行
-              </el-dropdown-item>
-              <el-dropdown-item command="row-span-4" :disabled="classicRowSpan === 4">
-                跨 4 行
-              </el-dropdown-item>
-              <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
+    <header v-if="showsBuiltinHeader" class="widget-header">
+      <h2>{{ definition?.title ?? "工作台组件" }}</h2>
     </header>
+
+    <div v-if="editable" class="widget-edit-chrome">
+      <div
+        class="widget-edit-btn widget-drag-handle"
+        role="button"
+        tabindex="0"
+        draggable="true"
+        aria-label="拖动组件"
+        @dragstart="handleDragStart"
+        @dragend="handleDragEnd"
+      >
+        <el-icon><Rank /></el-icon>
+      </div>
+      <button
+        v-if="hasSettings"
+        type="button"
+        class="widget-edit-btn"
+        aria-label="组件设置"
+        @click="emit('openSettings')"
+      >
+        <el-icon><Setting /></el-icon>
+      </button>
+      <el-dropdown trigger="click" @command="handleCommand">
+        <button type="button" class="widget-edit-btn" aria-label="组件操作">
+          <el-icon><MoreFilled /></el-icon>
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu v-if="layoutMode === 'simple' && simpleLayoutType === 'columns'">
+            <el-dropdown-item command="move-backward">向前移动</el-dropdown-item>
+            <el-dropdown-item command="move-forward">向后移动</el-dropdown-item>
+            <el-dropdown-item divided command="move-primary">移到主列</el-dropdown-item>
+            <el-dropdown-item command="move-secondary">移到辅列</el-dropdown-item>
+            <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
+          </el-dropdown-menu>
+          <el-dropdown-menu v-else-if="layoutMode === 'simple'">
+            <el-dropdown-item command="move-backward">向前移动</el-dropdown-item>
+            <el-dropdown-item command="move-forward">向后移动</el-dropdown-item>
+            <el-dropdown-item divided command="span-3">半行 · 双列</el-dropdown-item>
+            <el-dropdown-item command="span-6">整行 · 单列</el-dropdown-item>
+            <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
+          </el-dropdown-menu>
+          <el-dropdown-menu v-else>
+            <el-dropdown-item command="move-left">向左移动</el-dropdown-item>
+            <el-dropdown-item command="move-right">向右移动</el-dropdown-item>
+            <el-dropdown-item command="move-up">向上移动</el-dropdown-item>
+            <el-dropdown-item command="move-down">向下移动</el-dropdown-item>
+            <el-dropdown-item divided command="size-small">窄宽度</el-dropdown-item>
+            <el-dropdown-item command="size-medium">标准宽度</el-dropdown-item>
+            <el-dropdown-item command="size-large">宽宽度</el-dropdown-item>
+            <el-dropdown-item
+              divided
+              command="row-span-1"
+              :disabled="classicRowSpan === 1"
+            >
+              占 1 行
+            </el-dropdown-item>
+            <el-dropdown-item command="row-span-2" :disabled="classicRowSpan === 2">
+              跨 2 行
+            </el-dropdown-item>
+            <el-dropdown-item command="row-span-3" :disabled="classicRowSpan === 3">
+              跨 3 行
+            </el-dropdown-item>
+            <el-dropdown-item command="row-span-4" :disabled="classicRowSpan === 4">
+              跨 4 行
+            </el-dropdown-item>
+            <el-dropdown-item divided command="hide">隐藏组件</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
 
     <div class="widget-body">
       <el-skeleton v-if="loading" :rows="3" animated />
@@ -115,6 +111,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { MoreFilled, Rank, Setting } from "@element-plus/icons-vue";
 import WorkbenchWidgetContent from "@/features/workbench/components/WorkbenchWidgetContent.vue";
+import { attachWorkbenchDragPreview, releaseWorkbenchDragPreview } from "@/features/workbench/workbench-drag-preview";
 import type {
   SimpleWorkbenchLayoutType,
   WorkbenchLayoutMode,
@@ -154,6 +151,10 @@ const calendarContext = computed(() => workbenchStore.context ? {
 const hasSettings = computed(
   () => props.item.settings.kind !== "none" && definition.value?.kind !== "quick-links",
 );
+const showsBuiltinHeader = computed(() => {
+  const kind = definition.value?.kind;
+  return kind !== "user-overview" && kind !== "account-panel" && kind !== "agent" && kind !== "stats";
+});
 const classicRowSpan = computed(() => "h" in props.item ? props.item.h : 1);
 let loadRequestId = 0;
 let contentResizeObserver: ResizeObserver | null = null;
@@ -214,6 +215,19 @@ function handleCommand(command: WorkbenchWidgetAction) {
   emit("action", command);
 }
 
+function handleDragStart(event: DragEvent) {
+  attachWorkbenchDragPreview(event, {
+    title: definition.value?.title ?? "工作台组件",
+    subtitle: definition.value?.description ?? "",
+  });
+  emit("dragStart", event);
+}
+
+function handleDragEnd() {
+  releaseWorkbenchDragPreview();
+  emit("dragEnd");
+}
+
 watch(
   () => [
     props.item.widgetKey,
@@ -230,6 +244,7 @@ watch(contentMeasureElement, observeMeasuredContent, { flush: "post" });
 watch(data, () => void nextTick(reportPreferredHeight), { flush: "post" });
 
 onBeforeUnmount(() => {
+  releaseWorkbenchDragPreview();
   contentResizeObserver?.disconnect();
   contentMutationObserver?.disconnect();
   cancelAnimationFrame(measurementFrame);
@@ -244,20 +259,20 @@ onBeforeUnmount(() => {
   height: 100%;
   overflow: hidden;
   background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: border-color 160ms ease, background-color 160ms ease;
+  border: 0;
+  border-radius: var(--workbench-widget-radius);
+  transition: background-color 160ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .workbench-widget {
+  .workbench-widget,
+  .widget-edit-btn {
     transition: none;
   }
 }
 
 .workbench-widget.is-editing {
   background: color-mix(in srgb, var(--color-primary-light) 18%, var(--color-white));
-  border-color: var(--color-primary-line-light);
 }
 
 .workbench-widget.is-simple {
@@ -277,6 +292,19 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 
+.workbench-widget.is-agent {
+  background: transparent;
+}
+
+.workbench-widget.is-agent.is-editing {
+  background: transparent;
+}
+
+.workbench-widget.is-agent .widget-body {
+  padding: 0;
+  overflow: visible;
+}
+
 .workbench-widget.is-simple .widget-body {
   overflow: visible;
 }
@@ -289,30 +317,10 @@ onBeforeUnmount(() => {
 }
 
 .widget-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-height: 44px;
-  gap: var(--spacing-12);
   padding: var(--spacing-16) var(--spacing-20) 0;
 }
 
-.widget-title-block {
-  display: flex;
-  align-items: flex-start;
-  min-width: 0;
-  gap: var(--spacing-8);
-}
-
-.widget-title-block.widget-drag-handle {
-  cursor: grab;
-}
-
-.widget-title-block.widget-drag-handle:active {
-  cursor: grabbing;
-}
-
-.widget-title-block h2 {
+.widget-header h2 {
   margin: 0;
   color: var(--color-title);
   font-size: var(--font-size-lg);
@@ -320,29 +328,66 @@ onBeforeUnmount(() => {
   line-height: var(--line-height-lg);
 }
 
-.widget-title-block p {
-  display: -webkit-box;
-  margin: var(--spacing-2) 0 0;
-  overflow: hidden;
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-xs);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-}
-
-.drag-indicator {
-  display: inline-flex;
-  margin-top: 1px;
-  color: var(--color-secondary);
-}
-
-.widget-actions {
+.widget-edit-chrome {
+  position: absolute;
+  z-index: 4;
+  top: var(--spacing-8);
+  right: var(--spacing-8);
   display: flex;
   align-items: center;
+  gap: var(--spacing-2);
+  pointer-events: none;
+}
+
+.widget-edit-chrome > *,
+.widget-edit-chrome :deep(.el-dropdown),
+.widget-edit-chrome :deep(.el-tooltip__trigger) {
+  display: inline-flex;
+  pointer-events: auto;
+  line-height: 0;
+}
+
+.widget-edit-btn {
+  display: inline-flex;
   flex-shrink: 0;
-  margin-top: -8px;
-  margin-right: -8px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--color-body);
+  appearance: none;
+  background: var(--color-bg-muted);
+  border: 0;
+  border-radius: var(--radius-full);
+  outline: none;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.widget-edit-btn:hover,
+.widget-edit-btn:active {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.widget-edit-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.widget-edit-btn :deep(.el-icon) {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.widget-drag-handle {
+  cursor: grab;
+}
+
+.widget-drag-handle:active {
+  cursor: grabbing;
 }
 
 .widget-body {

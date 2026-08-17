@@ -91,6 +91,35 @@ describe("MenuConfigView", () => {
     expect(useMenuConfigStore().records.some((record) => record.name === "家校协同")).toBe(true);
   });
 
+  it("lets operators set icon accent from the menu list", async () => {
+    const wrapper = mountView();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain("图标背景");
+    const row = wrapper.findAll(".menu-tree-row").find((item) => item.text().includes("家校共育"));
+    const accentGroup = row!.find('[aria-label="家校共育图标背景色"]');
+    expect(accentGroup.exists()).toBe(true);
+    expect(accentGroup.find('[aria-label="自动"]').attributes("aria-checked")).toBe("true");
+
+    await accentGroup.find('[aria-label="红色"]').trigger("click");
+    await wrapper.vm.$nextTick();
+
+    const store = useMenuConfigStore();
+    const record = store.records.find((item) => item.name === "家校共育");
+    expect(record?.iconAccent).toBe("red");
+    expect(accentGroup.find('[aria-label="红色"]').attributes("aria-checked")).toBe("true");
+
+    const nameTrigger = row!.find(".menu-name-text");
+    await nameTrigger.trigger("click");
+    await wrapper.vm.$nextTick();
+    const input = row!.find('input[aria-label="菜单名称"]');
+    await input.setValue("家校协同");
+    await input.trigger("keyup", { key: "Enter" });
+    await wrapper.vm.$nextTick();
+
+    expect(store.records.find((item) => item.name === "家校协同")?.iconAccent).toBe("red");
+  });
+
   it("opens inline editing by double-clicking a row", async () => {
     const wrapper = mountView();
     await wrapper.vm.$nextTick();

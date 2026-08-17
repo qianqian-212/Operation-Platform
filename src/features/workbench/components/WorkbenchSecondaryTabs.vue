@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
 }
 
 .secondary-tab:focus-visible {
-  outline: 2px solid var(--color-primary-line-light);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   box-shadow: none;
 }

@@ -3,7 +3,13 @@ import type { PersistenceIdentity } from "@/features/persistence/operation-platf
 import type { TenantConfiguration } from "@/features/tenant-config/types";
 import { isValidTenantConfiguration } from "@/features/tenant-config/tenant-configuration-validation";
 import type { TenantMemberRecord } from "@/features/tenant-members/types";
-import type { UserWorkbenchLayout, WorkbenchProfile } from "@/features/workbench/types";
+import type {
+  UserWorkbenchLayout,
+  WorkbenchProfile,
+  WorkbenchWidgetAssignment,
+} from "@/features/workbench/types";
+import { reconcileWorkbenchWidgetAssignment } from "@/features/workbench/workbench-widget-assignment";
+import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
 import {
   defaultAdministrativeRegionForTenant,
   normalizeTenantAdministrativeRegion,
@@ -82,6 +88,7 @@ export interface OperationPlatformBootstrap {
   activeRoles: Map<string, string>;
   visualizationThemes: Map<string, string>;
   workbenchLayouts: Map<string, UserWorkbenchLayout>;
+  workbenchWidgetAssignment: WorkbenchWidgetAssignment | null;
 }
 
 export interface RemoteTenantState {
@@ -162,13 +169,29 @@ function toMember(row: MemberRow): TenantMemberRecord {
   };
 }
 
+function isMissingRelationError(error: { code?: string; message: string } | null) {
+  if (!error) return false;
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /does not exist|schema cache/i.test(error.message)
+  );
+}
+
+function assignmentFromRow(value: unknown) {
+  return reconcileWorkbenchWidgetAssignment(value);
+}
+
 function configurationFromRow(row: ConfigurationRow, tenant: TenantInfo) {
   if (!isValidTenantConfiguration(row.configuration, tenant)) {
     throw new Error(`组织「${tenant.name}」的远端配置格式无效`);
   }
   return {
     revision: Number(row.revision),
-    configuration: row.configuration,
+    configuration: {
+      ...row.configuration,
+      menuRecords: ensurePlatformSystemMenus(tenant, row.configuration.menuRecords),
+    },
   } satisfies RemoteTenantConfiguration;
 }
 
@@ -191,6 +214,7 @@ export class SupabaseOperationPlatformRepository {
       membersResult,
       preferencesResult,
       layoutsResult,
+      assignmentResult,
       preferredStateRows,
     ] = await Promise.all([
       client.from("profiles").select("id,display_name,initials,platform_admin").eq("id", user.id).single(),
@@ -198,6 +222,7 @@ export class SupabaseOperationPlatformRepository {
       client.from("tenant_members").select(memberColumns).eq("auth_user_id", user.id),
       client.from("user_tenant_preferences").select("tenant_id,active_role_id,visualization_theme_id").eq("auth_user_id", user.id),
       client.from("workbench_layouts").select("tenant_id,profile,layout").eq("auth_user_id", user.id),
+      this.loadWorkbenchWidgetAssignment(),
       preferredStateRequest,
     ]);
     assertNoError(profileResult.error, "用户资料读取失败");
@@ -259,6 +284,7 @@ export class SupabaseOperationPlatformRepository {
       activeRoles,
       visualizationThemes,
       workbenchLayouts,
+      workbenchWidgetAssignment: assignmentResult,
     };
   }
 
@@ -420,6 +446,37 @@ export class SupabaseOperationPlatformRepository {
       .eq("auth_user_id", authUserId)
       .eq("profile", profile);
     assertNoError(error, "恢复默认工作台失败");
+  }
+
+  async loadWorkbenchWidgetAssignment() {
+    const { data, error } = await getSupabaseClient()
+      .from("workbench_widget_assignments")
+      .select("assignment")
+      .eq("id", "global")
+      .maybeSingle();
+    if (isMissingRelationError(error)) return null;
+    assertNoError(error, "工作台组件授权读取失败");
+    return assignmentFromRow(data?.assignment ?? null);
+  }
+
+  async saveWorkbenchWidgetAssignment(assignment: WorkbenchWidgetAssignment) {
+    const { error } = await getSupabaseClient()
+      .from("workbench_widget_assignments")
+      .upsert({
+        id: "global",
+        revision: Math.max(assignment.revision, 1),
+        assignment,
+      }, { onConflict: "id" });
+    assertNoError(error, "工作台组件授权保存失败");
+  }
+
+  async resetWorkbenchWidgetAssignment() {
+    const { error } = await getSupabaseClient()
+      .from("workbench_widget_assignments")
+      .delete()
+      .eq("id", "global");
+    if (isMissingRelationError(error)) return;
+    assertNoError(error, "恢复默认工作台组件授权失败");
   }
 }
 

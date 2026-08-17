@@ -52,6 +52,8 @@
   --font-size-sm: 13px;
   --font-size-md: 14px;
   --font-size-lg: 16px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 30px;
   --line-height-xs: 20px;
   --line-height-md: 22px;
   --line-height-lg: 24px;
@@ -79,7 +81,17 @@
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
   --radius-full: 999px;
+  --workbench-widget-radius: var(--radius-2xl);
+  --workbench-widget-gap: var(--spacing-16);
+  --workbench-item-card-min-width: 16rem;
+  --menu-icon-accent-blue: var(--color-primary);
+  --menu-icon-accent-red: var(--color-error);
+  --menu-icon-accent-yellow: var(--color-warning);
+  --menu-icon-accent-cyan: #14c4c4;
+  --menu-icon-accent-green: var(--color-success-dark-text);
 
   /* Shadow */
   --shadow-s:
@@ -271,10 +283,84 @@ body,
 }
 
 .el-tag {
-  --el-tag-border-radius: var(--radius-sm);
+  --el-tag-border-radius: var(--radius-md);
+  --el-tag-border-color: transparent;
+  border-color: transparent;
 }
 
-/* Dropdown trigger — 去掉 EP 默认的 focus outline 和 hover 底边 */
+.el-tag.el-tag--small {
+  padding: 0 var(--spacing-4) 0;
+}
+
+.el-tag.el-tag--primary {
+  --el-tag-bg-color: var(--color-tag-blue-bg);
+  --el-tag-text-color: var(--color-tag-blue-text);
+  --el-tag-border-color: transparent;
+  background-color: var(--color-tag-blue-bg);
+  color: var(--color-tag-blue-text);
+  border-color: transparent;
+}
+
+.el-tag.el-tag--success {
+  --el-tag-bg-color: var(--color-tag-green-bg);
+  --el-tag-text-color: var(--color-tag-green-text);
+  --el-tag-border-color: transparent;
+  background-color: var(--color-tag-green-bg);
+  color: var(--color-tag-green-text);
+  border-color: transparent;
+}
+
+.el-tag.el-tag--warning {
+  --el-tag-bg-color: var(--color-tag-orange-bg);
+  --el-tag-text-color: var(--color-tag-orange-text);
+  --el-tag-border-color: transparent;
+  background-color: var(--color-tag-orange-bg);
+  color: var(--color-tag-orange-text);
+  border-color: transparent;
+}
+
+.el-tag.el-tag--danger {
+  --el-tag-bg-color: var(--color-tag-red-bg);
+  --el-tag-text-color: var(--color-tag-red-text);
+  --el-tag-border-color: transparent;
+  background-color: var(--color-tag-red-bg);
+  color: var(--color-tag-red-text);
+  border-color: transparent;
+}
+
+.el-tag.el-tag--info {
+  --el-tag-bg-color: var(--color-tag-gray-bg);
+  --el-tag-text-color: var(--color-tag-gray-text);
+  --el-tag-border-color: transparent;
+  background-color: var(--color-tag-gray-bg);
+  color: var(--color-tag-gray-text);
+  border-color: transparent;
+}
+
+.workbench-surface-card {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.workbench-surface-card:hover,
+.workbench-surface-card:focus-visible {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-line-light);
+  box-shadow: var(--shadow-s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workbench-surface-card {
+    transition: none;
+  }
+}
 .el-dropdown > *:focus-visible,
 .el-dropdown > *:focus {
   outline: none;
@@ -379,17 +465,11 @@ body,
 }
 
 /* Tag Styles */
-.el-tag--primary {
-  background-color: var(--color-tag-blue-bg);
-  color: var(--color-tag-blue-text);
-  border-color: transparent;
-}
-
 .status-tag {
   display: inline-flex;
   align-items: center;
   padding: 1px var(--spacing-6);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-xs);
   font-weight: var(--font-weight-regular);
@@ -430,4 +510,39 @@ body,
 
 .table-action-link:hover {
   color: var(--color-primary-hover);
+}
+
+.workbench-drag-preview {
+  position: absolute;
+  top: -1000px;
+  left: 0;
+  z-index: -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  max-width: 280px;
+  padding: var(--spacing-12) var(--spacing-16);
+  overflow: hidden;
+  color: var(--color-title);
+  background: var(--color-white);
+  border: 0;
+  border-radius: var(--workbench-widget-radius);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.workbench-drag-preview strong {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-md);
+}
+
+.workbench-drag-preview span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }

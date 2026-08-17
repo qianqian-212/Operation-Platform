@@ -12,7 +12,7 @@
 
 - `src/config/page-registry.ts` 是页面资源和动态路由的唯一代码级事实源。菜单只保存 `pageKey`，不得保存组件路径。
 - 菜单模板只用于首次初始化和恢复默认，不得静默覆盖租户现有配置。菜单最多四级，层级规则由领域校验统一维护。
-- 工作台是租户 Shell 配置，不是菜单节点；固定组件清单以 `src/features/workbench/workbench-templates.ts` 为准，个人布局不得真正新增或删除系统组件。
+- 工作台是租户 Shell 配置，不是菜单节点；固定组件目录以 `src/features/workbench/workbench-widget-catalog.ts` 为准，各组织类型的默认编排以 `src/features/workbench/workbench-templates.ts` 为准。系统组件集 = 目录 ∩ 当前授权，授权只能在组件声明的兼容组织类型内启用或停用。公共组件只定义一次，领域组件通过兼容组织类型引用，个人布局不得真正新增或删除系统组件。数据概览覆盖全部组织类型，按类型与角色切换指标；消息与待办中心面向学校、教育局和机构，不含运营平台。
 - `src/features/persistence/operation-platform-persistence.ts` 是应用持久化契约，`runtime-operation-platform-persistence.ts` 是唯一装配入口。页面和 Store 不得直接依赖 Adapter、远端 DTO 或数据源类型。
 - 菜单、工作台入口和角色必须通过 `src/features/tenant-config/` 聚合原子保存；Supabase 写入保留 revision 并发控制。
 - 组织、成员、工作台和权限分别通过对应 `src/features/` repository 维护。Repository 返回防御性副本、显式抛错；损坏数据只有在备份成功后才能恢复。

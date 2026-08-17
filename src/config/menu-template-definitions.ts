@@ -119,6 +119,7 @@ export const menuTemplateChildrenByModule: Record<string, SideMenuItem[]> = {
     { key: "organization-management", label: "组织管理", icon: "Building2", path: "/system/organization" },
     { key: "role-management", label: "角色管理", icon: "Users", path: "/system/roles" },
     { key: "menu-config", label: "菜单配置", icon: "setting", path: "/system/menu-config" },
+    { key: "workbench-widgets", label: "工作台组件管理", icon: "LayoutGrid", path: "/system/workbench-widgets" },
   ],
 };
 

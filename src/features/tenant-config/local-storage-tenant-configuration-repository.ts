@@ -2,6 +2,7 @@ import {
   tenantRoleRepository,
   tenantRoleStorageKey,
 } from "@/features/access-control/local-storage-role-repository";
+import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
 import {
   tenantMenuRepository,
   tenantMenuStorageKey,
@@ -43,6 +44,15 @@ function invalidConfigurationStorageKey(tenantId: string, timestamp: number) {
   return `operation-platform:tenant-configuration:invalid:${tenantId}:${timestamp}`;
 }
 
+function withPlatformSystemMenus(
+  tenant: TenantInfo,
+  configuration: TenantConfiguration,
+): TenantConfiguration {
+  const menuRecords = ensurePlatformSystemMenus(tenant, configuration.menuRecords);
+  if (menuRecords.length === configuration.menuRecords.length) return configuration;
+  return { ...configuration, menuRecords };
+}
+
 function cloneConfiguration(configuration: TenantConfiguration): TenantConfiguration {
   return {
     version: CONFIGURATION_VERSION,
@@ -71,7 +81,11 @@ export class LocalStorageTenantConfigurationRepository {
       if (!isValidTenantConfiguration(parsed, tenant)) {
         return this.recoverInvalidConfiguration(tenant, raw);
       }
-      return { configuration: cloneConfiguration(parsed), recoveryNotice: null };
+      const configuration = withPlatformSystemMenus(tenant, cloneConfiguration(parsed));
+      if (configuration.menuRecords.length !== parsed.menuRecords.length) {
+        return { configuration: this.replace(tenant, configuration), recoveryNotice: null };
+      }
+      return { configuration, recoveryNotice: null };
     } catch (error) {
       if (error instanceof TenantConfigurationPersistenceError) throw error;
       return this.recoverInvalidConfiguration(tenant, raw);

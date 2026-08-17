@@ -36,10 +36,8 @@ import {
   CLASSIC_WORKBENCH_MAX_ROW_SPAN,
   WORKBENCH_GRID_COLUMNS,
 } from "@/features/workbench/types";
-import {
-  getWorkbenchTemplate,
-  workbenchWidgetRegistry,
-} from "@/features/workbench/workbench-templates";
+import { workbenchWidgetRegistry } from "@/features/workbench/workbench-templates";
+import { resolveWorkbenchTemplate } from "@/features/workbench/workbench-widget-assignment";
 import type { TenantInfo } from "@/types/user";
 
 function layoutsEqual(first: UserWorkbenchLayout | null, second: UserWorkbenchLayout | null) {
@@ -76,6 +74,7 @@ function collectQuickLinks(
             openMode: target.openMode,
             tenantId,
             icon: node.icon,
+            iconAccent: node.iconAccent ?? null,
             moduleId: module.id,
             moduleName: module.name,
             moduleIcon: module.icon,
@@ -200,7 +199,11 @@ export const useWorkbenchStore = defineStore("workbench", () => {
     const nextContext: WorkbenchLayoutContext = { tenant, userId, profile: nextProfile };
     const nextContextKey = `${tenant.id}:${userId}:${nextProfile}`;
     if (previousContextKey !== nextContextKey) widgetDataCache.clear();
-    const nextTemplate = getWorkbenchTemplate(tenant.type, nextProfile);
+    const nextTemplate = resolveWorkbenchTemplate(
+      tenant.type,
+      nextProfile,
+      operationPlatformPersistence.loadWorkbenchWidgetAssignment().assignment,
+    );
     const result = operationPlatformPersistence.loadWorkbenchLayout(nextContext, nextTemplate);
     context.value = { ...nextContext, tenant: { ...tenant } };
     template.value = nextTemplate;

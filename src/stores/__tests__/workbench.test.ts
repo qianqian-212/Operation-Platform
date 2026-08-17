@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { ADMIN_ROLE_ID, STAFF_ROLE_ID } from "@/features/access-control/types";
 import { workbenchLayoutStorageKey } from "@/features/workbench/local-storage-workbench-layout-repository";
+import {
+  createDefaultWorkbenchWidgetAssignment,
+  setWorkbenchWidgetTenantEnabled,
+} from "@/features/workbench/workbench-widget-assignment";
+import { operationPlatformPersistence } from "@/features/persistence/runtime-operation-platform-persistence";
 import type { MenuTreeNode } from "@/features/menu-config/types";
 import { workbenchDataSource } from "@/features/workbench/runtime-workbench-data-source";
 import { useWorkbenchStore } from "@/stores/workbench";
@@ -28,11 +33,27 @@ describe("workbench store", () => {
 
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
     expect(store.profile).toBe("admin");
-    expect(store.totalCount).toBe(10);
+    expect(store.totalCount).toBe(8);
 
     store.load(school, "user-a", STAFF_ROLE_ID, emptyTree);
     expect(store.profile).toBe("business");
-    expect(store.totalCount).toBe(8);
+    expect(store.totalCount).toBe(6);
+  });
+
+  it("loads only widgets assigned to the current tenant type", async () => {
+    await operationPlatformPersistence.saveWorkbenchWidgetAssignment(
+      setWorkbenchWidgetTenantEnabled(
+        createDefaultWorkbenchWidgetAssignment(),
+        "stats-overview",
+        "school",
+        false,
+      ),
+    );
+    const store = useWorkbenchStore();
+    store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
+
+    expect(store.items.some((item) => item.widgetKey === "stats-overview")).toBe(false);
+    expect(store.totalCount).toBe(7);
   });
 
   it("groups only internal page entries by their configured top-level module", () => {
@@ -91,6 +112,7 @@ describe("workbench store", () => {
         moduleId: "module-services",
         moduleName: "公共服务",
         icon: "School",
+        iconAccent: null,
         moduleIcon: "LayoutGrid",
       }),
     ]);
@@ -105,8 +127,8 @@ describe("workbench store", () => {
     const original = { x: first.x, y: first.y };
 
     store.setVisible(first.widgetKey, false);
-    expect(store.totalCount).toBe(10);
-    expect(store.visibleCount).toBe(9);
+    expect(store.totalCount).toBe(8);
+    expect(store.visibleCount).toBe(7);
     expect(store.items.find((item) => item.widgetKey === first.widgetKey)).toMatchObject({
       visible: false,
       ...original,
@@ -118,7 +140,7 @@ describe("workbench store", () => {
 
     expect(restored.visible).toBe(true);
     expect({ x: restored.x, y: restored.y }).not.toEqual(original);
-    expect(store.totalCount).toBe(10);
+    expect(store.totalCount).toBe(8);
   });
 
   it("expands a classic widget by logical rows and only pushes horizontally intersecting widgets", () => {
@@ -126,23 +148,23 @@ describe("workbench store", () => {
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
     store.beginEditing();
     const alert = store.draftLayout!.items.find((item) =>
-      item.widgetKey.endsWith(".operational-alerts")
+      item.widgetKey === "school.operational-alerts"
     )!;
-    const notices = store.draftLayout!.items.find((item) => item.widgetKey.endsWith(".notices"))!;
+    const notices = store.draftLayout!.items.find((item) => item.widgetKey === "message-todo-center")!;
     const quickLinks = store.draftLayout!.items.find((item) =>
-      item.widgetKey.endsWith(".quick-links")
+      item.widgetKey === "quick-links"
     )!;
 
     expect({ alert: alert.y, notices: notices.y, quickLinks: quickLinks.y }).toEqual({
-      alert: 1,
-      notices: 2,
-      quickLinks: 2,
+      alert: 2,
+      notices: 3,
+      quickLinks: 3,
     });
     expect(store.setClassicRowSpan(alert.widgetKey, 2)).toBe(true);
 
     expect(alert.h).toBe(2);
-    expect(notices.y).toBe(2);
-    expect(quickLinks.y).toBe(3);
+    expect(notices.y).toBe(3);
+    expect(quickLinks.y).toBe(4);
   });
 
   it("cancels a draft without persistence and saves one override atomically", async () => {
@@ -205,10 +227,14 @@ describe("workbench store", () => {
   it("keeps classic coordinates and simple order/width independent across version switches", async () => {
     const store = useWorkbenchStore();
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
-    const classicFirst = store.savedLayout!.items[0]!;
+    const classicFirst = store.savedLayout!.items.find(
+      (item) => item.widgetKey === "message-todo-center",
+    )!;
     const classicPosition = { x: classicFirst.x, y: classicFirst.y, w: classicFirst.w, h: classicFirst.h };
     const firstKey = classicFirst.widgetKey;
-    const secondKey = store.savedLayout!.items[1]!.widgetKey;
+    const secondKey = store.savedLayout!.items.find(
+      (item) => item.widgetKey === "school.student-distribution",
+    )!.widgetKey;
 
     await store.switchLayoutMode("simple");
     expect(store.layoutMode).toBe("simple");
