@@ -107,6 +107,21 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "bureau-regional-education-overview",
     });
+
+    const teacherDevelopment = records.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(teacherDevelopment.id, "教研与科研");
+    const crossSchool = child(teachingResearch.id, "跨校协同教研");
+    expect(crossSchool).toMatchObject({ type: "directory" });
+    expect(child(crossSchool.id, "教研联盟")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-teaching-research-alliance",
+    });
+    expect(child(crossSchool.id, "跨校教研活动")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-cross-school-activity",
+    });
   });
 
   it("preserves representative school menu hierarchy and flattens only beyond level four", () => {

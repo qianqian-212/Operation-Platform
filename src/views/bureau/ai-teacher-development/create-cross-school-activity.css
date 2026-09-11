@@ -1,0 +1,152 @@
+.create-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.breadcrumb-bar {
+  padding: var(--spacing-16) var(--spacing-24);
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.create-body {
+  flex: 1;
+  overflow: auto;
+  padding: var(--spacing-24);
+  padding-bottom: 96px;
+}
+
+.activity-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  max-width: 880px;
+}
+
+.activity-form :deep(.form-card) {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-24);
+}
+
+.activity-form :deep(.card-title) {
+  margin: 0 0 var(--spacing-16);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-title);
+  line-height: 24px;
+}
+
+.activity-form :deep(.card-desc) {
+  margin: calc(var(--spacing-8) * -1) 0 var(--spacing-16);
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+.activity-form :deep(.card-head) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  margin-bottom: var(--spacing-8);
+}
+
+.activity-form :deep(.card-head .card-title),
+.activity-form :deep(.card-head .card-desc) {
+  margin-bottom: 0;
+}
+
+.activity-form :deep(.el-form-item__label) {
+  color: var(--color-title);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+}
+
+.activity-form :deep(.el-input),
+.activity-form :deep(.el-textarea),
+.activity-form :deep(.el-select),
+.activity-form :deep(.el-date-editor) {
+  width: 100%;
+}
+
+.activity-form :deep(.field-grid) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 var(--spacing-16);
+}
+
+.activity-form :deep(.task-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: var(--spacing-12);
+  align-items: flex-start;
+}
+
+.activity-form :deep(.task-remove) {
+  margin-top: 30px;
+}
+
+.activity-form :deep(.pick-panel) {
+  margin-top: var(--spacing-12);
+  padding: var(--spacing-16);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+}
+
+.activity-form :deep(.pick-panel-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-12);
+  color: var(--color-title);
+  font-size: var(--font-size-md);
+}
+
+.activity-form :deep(.pick-panel-head span:last-child) {
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.activity-form :deep(.pick-group + .pick-group) {
+  margin-top: var(--spacing-16);
+}
+
+.activity-form :deep(.pick-group-title) {
+  margin: 0 0 var(--spacing-8);
+  color: var(--color-title);
+  font-size: var(--font-size-md);
+}
+
+.activity-form :deep(.pick-tags) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.footer-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-24);
+  background: var(--color-white);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 860px) {
+  .activity-form :deep(.field-grid),
+  .activity-form :deep(.task-row) {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-form :deep(.task-remove) {
+    margin-top: 0;
+  }
+}

@@ -258,6 +258,76 @@ export const pageRegistry: PageRegistryItem[] = [
     },
   ),
 
+  // 教育局 · AI教师发展 · 跨校协同教研
+  page(
+    "bureau-teaching-research-alliance",
+    "教研联盟管理",
+    "/bureau/ai-teacher-development/cross-school-research/alliance",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/AllianceManagementView.vue"),
+    {
+      description: "教育局创建和管理跨校教研联盟，支持联盟检索、启停与专属空间初始化。",
+    },
+  ),
+  page(
+    "bureau-teaching-research-alliance-create",
+    "创建教研联盟",
+    "/bureau/ai-teacher-development/cross-school-research/alliance/create",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/CreateAllianceView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-teaching-research-alliance",
+      description: "教育局创建跨校教研联盟，配置成员学校、牵头校、管理员与参与教师。",
+    },
+  ),
+  page(
+    "bureau-teaching-research-alliance-detail",
+    "教研联盟详情",
+    "/bureau/ai-teacher-development/cross-school-research/alliance/:id",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/AllianceDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-teaching-research-alliance",
+      description: "查看教研联盟基本信息、成员学校、统计数据与专属空间入口。",
+    },
+  ),
+  page(
+    "bureau-cross-school-activity",
+    "跨校教研活动",
+    "/bureau/ai-teacher-development/cross-school-research/activities",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/CrossSchoolActivityView.vue"),
+    {
+      description: "牵头学校统筹组织跨校教研活动，支持按类型、状态和联盟检索并进入活动详情。",
+    },
+  ),
+  page(
+    "bureau-cross-school-activity-create",
+    "创建跨校教研活动",
+    "/bureau/ai-teacher-development/cross-school-research/activities/create",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/CreateCrossSchoolActivityView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-cross-school-activity",
+      description: "牵头学校发起跨校集体备课或听评课，配置参与学校、教师与任务分工。",
+    },
+  ),
+  page(
+    "bureau-cross-school-activity-detail",
+    "跨校教研活动详情",
+    "/bureau/ai-teacher-development/cross-school-research/activities/:id",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/CrossSchoolActivityDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-cross-school-activity",
+      description: "管理跨校教研活动全流程：概览、任务分工或听评设置、讨论投票与归档。",
+    },
+  ),
+
   // 教育局 · 组织与运营商
   page("bureau-org-structure", "组织架构", "/bureau/org/structure", bureau),
   page("bureau-staff-manage", "人员管理", "/bureau/org/staff", bureau),

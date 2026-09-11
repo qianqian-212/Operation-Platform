@@ -106,6 +106,60 @@ describe("page registry", () => {
     });
   });
 
+  it("registers the bureau teaching research alliance list and detail pages", () => {
+    expect(pageRegistryByKey.get("bureau-teaching-research-alliance")).toMatchObject({
+      title: "教研联盟管理",
+      path: "/bureau/ai-teacher-development/cross-school-research/alliance",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-teaching-research-alliance-create")).toMatchObject({
+      title: "创建教研联盟",
+      path: "/bureau/ai-teacher-development/cross-school-research/alliance/create",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-teaching-research-alliance",
+    });
+    expect(pageRegistryByKey.get("bureau-teaching-research-alliance-detail")).toMatchObject({
+      title: "教研联盟详情",
+      path: "/bureau/ai-teacher-development/cross-school-research/alliance/:id",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-teaching-research-alliance",
+    });
+  });
+
+  it("registers the bureau cross-school activity list and detail pages", () => {
+    expect(pageRegistryByKey.get("bureau-cross-school-activity")).toMatchObject({
+      title: "跨校教研活动",
+      path: "/bureau/ai-teacher-development/cross-school-research/activities",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-cross-school-activity-create")).toMatchObject({
+      title: "创建跨校教研活动",
+      path: "/bureau/ai-teacher-development/cross-school-research/activities/create",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-cross-school-activity",
+    });
+    expect(pageRegistryByKey.get("bureau-cross-school-activity-detail")).toMatchObject({
+      title: "跨校教研活动详情",
+      path: "/bureau/ai-teacher-development/cross-school-research/activities/:id",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-cross-school-activity",
+    });
+  });
+
   it("registers a reusable menu-scoped developing placeholder page", () => {
     const page = pageRegistryByKey.get(DEVELOPING_PAGE_KEY);
 

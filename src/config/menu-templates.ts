@@ -74,6 +74,8 @@ const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI教育治理/学生发展评价/学生成长概览": "bureau-student-growth-portrait",
   "AI教育治理/学生发展评价/学生成长档案": "bureau-student-growth-archive",
   "智慧大脑/数据驾驶舱/区域教育总览": "bureau-regional-education-overview",
+  "AI教师发展/教研与科研/跨校协同教研/教研联盟": "bureau-teaching-research-alliance",
+  "AI教师发展/教研与科研/跨校协同教研/跨校教研活动": "bureau-cross-school-activity",
 };
 
 interface FlattenedOutlinePage {
