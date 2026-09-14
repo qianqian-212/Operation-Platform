@@ -99,7 +99,8 @@ watch(
     const stillVisible = orgs.some(
       (org) => active === orgKey(org.id) || active.startsWith(`group:${org.id}:`),
     );
-    if (!stillVisible) emit("focus", orgKey(orgs[0].id));
+    const firstOrg = orgs[0];
+    if (!stillVisible && firstOrg) emit("focus", orgKey(firstOrg.id));
   },
   { flush: "post" },
 );
