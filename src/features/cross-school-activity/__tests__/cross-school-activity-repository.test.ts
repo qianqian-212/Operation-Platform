@@ -123,14 +123,18 @@ describe("cross-school activity repository", () => {
       tasks: [],
       observation: {
         courseName: "观察水的浮力",
+        instructorId: "teacher-jiangning",
         instructorName: "蒋宁",
         scheduledAt: "2026-09-01 09:00",
         method: "线下听课",
         grade: "四年级",
         subject: "科学",
         courseType: "实验课",
+        reviewerId: "teacher-liuchen",
         reviewerName: "刘晨",
         reviewMethod: "议课研讨",
+        assessmentTemplate: "小学科学评课模板",
+        materials: [],
       },
     });
     expect(row.leadSchoolName).toBe("翠竹小学");
