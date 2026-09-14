@@ -1,6 +1,17 @@
 <template>
   <WorkbenchStatsOverview v-if="data.kind === 'stats'" :data="data" />
 
+  <WorkbenchAllianceOverview v-else-if="data.kind === 'alliance-overview'" :data="data" />
+
+  <WorkbenchAllianceList v-else-if="data.kind === 'alliance-list'" :data="data" />
+
+  <WorkbenchEffectEvaluation v-else-if="data.kind === 'effect-evaluation'" :data="data" />
+
+  <WorkbenchCrossSchoolActivities
+    v-else-if="data.kind === 'cross-school-activities'"
+    :data="data"
+  />
+
   <WorkbenchTrendChart v-else-if="data.kind === 'trend'" :data="data" />
 
   <WorkbenchItemCards
@@ -51,6 +62,10 @@
 </template>
 
 <script setup lang="ts">
+import WorkbenchAllianceList from "@/features/workbench/components/WorkbenchAllianceList.vue";
+import WorkbenchAllianceOverview from "@/features/workbench/components/WorkbenchAllianceOverview.vue";
+import WorkbenchCrossSchoolActivities from "@/features/workbench/components/WorkbenchCrossSchoolActivities.vue";
+import WorkbenchEffectEvaluation from "@/features/workbench/components/WorkbenchEffectEvaluation.vue";
 import WorkbenchStatsOverview from "@/features/workbench/components/WorkbenchStatsOverview.vue";
 import WorkbenchAccountPanel from "@/features/workbench/components/WorkbenchAccountPanel.vue";
 import WorkbenchEtoneduAgent from "@/features/workbench/components/WorkbenchEtoneduAgent.vue";

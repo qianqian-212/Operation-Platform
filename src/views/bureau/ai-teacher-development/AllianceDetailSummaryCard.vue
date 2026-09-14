@@ -14,7 +14,18 @@
     <div class="metric-row">
       <div v-for="metric in metrics" :key="metric.label" class="metric-item">
         <span class="metric-value">{{ metric.value }}</span>
-        <span class="metric-label">{{ metric.label }}</span>
+        <div class="metric-label-row">
+          <span class="metric-label">{{ metric.label }}</span>
+          <button
+            v-if="metric.action"
+            type="button"
+            class="metric-action"
+            @click="emit('view-schools')"
+          >
+            查看
+            <el-icon><ArrowRight /></el-icon>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -22,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { ArrowRight } from "@element-plus/icons-vue";
 import StatusTag from "@/components/StatusTag.vue";
 import {
   ALLIANCE_STATUS_MAP,
@@ -35,12 +47,14 @@ const props = defineProps<{
   detail: TeachingResearchAllianceDetail;
 }>();
 
+const emit = defineEmits<{
+  "view-schools": [];
+}>();
+
 const metrics = computed(() => [
-  { label: "成员学校", value: String(props.detail.memberSchoolCount) },
-  { label: "教研活动", value: String(props.detail.activityCount) },
-  { label: "参与教师", value: String(props.detail.teacherCount) },
-  { label: "活动产出率", value: `${props.detail.performance.participationRate}%` },
-  { label: "成果产出率", value: `${props.detail.performance.outputRate}%` },
+  { label: "成员学校", value: String(props.detail.memberSchoolCount), action: true },
+  { label: "教研活动", value: String(props.detail.activityCount), action: false },
+  { label: "参与教师", value: String(props.detail.teacherCount), action: false },
 ]);
 </script>
 
@@ -89,7 +103,7 @@ const metrics = computed(() => [
 
 .metric-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-12);
   margin-top: auto;
   padding-top: var(--spacing-8);
@@ -114,21 +128,38 @@ const metrics = computed(() => [
   line-height: 28px;
 }
 
+.metric-label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
 .metric-label {
   font-size: var(--font-size-sm);
   color: var(--color-secondary);
   line-height: var(--line-height-md);
 }
 
-@media (max-width: 1100px) {
-  .metric-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.metric-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  cursor: pointer;
+}
+
+.metric-action:hover {
+  color: var(--color-primary-hover);
 }
 
 @media (max-width: 720px) {
   .metric-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 </style>

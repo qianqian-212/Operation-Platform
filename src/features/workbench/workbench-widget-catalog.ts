@@ -42,7 +42,14 @@ interface CatalogDraft {
 function heightPolicy(kind: WorkbenchWidgetKind): WorkbenchWidgetHeightPolicy {
   switch (kind) {
     case "stats":
+    case "alliance-overview":
       return { mode: "intrinsic", minHeight: 148, preferredHeight: 176, maxContentHeight: 240 };
+    case "alliance-list":
+      return { mode: "intrinsic", minHeight: 420, preferredHeight: 520, maxContentHeight: 640 };
+    case "effect-evaluation":
+      return { mode: "intrinsic", minHeight: 260, preferredHeight: 320, maxContentHeight: 480 };
+    case "cross-school-activities":
+      return { mode: "intrinsic", minHeight: 220, preferredHeight: 280, maxContentHeight: 360 };
     case "user-overview":
       return { mode: "intrinsic", minHeight: 123, preferredHeight: 144, maxContentHeight: 220 };
     case "account-panel":
@@ -187,6 +194,33 @@ const drafts: CatalogDraft[] = [
     maxSize: { w: 8, h: 8 },
   },
 
+  domain("school.alliance-overview", "联盟数据总览", "教研联盟规模、跨校活动与参与教师概览。", "alliance-overview", "school", {
+    minSize: { w: 6, h: 2 },
+    preferredSize: { w: 12, h: 2 },
+    maxSize: { w: 12, h: 3 },
+  }),
+  domain("school.alliance-list", "教研联盟概览", "本校参与的教研联盟状态与核心指标。", "alliance-list", "school", {
+    minSize: { w: 4, h: 4 },
+    preferredSize: { w: 6, h: 7 },
+    maxSize: { w: 12, h: 8 },
+  }),
+  domain("school.effect-evaluation", "效果评估速览", "参与校与未参与校的年度效果对比。", "effect-evaluation", "school", {
+    minSize: { w: 4, h: 3 },
+    preferredSize: { w: 6, h: 4 },
+    maxSize: { w: 12, h: 6 },
+  }),
+  domain(
+    "school.cross-school-activities",
+    "近期跨校活动",
+    "近期跨校教研活动进度与牵头信息。",
+    "cross-school-activities",
+    "school",
+    {
+      minSize: { w: 4, h: 3 },
+      preferredSize: { w: 6, h: 3 },
+      maxSize: { w: 12, h: 5 },
+    },
+  ),
   domain("school.attendance-trend", "考勤趋势", "学生到校率变化趋势。", "trend", "school", {
     profiles: adminOnly,
     minSize: { w: 6, h: 3 },

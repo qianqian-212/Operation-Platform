@@ -26,9 +26,11 @@
           <CreateAllianceMemberSections
             :schools="selectedSchools"
             :lead-school-id="form.leadSchoolId"
+            :admin-id="form.adminId"
             :teachers="selectedTeachers"
             @pick-members="openMemberPicker"
             @set-lead="setLeadSchool"
+            @set-admin="setAdmin"
             @remove-teacher="removeTeacher"
           />
 
@@ -104,6 +106,7 @@ const memberPickerVisible = ref(false);
 const form = ref({
   name: "",
   leadSchoolId: "",
+  adminId: "",
   memberSchoolIds: [] as string[],
   teacherIds: [] as string[],
   description: "",
@@ -113,6 +116,7 @@ const rules: FormRules = {
   name: [{ required: true, message: "请输入联盟名称", trigger: "blur" }],
   teacherIds: [{ validator: validateMembers, trigger: "change" }],
   leadSchoolId: [{ required: true, message: "请选择牵头学校", trigger: "change" }],
+  adminId: [{ required: true, message: "请选择联盟管理员", trigger: "change" }],
   description: [{ required: true, message: "请输入联盟描述", trigger: "blur" }],
 };
 
@@ -172,10 +176,16 @@ function openMemberPicker() {
 
 function setLeadSchool(id: string) {
   form.value.leadSchoolId = id;
+  syncAdminId();
+}
+
+function setAdmin(id: string) {
+  form.value.adminId = id;
 }
 
 function removeTeacher(id: string) {
   form.value.teacherIds = form.value.teacherIds.filter((item) => item !== id);
+  syncAdminId();
 }
 
 function handleMemberConfirm(payload: OrgMemberPickerSchoolResult | OrgMemberPickerPersonResult) {
@@ -184,13 +194,14 @@ function handleMemberConfirm(payload: OrgMemberPickerSchoolResult | OrgMemberPic
   if (!form.value.memberSchoolIds.includes(form.value.leadSchoolId)) {
     form.value.leadSchoolId = "";
   }
+  syncAdminId();
 }
 
-function resolveAdminId() {
-  const inLead = selectedTeachers.value.find(
-    (teacher) => teacher.schoolId === form.value.leadSchoolId,
+function syncAdminId() {
+  const valid = selectedTeachers.value.some(
+    (teacher) => teacher.id === form.value.adminId && teacher.schoolId === form.value.leadSchoolId,
   );
-  return inLead?.id ?? selectedTeachers.value[0]?.id ?? "";
+  if (!valid) form.value.adminId = "";
 }
 
 async function loadOptions() {
@@ -212,7 +223,7 @@ async function handleSubmit() {
     const row = await allianceStore.createAlliance({
       name: form.value.name,
       leadSchoolId: form.value.leadSchoolId,
-      adminId: resolveAdminId(),
+      adminId: form.value.adminId,
       memberSchoolIds: [...form.value.memberSchoolIds],
       teacherIds: [...form.value.teacherIds],
       description: form.value.description,

@@ -45,7 +45,7 @@ describe("cross-school activity views", () => {
     expect(wrapper.text()).toContain("跨校教研活动");
     expect(wrapper.text()).toContain("牵头学校统筹组织跨校教研活动");
     expect(wrapper.text()).toContain("跨校集体备课·小学语文三年级《富饶的西沙群岛》");
-    expect(wrapper.text()).toContain("5人/5校");
+    expect(wrapper.text()).toContain("9人/5校");
     expect(wrapper.text()).toContain("详情");
   });
 
@@ -59,16 +59,43 @@ describe("cross-school activity views", () => {
     expect(wrapper.text()).toContain("任务分工");
   });
 
-  it("renders activity detail overview matching the seed record", async () => {
+  it("renders activity detail summary and task cards matching the seed record", async () => {
     const wrapper = await mountPage(
       CrossSchoolActivityDetailView,
       `${listPath}/activity-chinese`,
     );
     await flushPromises();
+    expect(wrapper.text()).toContain("活动管理");
+    expect(wrapper.text()).toContain("活动详情");
     expect(wrapper.text()).toContain("跨校集体备课·小学语文三年级《富饶的西沙群岛》");
     expect(wrapper.text()).toContain("阳光小学·教研楼302（线上同步）");
     expect(wrapper.text()).toContain("陈豪东");
     expect(wrapper.text()).toContain("城东学区教研联盟");
     expect(wrapper.text()).toContain("参与教师（跨校）");
+    expect(wrapper.text()).toContain("任务分工");
+    expect(wrapper.text()).toContain("听评课设置");
+    expect(wrapper.text()).toContain("主备教案·第一课时");
+    expect(wrapper.text()).toContain("最终版");
+    expect(wrapper.text()).toContain("待提交");
+    expect(wrapper.text()).not.toContain("概览");
+  });
+
+  it("renders the observation settings form on the detail tab", async () => {
+    const wrapper = await mountPage(
+      CrossSchoolActivityDetailView,
+      `${listPath}/activity-chinese`,
+    );
+    await flushPromises();
+    const panes = wrapper.findAll(".el-tabs__item");
+    const observationTab = panes.find((pane) => pane.text() === "听评课设置");
+    expect(observationTab).toBeTruthy();
+    await observationTab?.trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("课程名称");
+    expect(wrapper.text()).toContain("授课老师");
+    expect(wrapper.text()).toContain("评课老师从联盟成员学校的教师中选择");
+    expect(wrapper.text()).toContain("线下评课");
+    expect(wrapper.text()).toContain("直播评课");
+    expect(wrapper.text()).toContain("视频评课");
   });
 });

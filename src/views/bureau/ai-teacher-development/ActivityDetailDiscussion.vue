@@ -1,5 +1,5 @@
 <template>
-  <section class="panel-card">
+  <section>
     <div class="panel-header">
       <h2 class="panel-title">讨论</h2>
     </div>
@@ -21,7 +21,7 @@
     <el-empty v-else description="暂无跨校讨论" />
   </section>
 
-  <section class="panel-card">
+  <section>
     <div class="panel-header">
       <h2 class="panel-title">投票</h2>
     </div>

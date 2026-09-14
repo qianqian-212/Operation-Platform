@@ -15,7 +15,6 @@
       :orgs="memberOrgs"
       :people="visiblePeople"
       :selected-ids="tempIds"
-      :selected-org-ids="tempOrgIds"
       :expanded-ids="expandedIds"
       :active-key="activeKey"
       :groups="selectedPersonGroups"
@@ -186,12 +185,14 @@ function togglePerson(id: string, checked: boolean) {
 }
 
 function toggleOrg(orgId: string, checked: boolean) {
-  tempOrgIds.value = mergeIds(tempOrgIds.value, [orgId], checked);
-  if (checked) return;
   const ids = props.people
     .filter((person) => person.orgId === orgId && !props.lockedIds.includes(person.id))
     .map((person) => person.id);
-  tempIds.value = mergeIds(tempIds.value, ids, false);
+  tempIds.value = mergeIds(tempIds.value, ids, checked);
+  tempOrgIds.value = mergeIds(tempOrgIds.value, [orgId], checked);
+  if (checked && !expandedIds.value.includes(orgId)) {
+    expandedIds.value = [...expandedIds.value, orgId];
+  }
 }
 
 function includeOrgsOfPeople(personIds: readonly string[]) {

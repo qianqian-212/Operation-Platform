@@ -1,8 +1,5 @@
 <template>
-  <section class="panel-card">
-    <div class="panel-header">
-      <h2 class="panel-title">成员学校</h2>
-    </div>
+  <el-dialog v-model="visible" title="成员学校" width="800px" append-to-body>
     <el-table :data="schools" stripe border>
       <el-table-column label="序号" width="72" align="center">
         <template #default="{ $index }">{{ $index + 1 }}</template>
@@ -23,7 +20,7 @@
       <el-table-column prop="teacherCount" label="教师数" width="90" align="center" />
       <el-table-column prop="activityCount" label="活动数" width="90" align="center" />
     </el-table>
-  </section>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -40,30 +37,6 @@ defineProps<{
   /** 成员学校列表 */
   schools: AllianceMemberSchool[];
 }>();
+
+const visible = defineModel<boolean>("visible", { required: true });
 </script>
-
-<style scoped>
-.panel-card {
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-24);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-16);
-  min-width: 0;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-8);
-}
-
-.panel-title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-title);
-  line-height: 24px;
-}
-</style>

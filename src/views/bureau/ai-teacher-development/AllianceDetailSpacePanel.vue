@@ -20,6 +20,8 @@
       <AllianceSpaceDocumentList
         v-if="activeTab === 'documents'"
         :documents="documents"
+        @view="emit('view', $event)"
+        @download="emit('download', $event)"
       />
       <AllianceSpaceDiscussionList
         v-else-if="activeTab === 'discussions'"
@@ -56,6 +58,8 @@ defineProps<{
 
 const emit = defineEmits<{
   create: [tab: AllianceSpaceTab];
+  view: [title: string];
+  download: [title: string];
 }>();
 
 const activeTab = ref<AllianceSpaceTab>("documents");

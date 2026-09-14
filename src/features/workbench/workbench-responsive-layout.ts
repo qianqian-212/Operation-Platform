@@ -10,6 +10,10 @@ function isPrimaryPanel(item: WorkbenchLayoutItem) {
     || kind === "calendar"
     || kind === "agent"
     || kind === "stats"
+    || kind === "alliance-overview"
+    || kind === "alliance-list"
+    || kind === "effect-evaluation"
+    || kind === "cross-school-activities"
     || (kind === "quick-links" && item.w >= 8);
 }
 

@@ -324,7 +324,7 @@ export const pageRegistry: PageRegistryItem[] = [
     {
       selectable: false,
       menuOwnerKey: "bureau-cross-school-activity",
-      description: "管理跨校教研活动全流程：概览、任务分工或听评设置、讨论投票与归档。",
+      description: "查看跨校教研活动摘要，并管理任务分工、听评课设置、讨论投票与归档。",
     },
   ),
 

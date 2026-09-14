@@ -13,6 +13,10 @@ export type WorkbenchProfile = "admin" | "business";
 export type WorkbenchWidgetScope = "common" | "domain";
 export type WorkbenchWidgetKind =
   | "stats"
+  | "alliance-overview"
+  | "alliance-list"
+  | "effect-evaluation"
+  | "cross-school-activities"
   | "inbox"
   | "trend"
   | "list"
@@ -157,6 +161,81 @@ export interface WorkbenchStatsData {
   kind: "stats";
   title: string;
   items: WorkbenchStatsItemData[];
+}
+
+export interface WorkbenchAllianceOverviewData {
+  kind: "alliance-overview";
+  title: string;
+  items: WorkbenchStatsItemData[];
+}
+
+export interface WorkbenchAllianceListStatData {
+  label: string;
+  value: string;
+}
+
+export interface WorkbenchAllianceListItemData {
+  id: string;
+  title: string;
+  statusLabel: string;
+  statusTone: Extract<WorkbenchWidgetTone, "success" | "primary" | "neutral">;
+  createdAt: string;
+  /** 联盟管理员展示名 */
+  adminName: string;
+  description: string;
+  stats: WorkbenchAllianceListStatData[];
+}
+
+export interface WorkbenchAllianceListData {
+  kind: "alliance-list";
+  actionLabel: string;
+  items: WorkbenchAllianceListItemData[];
+}
+
+export interface WorkbenchEffectSeriesData {
+  label: string;
+  displayValue: string;
+  percentage: number;
+}
+
+export interface WorkbenchEffectMetricData {
+  id: string;
+  title: string;
+  participating: WorkbenchEffectSeriesData;
+  nonParticipating: WorkbenchEffectSeriesData;
+}
+
+export interface WorkbenchEffectSummaryData {
+  title: string;
+  /** 均值展示单位，如「次」 */
+  unit?: string;
+  participatingAverage: string;
+  participatingLabel: string;
+  nonParticipatingAverage: string;
+  nonParticipatingLabel: string;
+  increasePercent: string;
+  increaseLabel: string;
+}
+
+export interface WorkbenchEffectEvaluationData {
+  kind: "effect-evaluation";
+  actionLabel: string;
+  metrics: WorkbenchEffectMetricData[];
+  summary: WorkbenchEffectSummaryData;
+}
+
+export interface WorkbenchCrossSchoolActivityData {
+  id: string;
+  title: string;
+  statusLabel: string;
+  statusTone: Extract<WorkbenchWidgetTone, "primary" | "success" | "neutral">;
+  meta: string;
+}
+
+export interface WorkbenchCrossSchoolActivitiesData {
+  kind: "cross-school-activities";
+  actionLabel: string;
+  items: WorkbenchCrossSchoolActivityData[];
 }
 
 export interface WorkbenchTrendData {
@@ -386,6 +465,10 @@ export interface WorkbenchGrowthData {
 
 export type WorkbenchWidgetData =
   | WorkbenchStatsData
+  | WorkbenchAllianceOverviewData
+  | WorkbenchAllianceListData
+  | WorkbenchEffectEvaluationData
+  | WorkbenchCrossSchoolActivitiesData
   | WorkbenchTrendData
   | WorkbenchListData
   | WorkbenchDistributionData

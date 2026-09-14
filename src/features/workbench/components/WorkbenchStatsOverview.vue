@@ -1,6 +1,6 @@
 <template>
-  <section class="stats-overview" aria-labelledby="stats-overview-title">
-    <h2 id="stats-overview-title">{{ data.title }}</h2>
+  <section class="stats-overview" :aria-labelledby="titleId">
+    <h2 :id="titleId">{{ data.title }}</h2>
     <ul class="stats-items">
       <li v-for="item in data.items" :key="item.id">
         <span>{{ item.label }}</span>
@@ -16,9 +16,12 @@ import type { WorkbenchStatsData } from "@/features/workbench/types";
 
 defineOptions({ name: "WorkbenchStatsOverview" });
 
-defineProps<{
+withDefaults(defineProps<{
   data: WorkbenchStatsData;
-}>();
+  titleId?: string;
+}>(), {
+  titleId: "stats-overview-title",
+});
 </script>
 
 <style scoped>

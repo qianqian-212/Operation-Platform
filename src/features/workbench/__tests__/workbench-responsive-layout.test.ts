@@ -59,15 +59,17 @@ describe("workbench responsive layout", () => {
     const projected = projectWorkbenchItemsToMediumGrid([
       node("etonedu-agent", 0, 0, 12, 1),
       node("stats-overview", 0, 1, 12, 1),
-      node("school.operational-alerts", 0, 2, 4, 1),
-      node("message-todo-center", 4, 2, 4, 1),
+      node("school.alliance-overview", 0, 2, 12, 1),
+      node("school.operational-alerts", 0, 3, 4, 1),
+      node("message-todo-center", 4, 3, 4, 1),
     ]);
 
     expect(projected.map(({ x, y, w }) => ({ x, y, w }))).toEqual([
       { x: 0, y: 0, w: 6 },
       { x: 0, y: 1, w: 6 },
-      { x: 0, y: 2, w: 3 },
-      { x: 3, y: 2, w: 3 },
+      { x: 0, y: 2, w: 6 },
+      { x: 0, y: 3, w: 3 },
+      { x: 3, y: 3, w: 3 },
     ]);
   });
 });

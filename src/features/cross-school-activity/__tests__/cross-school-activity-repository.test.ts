@@ -51,8 +51,13 @@ describe("cross-school activity repository", () => {
       initiatorName: "陈豪东",
       allianceName: "城东学区教研联盟",
     });
-    expect(detail?.participants).toHaveLength(5);
-    expect(detail?.tasks[0]).toMatchObject({ name: "主备教案", ownerName: "陈豪东" });
+    expect(detail?.participants).toHaveLength(9);
+    expect(detail?.tasks[0]).toMatchObject({
+      name: "主备教案·第一课时",
+      ownerName: "陈豪东",
+      kind: "file",
+      status: "final",
+    });
   });
 
   it("creates a lesson-prep activity and places it at the top of the list", async () => {
@@ -130,5 +135,27 @@ describe("cross-school activity repository", () => {
     });
     expect(row.leadSchoolName).toBe("翠竹小学");
     expect(row.allianceName).toBe("未归属联盟");
+  });
+
+  it("saves observation settings onto an existing activity", async () => {
+    const saved = await crossSchoolActivityRepository.saveObservation("bureau-001", "activity-chinese", {
+      courseName: "富饶的西沙群岛",
+      instructorId: "teacher-chenhaodong",
+      instructorName: "陈豪东",
+      scheduledAt: "2026-08-10 09:00",
+      method: "线下听课",
+      grade: "三年级",
+      subject: "语文",
+      courseType: "新授课",
+      reviewerId: "teacher-wangfang",
+      reviewerName: "王芳",
+      reviewMethod: "线下评课",
+      assessmentTemplate: "小学语文评课模板",
+      materials: [{ id: "mat-1", name: "教案.docx", sizeLabel: "10.2K" }],
+    });
+    expect(saved.observation?.courseName).toBe("富饶的西沙群岛");
+    expect(saved.observation?.reviewMethod).toBe("线下评课");
+    const detail = await crossSchoolActivityRepository.detail("bureau-001", "activity-chinese");
+    expect(detail?.observation?.instructorName).toBe("陈豪东");
   });
 });

@@ -3,7 +3,6 @@
     <OrgMemberPickerTreePane
       :orgs="orgs"
       :selected-ids="selectedIds"
-      :selected-org-ids="selectedOrgIds"
       :expanded-ids="expandedIds"
       :active-key="activeKey"
       @focus="emit('focus', $event)"
@@ -49,8 +48,6 @@ defineProps<{
   people: OrgMemberPickerPerson[];
   /** 已选人员 */
   selectedIds: string[];
-  /** 已选学校 */
-  selectedOrgIds: string[];
   /** 展开学校 */
   expandedIds: string[];
   /** 当前聚焦节点 */

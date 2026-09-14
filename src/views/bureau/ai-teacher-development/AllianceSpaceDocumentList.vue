@@ -19,6 +19,8 @@
         <StatusTag :color="DOCUMENT_STATUS_MAP[document.status].tagColor">
           {{ DOCUMENT_STATUS_MAP[document.status].label }}
         </StatusTag>
+        <span class="action-link" @click="emit('view', document.title)">查看</span>
+        <span class="action-link" @click="emit('download', document.title)">下载</span>
       </div>
     </article>
     <el-empty v-if="documents.length === 0" description="暂无在线文档" :image-size="72" />
@@ -38,6 +40,11 @@ defineOptions({ name: "AllianceSpaceDocumentList" });
 defineProps<{
   /** 在线文档列表 */
   documents: AllianceSpaceDocument[];
+}>();
+
+const emit = defineEmits<{
+  view: [title: string];
+  download: [title: string];
 }>();
 </script>
 
@@ -117,5 +124,15 @@ defineProps<{
 
 .avatar:first-child {
   margin-left: 0;
+}
+
+.action-link {
+  font-size: var(--font-size-md);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.action-link:hover {
+  color: var(--color-primary-hover);
 }
 </style>

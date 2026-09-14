@@ -50,17 +50,30 @@ function statsRow(): Placement {
   return place("stats-overview", 0, 0, 12, 2);
 }
 
+function allianceRow(y = 2): Placement {
+  return place("school.alliance-overview", 0, y, 12, 2);
+}
+
+function alliancePanels(startY = 4): Placement[] {
+  return [
+    place("school.alliance-list", 0, startY, 6, 7),
+    place("school.effect-evaluation", 6, startY, 6, 4),
+    place("school.cross-school-activities", 6, startY + 4, 6, 3),
+  ];
+}
+
 function adminPanels(
   trend: string,
   list: string,
   distribution: string,
+  startY = 2,
 ): Placement[] {
   return [
-    place(trend, 0, 2, 8, 4, { kind: "trend", range: "7d" }),
-    place(list, 8, 2, 4, 4, { kind: "list", limit: 5 }),
-    place("message-todo-center", 0, 6, 4, 3, { kind: "list", limit: 5 }),
-    place(distribution, 4, 6, 4, 3),
-    place("quick-links", 8, 6, 4, 3),
+    place(trend, 0, startY, 8, 4, { kind: "trend", range: "7d" }),
+    place(list, 8, startY, 4, 4, { kind: "list", limit: 5 }),
+    place("message-todo-center", 0, startY + 4, 4, 3, { kind: "list", limit: 5 }),
+    place(distribution, 4, startY + 4, 4, 3),
+    place("quick-links", 8, startY + 4, 4, 3),
   ];
 }
 
@@ -77,11 +90,11 @@ function platformAdminPanels(
   ];
 }
 
-function businessPanels(schedule: string): Placement[] {
+function businessPanels(schedule: string, startY = 2): Placement[] {
   return [
-    place(schedule, 0, 2, 7, 4, { kind: "list", limit: 5 }),
-    place("message-todo-center", 7, 2, 5, 4, { kind: "list", limit: 5 }),
-    place("quick-links", 0, 6, 8, 3),
+    place(schedule, 0, startY, 7, 4, { kind: "list", limit: 5 }),
+    place("message-todo-center", 7, startY, 5, 4, { kind: "list", limit: 5 }),
+    place("quick-links", 0, startY + 4, 8, 3),
   ];
 }
 
@@ -159,19 +172,24 @@ function buildTemplate(
 }
 
 export const workbenchTemplates: WorkbenchTemplate[] = [
-  buildTemplate("school", "admin", 5, withAgentBanner([
+  buildTemplate("school", "admin", 8, withAgentBanner([
     statsRow(),
+    allianceRow(),
+    ...alliancePanels(4),
     ...adminPanels(
       "school.attendance-trend",
       "school.operational-alerts",
       "school.student-distribution",
+      11,
     ),
-    place("account-panel", 8, 9, 4, 6),
+    place("account-panel", 8, 18, 4, 6),
   ])),
-  buildTemplate("school", "business", 5, withAgentBanner([
+  buildTemplate("school", "business", 8, withAgentBanner([
     statsRow(),
-    ...businessPanels("school.today-schedule"),
-    place("account-panel", 8, 9, 4, 6),
+    allianceRow(),
+    ...alliancePanels(4),
+    ...businessPanels("school.today-schedule", 11),
+    place("account-panel", 8, 18, 4, 6),
   ])),
   buildTemplate("bureau", "admin", 10, withAgentBanner([
     statsRow(),

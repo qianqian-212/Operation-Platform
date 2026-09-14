@@ -15,6 +15,7 @@
         'is-being-dragged': draggedWidgetKey === item.widgetKey,
         'is-spanning': item.h > 1,
         'is-width-resizing': widthResizeState?.widgetKey === item.widgetKey,
+        'is-intrinsic-height': isIntrinsicHeight(item.widgetKey),
       }"
       :style="itemStyle(item)"
       :gs-id="item.widgetKey"
@@ -149,6 +150,10 @@ function desiredHeight(item: WorkbenchLayoutItem) {
   if (policy.mode !== "intrinsic") return policy.preferredHeight;
   const measured = measuredHeights.value[item.widgetKey] ?? policy.preferredHeight;
   return Math.max(policy.minHeight, Math.min(policy.maxContentHeight, measured));
+}
+
+function isIntrinsicHeight(widgetKey: string) {
+  return workbenchStore.definitionFor(widgetKey)?.heightPolicy.mode === "intrinsic";
 }
 
 const rowCount = computed(() => displayItems.value.reduce(
@@ -337,10 +342,18 @@ onBeforeUnmount(() => {
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
+.classic-grid-item.is-intrinsic-height {
+  align-self: start;
+}
+
 .grid-stack-item-content {
   width: 100%;
   height: 100%;
   min-height: 0;
+}
+
+.classic-grid-item.is-intrinsic-height .grid-stack-item-content {
+  height: auto;
 }
 
 .classic-grid-item.is-being-dragged {

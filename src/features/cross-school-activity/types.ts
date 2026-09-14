@@ -2,6 +2,8 @@ export type CrossSchoolActivityType = "lesson-prep" | "lesson-observation";
 export type CrossSchoolActivityStatus = "ongoing" | "archived";
 export type ActivityDiscussionStatus = "hot" | "summarized" | "discussing";
 export type ActivityArchiveKind = "reflection" | "output";
+export type ActivityTaskKind = "file" | "text";
+export type ActivityTaskStatus = "final" | "pending";
 
 export interface CrossSchoolActivityRow {
   id: string;
@@ -35,22 +37,35 @@ export interface ActivityLessonTopic {
 export interface ActivityTask {
   id: string;
   name: string;
+  kind: ActivityTaskKind;
+  status: ActivityTaskStatus;
   ownerId: string;
   ownerName: string;
   schoolName: string;
-  resourceLabel: string;
+  latestFileName: string;
+  latestSubmittedAt: string;
+}
+
+export interface ActivityCourseMaterial {
+  id: string;
+  name: string;
+  sizeLabel: string;
 }
 
 export interface ActivityObservation {
   courseName: string;
+  instructorId: string;
   instructorName: string;
   scheduledAt: string;
   method: string;
   grade: string;
   subject: string;
   courseType: string;
+  reviewerId: string;
   reviewerName: string;
   reviewMethod: string;
+  assessmentTemplate: string;
+  materials: ActivityCourseMaterial[];
 }
 
 export interface ActivityDiscussion {
@@ -145,10 +160,23 @@ export const ACTIVITY_TYPE_MAP: Record<
 
 export const ACTIVITY_STATUS_MAP: Record<
   CrossSchoolActivityStatus,
-  { label: string; tagColor: "blue" | "green" }
+  { label: string; tagColor: "green" | "gray" }
 > = {
-  ongoing: { label: "进行中", tagColor: "blue" },
-  archived: { label: "已归档", tagColor: "green" },
+  ongoing: { label: "进行中", tagColor: "green" },
+  archived: { label: "已归档", tagColor: "gray" },
+};
+
+export const ACTIVITY_TASK_KIND_MAP: Record<ActivityTaskKind, string> = {
+  file: "文件",
+  text: "文本",
+};
+
+export const ACTIVITY_TASK_STATUS_MAP: Record<
+  ActivityTaskStatus,
+  { label: string; tagColor: "green" | "orange" }
+> = {
+  final: { label: "最终版", tagColor: "green" },
+  pending: { label: "待提交", tagColor: "orange" },
 };
 
 export const DISCUSSION_STATUS_MAP: Record<
@@ -181,3 +209,33 @@ export const LESSON_GRADE_OPTIONS = [
 export const OBSERVATION_METHOD_OPTIONS = ["线下听课", "线上同步", "录播回看"] as const;
 export const COURSE_TYPE_OPTIONS = ["新授课", "复习课", "实验课", "练习课"] as const;
 export const REVIEW_METHOD_OPTIONS = ["量表评课", "议课研讨", "书面反馈"] as const;
+export const OBSERVATION_REVIEW_METHOD_OPTIONS = ["线下评课", "直播评课", "视频评课"] as const;
+export const OBSERVATION_SUBJECT_GRADE_OPTIONS = [
+  "语文/三年级",
+  "数学/八年级",
+  "英语/四年级",
+  "科学/四年级",
+] as const;
+export const OBSERVATION_TEMPLATE_OPTIONS = [
+  "跨校听评课量表（通用）",
+  "小学语文评课模板",
+  "初中数学评课模板",
+] as const;
+
+export function createEmptyObservation(): ActivityObservation {
+  return {
+    courseName: "",
+    instructorId: "",
+    instructorName: "",
+    scheduledAt: "",
+    method: "线下听课",
+    grade: "三年级",
+    subject: "语文",
+    courseType: "新授课",
+    reviewerId: "",
+    reviewerName: "",
+    reviewMethod: "",
+    assessmentTemplate: "",
+    materials: [],
+  };
+}

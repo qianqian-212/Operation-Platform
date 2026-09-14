@@ -135,9 +135,10 @@ onBeforeUnmount(() => {
 .secondary-tabs-viewport {
   --secondary-tab-height: 32px;
   position: relative;
+  /* 用 height 锁行高，避免 flex-basis 在横向容器里被当成宽度 */
   height: calc(var(--secondary-tab-height) + var(--spacing-4));
   min-height: calc(var(--secondary-tab-height) + var(--spacing-4));
-  flex: 0 0 calc(var(--secondary-tab-height) + var(--spacing-4));
+  flex: none;
   max-width: 100%;
   padding: var(--spacing-2);
   margin: calc(-1 * var(--spacing-2));

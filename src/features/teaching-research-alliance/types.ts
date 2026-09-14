@@ -159,6 +159,6 @@ export const DISCUSSION_STATUS_MAP: Record<
   { label: string; tagColor: "orange" | "green" | "blue" }
 > = {
   hot: { label: "热议中", tagColor: "orange" },
-  summarized: { label: "已总结", tagColor: "green" },
-  discussing: { label: "讨论中", tagColor: "blue" },
+  summarized: { label: "已总结", tagColor: "blue" },
+  discussing: { label: "讨论中", tagColor: "green" },
 };

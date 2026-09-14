@@ -1,5 +1,5 @@
 <template>
-  <section class="panel-card">
+  <section>
     <div class="panel-header">
       <h2 class="panel-title">归档管理</h2>
     </div>

@@ -1,8 +1,9 @@
-import type {
-  ActivityLessonTopic,
-  ActivityObservation,
-  ActivityTaskInput,
-  CrossSchoolActivityType,
+import {
+  createEmptyObservation,
+  type ActivityLessonTopic,
+  type ActivityObservation,
+  type ActivityTaskInput,
+  type CrossSchoolActivityType,
 } from "@/features/cross-school-activity/types";
 
 export interface CreateActivityFormState {
@@ -31,17 +32,7 @@ export function emptyLessonTopic(): ActivityLessonTopic {
 }
 
 export function emptyObservation(): ActivityObservation {
-  return {
-    courseName: "",
-    instructorName: "",
-    scheduledAt: "",
-    method: "线下听课",
-    grade: "三年级",
-    subject: "语文",
-    courseType: "新授课",
-    reviewerName: "",
-    reviewMethod: "量表评课",
-  };
+  return createEmptyObservation();
 }
 
 export function emptyTask(): ActivityTaskInput {

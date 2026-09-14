@@ -57,9 +57,14 @@ describe("workbench widget catalog", () => {
 
   it("keeps domain widgets inside their compatible tenant types", () => {
     const studentTrend = workbenchWidgetRegistry.get("school.attendance-trend")!;
+    const allianceOverview = workbenchWidgetRegistry.get("school.alliance-overview")!;
     const calendar = workbenchWidgetRegistry.get("bureau.calendar-tasks")!;
     expect(studentTrend.scope).toBe("domain");
+    expect(allianceOverview.scope).toBe("domain");
+    expect(allianceOverview.kind).toBe("alliance-overview");
     expect(isWorkbenchWidgetCompatible(studentTrend, "school", "admin")).toBe(true);
+    expect(isWorkbenchWidgetCompatible(allianceOverview, "school", "business")).toBe(true);
+    expect(isWorkbenchWidgetCompatible(allianceOverview, "bureau", "admin")).toBe(false);
     expect(isWorkbenchWidgetCompatible(studentTrend, "bureau", "admin")).toBe(false);
     expect(isWorkbenchWidgetCompatible(calendar, "bureau", "business")).toBe(true);
     expect(isWorkbenchWidgetCompatible(calendar, "school", "business")).toBe(false);
@@ -120,10 +125,11 @@ describe("workbench widget catalog", () => {
     const template = getWorkbenchTemplate("school", "admin");
     const context = { tenant: school, userId: "user-a", profile: "admin" as const };
     const current = createDefaultWorkbenchLayout(context, template);
+    const noticesY = current.items.find((item) => item.widgetKey === "message-todo-center")?.y ?? 4;
     const extraMetrics = [
       { widgetKey: "school.student-count", visible: true, x: 0, y: 1, w: 3, h: 1, settings: { kind: "none" as const } },
       { widgetKey: "school.arrival-rate", visible: true, x: 3, y: 1, w: 3, h: 1, settings: { kind: "none" as const } },
-      { widgetKey: "school.notices", visible: true, x: 0, y: 3, w: 4, h: 1, settings: { kind: "list" as const, limit: 5 as const } },
+      { widgetKey: "school.notices", visible: true, x: 0, y: noticesY, w: 4, h: 1, settings: { kind: "list" as const, limit: 5 as const } },
     ];
     const legacy = {
       ...current,

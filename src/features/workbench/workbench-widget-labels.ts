@@ -2,6 +2,10 @@ import type { WorkbenchProfile, WorkbenchWidgetKind, WorkbenchWidgetScope } from
 
 export const WORKBENCH_WIDGET_KIND_LABEL: Record<WorkbenchWidgetKind, string> = {
   stats: "数据概览",
+  "alliance-overview": "联盟数据总览",
+  "alliance-list": "教研联盟概览",
+  "effect-evaluation": "效果评估速览",
+  "cross-school-activities": "近期跨校活动",
   inbox: "消息待办",
   trend: "趋势",
   list: "列表",

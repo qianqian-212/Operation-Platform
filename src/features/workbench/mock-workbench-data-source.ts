@@ -13,6 +13,12 @@ import type {
 } from "@/features/workbench/types";
 import { bureauPublicFeedData } from "@/features/workbench/bureau-public-feed";
 import { inboxOverviewData } from "@/features/workbench/workbench-inbox-data";
+import {
+  allianceListData,
+  crossSchoolActivitiesData,
+  effectEvaluationData,
+} from "@/features/workbench/workbench-alliance-panels-data";
+import { allianceOverviewData } from "@/features/workbench/workbench-alliance-overview-data";
 import { statsOverviewData } from "@/features/workbench/workbench-stats-data";
 
 const bureauFeedData: Record<string, WorkbenchFeedItemData[]> = {
@@ -344,6 +350,18 @@ export class MockWorkbenchDataSource implements WorkbenchDataSource {
     }
     if (definition.kind === "stats") {
       return statsOverviewData(context);
+    }
+    if (definition.kind === "alliance-overview") {
+      return allianceOverviewData(context);
+    }
+    if (definition.kind === "alliance-list") {
+      return allianceListData();
+    }
+    if (definition.kind === "effect-evaluation") {
+      return effectEvaluationData();
+    }
+    if (definition.kind === "cross-school-activities") {
+      return crossSchoolActivitiesData();
     }
     if (definition.kind === "inbox") {
       const limit = settings.kind === "list" ? settings.limit : 5;

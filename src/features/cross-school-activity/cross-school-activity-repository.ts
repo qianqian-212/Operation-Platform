@@ -7,9 +7,11 @@ import {
   getActivityMockDetail,
   listActivityAllianceOptions,
   listActivityMockRows,
+  saveActivityObservation,
 } from "@/features/cross-school-activity/mock-data";
 import type {
   ActivityAllianceOption,
+  ActivityObservation,
   CrossSchoolActivityCreateInput,
   CrossSchoolActivityDetail,
   CrossSchoolActivityFilter,
@@ -33,6 +35,11 @@ export interface CrossSchoolActivityRepository {
     tenantId: string,
     input: CrossSchoolActivityCreateInput,
   ): Promise<CrossSchoolActivityRow>;
+  saveObservation(
+    tenantId: string,
+    id: string,
+    observation: ActivityObservation,
+  ): Promise<CrossSchoolActivityDetail>;
   listAlliances(tenantId: string): Promise<ActivityAllianceOption[]>;
   listSchools(tenantId: string): Promise<SchoolOption[]>;
   listTeachers(tenantId: string, schoolIds: readonly string[]): Promise<TeacherOption[]>;
@@ -78,6 +85,17 @@ const localCrossSchoolActivityRepository: CrossSchoolActivityRepository = {
   async create(_tenantId, input) {
     validateCreateInput(input);
     return createActivityMockRow(input);
+  },
+
+  async saveObservation(_tenantId, id, observation) {
+    if (!observation.courseName.trim()) throw new Error("请填写课程名称");
+    if (!observation.instructorId) throw new Error("请选择授课老师");
+    if (!observation.scheduledAt.trim()) throw new Error("请选择授课时间");
+    if (!observation.assessmentTemplate.trim()) throw new Error("请选择考核模板");
+    if (!observation.materials.length) throw new Error("请上传课程资料");
+    if (!observation.reviewerId) throw new Error("请选择评课老师");
+    if (!observation.reviewMethod.trim()) throw new Error("请选择评课方式");
+    return saveActivityObservation(id, observation);
   },
 
   async listAlliances() {

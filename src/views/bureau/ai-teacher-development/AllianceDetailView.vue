@@ -9,14 +9,19 @@
 
     <div v-loading="loading" class="detail-body">
       <template v-if="detail">
-        <AllianceDetailSummaryCard :detail="detail" />
-        <AllianceDetailMemberSchools :schools="detail.memberSchools" />
+        <AllianceDetailSummaryCard :detail="detail" @view-schools="schoolsVisible = true" />
         <AllianceDetailActivities :activities="detail.activities" @view="handleViewActivity" />
         <AllianceDetailSpacePanel
           :space="detail.space"
           :documents="detail.documents"
           :discussions="detail.discussions"
           @create="handleSpaceCreate"
+          @view="handleSpaceView"
+          @download="handleSpaceDownload"
+        />
+        <AllianceDetailMemberSchools
+          v-model:visible="schoolsVisible"
+          :schools="detail.memberSchools"
         />
       </template>
       <el-empty v-else-if="!loading" description="未找到该联盟" />
@@ -46,6 +51,7 @@ const route = useRoute();
 const router = useRouter();
 const allianceStore = useTeachingResearchAllianceStore();
 const loading = ref(false);
+const schoolsVisible = ref(false);
 const detail = ref<TeachingResearchAllianceDetail | null>(null);
 
 function handleViewActivity(activity: AllianceActivity) {
@@ -58,6 +64,14 @@ function handleSpaceCreate(tab: AllianceSpaceTab) {
   const label =
     tab === "discussions" ? "发起讨论" : tab === "files" ? "上传文件" : "新建文档";
   ElMessage.info(`「${label}」即将开放`);
+}
+
+function handleSpaceView(title: string) {
+  ElMessage.info(`查看「${title}」即将开放`);
+}
+
+function handleSpaceDownload(title: string) {
+  ElMessage.info(`下载「${title}」即将开放`);
 }
 
 async function loadDetail() {

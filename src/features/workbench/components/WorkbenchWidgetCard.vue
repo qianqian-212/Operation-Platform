@@ -12,6 +12,7 @@
         'is-account-panel': definition?.kind === 'account-panel',
         'is-agent': definition?.kind === 'agent',
         'is-stats': definition?.kind === 'stats',
+        'is-alliance-overview': definition?.kind === 'alliance-overview',
         'is-quick-links': definition?.kind === 'quick-links',
         'is-intrinsic-height': definition?.heightPolicy.mode === 'intrinsic',
       },
@@ -19,6 +20,15 @@
   >
     <header v-if="showsBuiltinHeader" class="widget-header">
       <h2>{{ definition?.title ?? "工作台组件" }}</h2>
+      <button
+        v-if="headerActionLabel"
+        type="button"
+        class="widget-header-action"
+        @click="handleHeaderAction"
+      >
+        <span>{{ headerActionLabel }}</span>
+        <el-icon aria-hidden="true"><ArrowRight /></el-icon>
+      </button>
     </header>
 
     <div v-if="editable" class="widget-edit-chrome">
@@ -109,9 +119,14 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { MoreFilled, Rank, Setting } from "@element-plus/icons-vue";
+import { ArrowRight, MoreFilled, Rank, Setting } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import WorkbenchWidgetContent from "@/features/workbench/components/WorkbenchWidgetContent.vue";
 import { attachWorkbenchDragPreview, releaseWorkbenchDragPreview } from "@/features/workbench/workbench-drag-preview";
+import {
+  workbenchHeaderActionLabel,
+  workbenchHeaderActionNotice,
+} from "@/features/workbench/workbench-header-action";
 import type {
   SimpleWorkbenchLayoutType,
   WorkbenchLayoutMode,
@@ -153,8 +168,13 @@ const hasSettings = computed(
 );
 const showsBuiltinHeader = computed(() => {
   const kind = definition.value?.kind;
-  return kind !== "user-overview" && kind !== "account-panel" && kind !== "agent" && kind !== "stats";
+  return kind !== "user-overview"
+    && kind !== "account-panel"
+    && kind !== "agent"
+    && kind !== "stats"
+    && kind !== "alliance-overview";
 });
+const headerActionLabel = computed(() => workbenchHeaderActionLabel(data.value));
 const classicRowSpan = computed(() => "h" in props.item ? props.item.h : 1);
 let loadRequestId = 0;
 let contentResizeObserver: ResizeObserver | null = null;
@@ -215,6 +235,12 @@ function handleCommand(command: WorkbenchWidgetAction) {
   emit("action", command);
 }
 
+function handleHeaderAction() {
+  const kind = definition.value?.kind;
+  if (!kind) return;
+  ElMessage.info(workbenchHeaderActionNotice(kind));
+}
+
 function handleDragStart(event: DragEvent) {
   attachWorkbenchDragPreview(event, {
     title: definition.value?.title ?? "工作台组件",
@@ -262,6 +288,10 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: var(--workbench-widget-radius);
   transition: background-color 160ms ease;
+}
+
+.workbench-widget.is-intrinsic-height {
+  height: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -317,15 +347,68 @@ onBeforeUnmount(() => {
 }
 
 .widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
   padding: var(--spacing-16) var(--spacing-20) 0;
 }
 
+.workbench-widget.is-editing .widget-header {
+  padding-right: 7.5rem;
+}
+
 .widget-header h2 {
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--color-title);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-header-action {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0;
+  color: var(--color-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  appearance: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.widget-header-action:hover,
+.widget-header-action:active {
+  color: var(--color-primary);
+}
+
+.widget-header-action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.widget-header-action :deep(.el-icon) {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-header-action {
+    transition: none;
+  }
 }
 
 .widget-edit-chrome {

@@ -3,18 +3,21 @@ import {
   ALLIANCE_TEACHER_OPTIONS,
   listAllianceMockRows,
 } from "@/features/teaching-research-alliance/mock-data";
-import type {
-  ActivityAllianceOption,
-  ActivityArchiveItem,
-  ActivityDiscussion,
-  ActivityLessonTopic,
-  ActivityObservation,
-  ActivityParticipant,
-  ActivityTask,
-  ActivityVote,
-  CrossSchoolActivityCreateInput,
-  CrossSchoolActivityDetail,
-  CrossSchoolActivityRow,
+import {
+  createEmptyObservation,
+  type ActivityAllianceOption,
+  type ActivityArchiveItem,
+  type ActivityDiscussion,
+  type ActivityLessonTopic,
+  type ActivityObservation,
+  type ActivityParticipant,
+  type ActivityTask,
+  type ActivityTaskKind,
+  type ActivityTaskStatus,
+  type ActivityVote,
+  type CrossSchoolActivityCreateInput,
+  type CrossSchoolActivityDetail,
+  type CrossSchoolActivityRow,
 } from "@/features/cross-school-activity/types";
 
 function schoolName(id: string) {
@@ -60,9 +63,22 @@ function task(
   ownerId: string,
   ownerName: string,
   schoolNameValue: string,
-  resourceLabel: string,
+  kind: ActivityTaskKind,
+  status: ActivityTaskStatus,
+  latestFileName: string,
+  latestSubmittedAt: string,
 ): ActivityTask {
-  return { id, name, ownerId, ownerName, schoolName: schoolNameValue, resourceLabel };
+  return {
+    id,
+    name,
+    kind,
+    status,
+    ownerId,
+    ownerName,
+    schoolName: schoolNameValue,
+    latestFileName,
+    latestSubmittedAt,
+  };
 }
 
 function discussion(
@@ -106,10 +122,10 @@ function chinesePrepDetail(): CrossSchoolActivityDetail {
     id: "activity-chinese",
     name: "跨校集体备课·小学语文三年级《富饶的西沙群岛》",
     type: "lesson-prep",
-    scheduledAt: "2026-08-25 14:00",
+    scheduledAt: "2026-08-09 12:00",
     leadSchoolId: "school-sunshine",
     leadSchoolName: "阳光小学",
-    participantCount: 5,
+    participantCount: 9,
     schoolCount: 5,
     status: "ongoing",
     allianceId: "alliance-east",
@@ -117,19 +133,53 @@ function chinesePrepDetail(): CrossSchoolActivityDetail {
     location: "阳光小学·教研楼302（线上同步）",
     initiatorId: "teacher-chenhaodong",
     initiatorName: "陈豪东",
-    description: "围绕三年级语文《富饶的西沙群岛》开展跨校集体备课，重点研讨课文理解和写作训练。",
+    description: "围绕三年级语文《富饶的西沙群岛》开展跨校集体备课，重点研讨课文理解和仿写训练。",
     participants: [
       participant("teacher-chenhaodong", "陈豪东", "school-sunshine", "阳光小学"),
+      participant("teacher-liminghua", "李明华", "school-sunshine", "阳光小学"),
+      participant("teacher-zhoumin", "周敏", "school-sunshine", "阳光小学"),
       participant("teacher-lianglu", "梁璐", "school-yucai", "育才中学"),
+      participant("teacher-hewenqing", "何文清", "school-yucai", "育才中学"),
       participant("teacher-wangfang", "王芳", "school-wende", "文德小学"),
-      participant("teacher-liuchanghong", "刘昌弘", "school-chunfeng", "春风小学"),
-      participant("teacher-tanyufang", "谭玉芳", "school-hongmei", "红梅小学"),
+      participant("teacher-zhaozixuan", "赵子轩", "school-wende", "文德小学"),
+      participant("teacher-fangqing", "方晴", "school-chunfeng", "春风小学"),
+      participant("teacher-wulei", "吴磊", "school-xinghu", "星湖小学"),
     ],
     topic: chinesePrepTopic(),
     tasks: [
-      task("task-plan", "主备教案", "teacher-chenhaodong", "陈豪东", "阳光小学", "教案初稿"),
-      task("task-slides", "课件制作", "teacher-lianglu", "梁璐", "育才中学", "课件 v1"),
-      task("task-exercise", "分层练习设计", "teacher-wangfang", "王芳", "文德小学", "练习单"),
+      task(
+        "task-plan",
+        "主备教案·第一课时",
+        "teacher-chenhaodong",
+        "陈豪东",
+        "阳光小学",
+        "file",
+        "final",
+        "《富饶的西沙群岛》教案v1.0.docx",
+        "2026-08-22 16:30",
+      ),
+      task(
+        "task-slides",
+        "主备教案·第一课时",
+        "teacher-chenhaodong",
+        "陈豪东",
+        "阳光小学",
+        "text",
+        "pending",
+        "《富饶的西沙群岛》教案v1.0.docx",
+        "2026-08-22 16:30",
+      ),
+      task(
+        "task-exercise",
+        "主备教案·第一课时",
+        "teacher-chenhaodong",
+        "陈豪东",
+        "阳光小学",
+        "text",
+        "pending",
+        "《富饶的西沙群岛》教案v1.0.docx",
+        "2026-08-22 16:30",
+      ),
     ],
     observation: null,
     discussions: [
@@ -151,15 +201,20 @@ function chinesePrepDetail(): CrossSchoolActivityDetail {
 
 function mathObservation(): ActivityObservation {
   return {
+    ...createEmptyObservation(),
     courseName: "勾股定理",
+    instructorId: "teacher-zhangwei",
     instructorName: "张伟",
     scheduledAt: "2026-08-22 09:00",
     method: "线下听课",
     grade: "八年级",
     subject: "数学",
     courseType: "新授课",
+    reviewerId: "teacher-gaohang",
     reviewerName: "高航",
-    reviewMethod: "量表评课",
+    reviewMethod: "线下评课",
+    assessmentTemplate: "初中数学评课模板",
+    materials: [{ id: "mat-gougu", name: "勾股定理课件.pptx", sizeLabel: "2.1MB" }],
   };
 }
 
@@ -233,8 +288,28 @@ function englishPrepDetail(): CrossSchoolActivityDetail {
       period: "1课时",
     },
     tasks: [
-      task("task-text", "文本解读", "teacher-sunyue", "孙越", "实验学校", "解读稿"),
-      task("task-oral", "口语任务设计", "teacher-zhoumin", "周敏", "阳光小学", "任务单"),
+      task(
+        "task-text",
+        "文本解读",
+        "teacher-sunyue",
+        "孙越",
+        "实验学校",
+        "file",
+        "final",
+        "英语阅读解读稿.docx",
+        "2026-08-20 16:00",
+      ),
+      task(
+        "task-oral",
+        "口语任务设计",
+        "teacher-zhoumin",
+        "周敏",
+        "阳光小学",
+        "text",
+        "pending",
+        "口语任务单.docx",
+        "2026-08-20 15:10",
+      ),
     ],
     observation: null,
     discussions: [
@@ -272,15 +347,20 @@ function scienceObservationDetail(): CrossSchoolActivityDetail {
     topic: null,
     tasks: [],
     observation: {
+      ...createEmptyObservation(),
       courseName: "观察水的浮力",
+      instructorId: "teacher-jiangning",
       instructorName: "蒋宁",
       scheduledAt: "2026-08-18 14:00",
       method: "线下听课",
       grade: "四年级",
       subject: "科学",
       courseType: "实验课",
+      reviewerId: "teacher-liuchen",
       reviewerName: "刘晨",
-      reviewMethod: "议课研讨",
+      reviewMethod: "线下评课",
+      assessmentTemplate: "跨校听评课量表（通用）",
+      materials: [{ id: "mat-science", name: "浮力实验记录表.docx", sizeLabel: "186K" }],
     },
     discussions: [
       discussion("disc-safety", "科学实验课安全问题讨论", "蒋宁", "翠竹小学", 3, "2026-08-18 16:20", "discussing"),
@@ -305,7 +385,7 @@ function cloneDetail(detail: CrossSchoolActivityDetail): CrossSchoolActivityDeta
     participants: detail.participants.map((item) => ({ ...item })),
     topic: detail.topic ? { ...detail.topic } : null,
     tasks: detail.tasks.map((item) => ({ ...item })),
-    observation: detail.observation ? { ...detail.observation } : null,
+    observation: detail.observation ? normalizeObservation(detail.observation) : null,
     discussions: detail.discussions.map((item) => ({ ...item })),
     votes: detail.votes.map((item) => ({
       ...item,
@@ -322,6 +402,14 @@ function buildParticipants(teacherIds: readonly string[]): ActivityParticipant[]
   });
 }
 
+function normalizeObservation(input: ActivityObservation): ActivityObservation {
+  return {
+    ...createEmptyObservation(),
+    ...input,
+    materials: (input.materials ?? []).map((item) => ({ ...item })),
+  };
+}
+
 function buildTasks(input: CrossSchoolActivityCreateInput): ActivityTask[] {
   return input.tasks
     .filter((item) => item.name.trim())
@@ -332,7 +420,10 @@ function buildTasks(input: CrossSchoolActivityCreateInput): ActivityTask[] {
         item.ownerId,
         teacherName(item.ownerId),
         schoolName(teacherSchoolId(item.ownerId)),
+        "file",
+        "pending",
         item.resourceLabel.trim(),
+        "",
       ),
     );
 }
@@ -363,6 +454,13 @@ export function listActivityAllianceOptions(): ActivityAllianceOption[] {
     .map((row) => ({ id: row.id, name: row.name }));
 }
 
+export function saveActivityObservation(id: string, observation: ActivityObservation) {
+  const current = activities.find((item) => item.id === id);
+  if (!current) throw new Error("活动不存在");
+  current.observation = normalizeObservation(observation);
+  return cloneDetail(current);
+}
+
 export function createActivityMockRow(
   input: CrossSchoolActivityCreateInput,
 ): CrossSchoolActivityRow {
@@ -389,7 +487,7 @@ export function createActivityMockRow(
     tasks: input.type === "lesson-prep" ? buildTasks(input) : [],
     observation:
       input.type === "lesson-observation" && input.observation
-        ? { ...input.observation }
+        ? normalizeObservation(input.observation)
         : null,
     discussions: [],
     votes: [],

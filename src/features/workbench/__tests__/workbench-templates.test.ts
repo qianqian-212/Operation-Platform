@@ -61,13 +61,14 @@ describe("workbench templates", () => {
     for (const tenantType of tenantTypes.filter((type) => type !== "bureau")) {
       const admin = getWorkbenchTemplate(tenantType, "admin");
       const business = getWorkbenchTemplate(tenantType, "business");
-      const expectedAdmin = tenantType === "platform" ? 7 : 8;
-      const expectedBusiness = tenantType === "platform" ? 5 : 6;
+      const expectedAdmin = tenantType === "platform" ? 7 : tenantType === "school" ? 12 : 8;
+      const expectedBusiness = tenantType === "platform" ? 5 : tenantType === "school" ? 10 : 6;
+      const expectedRevision = tenantType === "school" ? 8 : 5;
 
       expect(admin.widgets).toHaveLength(expectedAdmin);
       expect(business.widgets).toHaveLength(expectedBusiness);
-      expect(admin.revision).toBe(5);
-      expect(business.revision).toBe(5);
+      expect(admin.revision).toBe(expectedRevision);
+      expect(business.revision).toBe(expectedRevision);
       expect(admin.widgets.map((item) => item.widgetKey)).not.toEqual(
         business.widgets.map((item) => item.widgetKey),
       );
@@ -75,6 +76,18 @@ describe("workbench templates", () => {
       expect(business.widgets[0]).toMatchObject({ widgetKey: "etonedu-agent", x: 0, y: 0, w: 12, h: 3 });
       expect(admin.widgets.some((item) => item.widgetKey === "stats-overview")).toBe(true);
       expect(business.widgets.some((item) => item.widgetKey === "stats-overview")).toBe(true);
+      expect(admin.widgets.some((item) => item.widgetKey === "school.alliance-overview"))
+        .toBe(tenantType === "school");
+      expect(business.widgets.some((item) => item.widgetKey === "school.alliance-overview"))
+        .toBe(tenantType === "school");
+      expect(admin.widgets.some((item) => item.widgetKey === "school.alliance-list"))
+        .toBe(tenantType === "school");
+      expect(admin.widgets.some((item) => item.widgetKey === "school.effect-evaluation"))
+        .toBe(tenantType === "school");
+      expect(admin.widgets.some((item) => item.widgetKey === "school.cross-school-activities"))
+        .toBe(tenantType === "school");
+      expect(business.widgets.some((item) => item.widgetKey === "school.alliance-list"))
+        .toBe(tenantType === "school");
       expect(admin.widgets.some((item) => item.widgetKey === "account-panel")).toBe(true);
       expect(business.widgets.some((item) => item.widgetKey === "account-panel")).toBe(true);
       expect(admin.widgets.some((item) => item.widgetKey === "quick-links")).toBe(true);

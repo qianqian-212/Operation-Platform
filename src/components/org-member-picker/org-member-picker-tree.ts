@@ -82,6 +82,22 @@ export function mergeIds(current: readonly string[], ids: readonly string[], che
   return current.filter((id) => !ids.includes(id));
 }
 
+export function filterMemberOrgs(
+  orgs: readonly OrgMemberPickerOrgNode[],
+  keyword: string,
+): OrgMemberPickerOrgNode[] {
+  const q = keyword.trim();
+  if (!q) return [...orgs];
+  return orgs.flatMap((org) => matchOrgNode(org, q));
+}
+
+function matchOrgNode(org: OrgMemberPickerOrgNode, q: string): OrgMemberPickerOrgNode[] {
+  if (org.name.includes(q)) return [org];
+  const groups = org.groups.filter((group) => group.name.includes(q));
+  if (!groups.length) return [];
+  return [{ ...org, groups, people: groups.flatMap((group) => group.people) }];
+}
+
 export function groupSelectedPeople(
   selectedIds: readonly string[],
   people: readonly OrgMemberPickerPerson[],

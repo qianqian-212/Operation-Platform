@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { crossSchoolActivityRepository } from "@/features/cross-school-activity/cross-school-activity-repository";
 import type {
   ActivityAllianceOption,
+  ActivityObservation,
   CrossSchoolActivityCreateInput,
   CrossSchoolActivityFilter,
   CrossSchoolActivityRow,
@@ -87,6 +88,14 @@ export const useCrossSchoolActivityStore = defineStore("cross-school-activity", 
     return crossSchoolActivityRepository.detail(userStore.currentTenant.id, id);
   }
 
+  async function saveObservation(id: string, observation: ActivityObservation) {
+    return crossSchoolActivityRepository.saveObservation(
+      userStore.currentTenant.id,
+      id,
+      observation,
+    );
+  }
+
   return {
     loading,
     tableData,
@@ -103,5 +112,6 @@ export const useCrossSchoolActivityStore = defineStore("cross-school-activity", 
     setPage,
     createActivity,
     loadDetail,
+    saveObservation,
   };
 });
