@@ -3,7 +3,7 @@
     v-model="visible"
     :title="title"
     width="1080px"
-    top="6vh"
+    align-center
     append-to-body
     destroy-on-close
     class="org-member-picker-dialog"
@@ -275,3 +275,17 @@ watch(
 </script>
 
 <style scoped src="./org-member-picker-dialog.css"></style>
+
+<style>
+.el-overlay-dialog .org-member-picker-dialog.el-dialog {
+  height: min(720px, 88vh);
+}
+
+.el-overlay-dialog .org-member-picker-dialog .el-dialog__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+</style>

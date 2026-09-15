@@ -54,16 +54,27 @@ function matchesFilter(row: CrossSchoolActivityRow, filter: CrossSchoolActivityF
   return true;
 }
 
+function resolveActivityTypes(input: CrossSchoolActivityCreateInput) {
+  return input.types?.length ? input.types : [input.type];
+}
+
 function validateCreateInput(input: CrossSchoolActivityCreateInput) {
   if (!input.name.trim()) throw new Error("活动主题不能为空");
+  const types = resolveActivityTypes(input);
+  if (!types.length) throw new Error("请选择活动类型");
+  if (!input.allianceId) throw new Error("请选择所属联盟");
   if (!input.scheduledAt.trim()) throw new Error("请选择活动时间");
+  if (!input.location.trim()) throw new Error("请选择活动地点");
   if (!input.leadSchoolId) throw new Error("请选择牵头学校");
   if (input.memberSchoolIds.length < 2) throw new Error("请至少选择 2 所学校");
   if (input.teacherIds.length < 1) throw new Error("请至少选择 1 名参与教师");
-  if (input.type === "lesson-prep" && !input.topic?.title.trim()) {
-    throw new Error("请填写课题名称");
+  if (types.includes("lesson-prep")) {
+    const topic = input.topic;
+    if (!topic?.stage || !topic.subject || !topic.grade || !topic.textbookVersion || !topic.chapter) {
+      throw new Error("请完善集体备课课题信息");
+    }
   }
-  if (input.type === "lesson-observation" && !input.observation?.courseName.trim()) {
+  if (types.includes("lesson-observation") && !input.observation?.courseName.trim()) {
     throw new Error("请填写课程名称");
   }
 }

@@ -1,5 +1,8 @@
 import { cloneTenantTemplate } from "@/config/menu-templates";
-import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
+import {
+  menuRecordsDiffer,
+  normalizeLoadedMenuRecords,
+} from "@/features/menu-config/align-template-menu-names";
 import { isMenuIconAccent } from "@/features/menu-config/menu-icon-accent";
 import type { MenuConfigRecord, MenuItemType } from "@/features/menu-config/types";
 import type {
@@ -91,8 +94,8 @@ export class LocalStorageTenantMenuRepository implements TenantMenuRepository {
       ) {
         return this.recoverInvalidData(tenant, raw);
       }
-      const records = ensurePlatformSystemMenus(tenant, parsed.records);
-      if (records.length !== parsed.records.length) {
+      const records = normalizeLoadedMenuRecords(tenant, parsed.records);
+      if (menuRecordsDiffer(records, parsed.records)) {
         return { records: this.replace(tenant, records), recoveryNotice: null };
       }
       return { records, recoveryNotice: null };

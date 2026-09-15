@@ -2,7 +2,10 @@ import {
   tenantRoleRepository,
   tenantRoleStorageKey,
 } from "@/features/access-control/local-storage-role-repository";
-import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
+import {
+  menuRecordsDiffer,
+  normalizeLoadedMenuRecords,
+} from "@/features/menu-config/align-template-menu-names";
 import {
   tenantMenuRepository,
   tenantMenuStorageKey,
@@ -44,12 +47,12 @@ function invalidConfigurationStorageKey(tenantId: string, timestamp: number) {
   return `operation-platform:tenant-configuration:invalid:${tenantId}:${timestamp}`;
 }
 
-function withPlatformSystemMenus(
+function withNormalizedMenus(
   tenant: TenantInfo,
   configuration: TenantConfiguration,
 ): TenantConfiguration {
-  const menuRecords = ensurePlatformSystemMenus(tenant, configuration.menuRecords);
-  if (menuRecords.length === configuration.menuRecords.length) return configuration;
+  const menuRecords = normalizeLoadedMenuRecords(tenant, configuration.menuRecords);
+  if (!menuRecordsDiffer(menuRecords, configuration.menuRecords)) return configuration;
   return { ...configuration, menuRecords };
 }
 
@@ -81,8 +84,8 @@ export class LocalStorageTenantConfigurationRepository {
       if (!isValidTenantConfiguration(parsed, tenant)) {
         return this.recoverInvalidConfiguration(tenant, raw);
       }
-      const configuration = withPlatformSystemMenus(tenant, cloneConfiguration(parsed));
-      if (configuration.menuRecords.length !== parsed.menuRecords.length) {
+      const configuration = withNormalizedMenus(tenant, cloneConfiguration(parsed));
+      if (menuRecordsDiffer(configuration.menuRecords, parsed.menuRecords)) {
         return { configuration: this.replace(tenant, configuration), recoveryNotice: null };
       }
       return { configuration, recoveryNotice: null };

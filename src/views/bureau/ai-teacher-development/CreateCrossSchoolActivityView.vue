@@ -1,13 +1,13 @@
 <template>
-  <div class="create-page">
+  <div class="create-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: listPath }">跨校教研活动</el-breadcrumb-item>
-        <el-breadcrumb-item>创建跨校教研活动</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: listPath }">活动管理</el-breadcrumb-item>
+        <el-breadcrumb-item>创建活动</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
-
-    <div class="create-body">
+    <section class="page-card">
+      <h1 class="page-title">创建跨校教研活动</h1>
       <el-form
         ref="formRef"
         class="activity-form"
@@ -26,58 +26,38 @@
           :schools="selectedSchools"
           :lead-school-id="form.leadSchoolId"
           :teachers="selectedTeachers"
-          @pick-schools="openSchoolPicker"
           @pick-teachers="openTeacherPicker"
-          @set-lead="setLeadSchool"
-          @remove-school="removeSchool"
           @remove-teacher="removeTeacher"
         />
-        <CreateActivityPrepFields
-          v-if="form.type === 'lesson-prep'"
-          v-model:form="form"
-          :teachers="selectedTeachers"
-          :resolve-school-name="schoolName"
-        />
+        <CreateActivityPrepFields v-if="hasPrep" v-model:form="form" />
+        <CreateActivityTaskSection v-model:form="form" :teachers="taskTeachers" />
         <CreateActivityObservationFields
-          v-else
+          v-if="hasObservation"
           v-model:form="form"
+          :picker-schools="pickerSchools"
+          :picker-people="pickerPeople"
+          :org-ids="observationOrgIds"
+          :lead-org-id="form.leadSchoolId"
           :teachers="selectedTeachers"
-          :resolve-school-name="schoolName"
         />
+        <div class="form-actions">
+          <el-button type="primary" :loading="submitting" @click="handleSubmit">创建活动</el-button>
+          <el-button @click="goBack">取消</el-button>
+        </div>
       </el-form>
-    </div>
+    </section>
 
-    <div class="footer-bar">
-      <el-button @click="goBack">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">创建活动</el-button>
-    </div>
-
-    <OrgMemberPickerDialog
-      v-model:visible="schoolPickerVisible"
-      mode="school"
-      title="选择学校和教师"
-      :schools="pickerSchools"
-      :model-value="form.memberSchoolIds"
-      :lead-id="form.leadSchoolId"
-      :min-count="2"
-      left-desc="当前教育局可管理学校"
-      right-desc="在已选学校中指定 1 所牵头校"
-      footer-note="至少选择 2 所学校，且只能设置 1 所牵头校"
-      @confirm="handleSchoolConfirm"
-    />
     <OrgMemberPickerDialog
       v-model:visible="teacherPickerVisible"
       mode="person"
       title="选择学校和教师"
       :schools="pickerSchools"
       :people="pickerPeople"
-      :org-ids="form.memberSchoolIds"
+      :org-ids="allianceOrgIds"
       :lead-org-id="form.leadSchoolId"
       :model-value="form.teacherIds"
-      :min-count="1"
-      left-desc="仅展示已选成员学校"
-      right-desc="可跨校多选参与教师"
-      footer-note="移除成员学校时，对应教师将同步移除"
+      :selected-org-ids="form.memberSchoolIds"
+      :min-count="0"
       @confirm="handleTeacherConfirm"
     />
   </div>
@@ -103,7 +83,9 @@ import CreateActivityBasicFields from "@/views/bureau/ai-teacher-development/Cre
 import CreateActivityMemberSections from "@/views/bureau/ai-teacher-development/CreateActivityMemberSections.vue";
 import CreateActivityObservationFields from "@/views/bureau/ai-teacher-development/CreateActivityObservationFields.vue";
 import CreateActivityPrepFields from "@/views/bureau/ai-teacher-development/CreateActivityPrepFields.vue";
-import { createEmptyActivityForm } from "@/views/bureau/ai-teacher-development/create-activity-form";
+import CreateActivityTaskSection from "@/views/bureau/ai-teacher-development/CreateActivityTaskSection.vue";
+import { createEmptyActivityForm, hasActivityType, primaryActivityType } from "@/views/bureau/ai-teacher-development/create-activity-form";
+import { formToObservation, validateObservationForm } from "@/views/bureau/ai-teacher-development/observation-form";
 
 defineOptions({ name: "CreateCrossSchoolActivityView" });
 
@@ -117,16 +99,15 @@ const schools = ref<SchoolOption[]>([]);
 const teachers = ref<TeacherOption[]>([]);
 const alliances = ref<ActivityAllianceOption[]>([]);
 const submitting = ref(false);
-const schoolPickerVisible = ref(false);
 const teacherPickerVisible = ref(false);
 
 const rules: FormRules = {
   name: [{ required: true, message: "请输入活动主题", trigger: "blur" }],
-  type: [{ required: true, message: "请选择活动类型", trigger: "change" }],
+  types: [{ type: "array", required: true, min: 1, message: "请选择活动类型", trigger: "change" }],
+  allianceId: [{ required: true, message: "请选择所属联盟", trigger: "change" }],
   scheduledAt: [{ required: true, message: "请选择活动时间", trigger: "change" }],
-  memberSchoolIds: [{ validator: validateSchools, trigger: "change" }],
-  leadSchoolId: [{ required: true, message: "请选择牵头学校", trigger: "change" }],
-  teacherIds: [{ validator: validateTeachers, trigger: "change" }],
+  location: [{ required: true, message: "请选择活动地点", trigger: "blur" }],
+  teacherIds: [{ validator: validateMembers, trigger: "change" }],
 };
 
 const selectedSchools = computed(() =>
@@ -158,16 +139,26 @@ const pickerPeople = computed((): OrgMemberPickerPerson[] =>
     groupName: `${teacher.subject}组`,
   })),
 );
+const taskTeachers = computed(() =>
+  selectedTeachers.value.map((teacher) => ({
+    id: teacher.id,
+    name: teacher.name,
+    schoolName: schoolName(teacher.schoolId),
+    subject: teacher.subject,
+  })),
+);
+const allianceOrgIds = computed(() => (form.value.allianceId ? form.value.memberSchoolIds : []));
+const observationOrgIds = computed(() =>
+  form.value.memberSchoolIds.length ? form.value.memberSchoolIds : schools.value.map((item) => item.id),
+);
+const hasPrep = computed(() => hasActivityType(form.value.types, "lesson-prep"));
+const hasObservation = computed(() => hasActivityType(form.value.types, "lesson-observation"));
 
-function validateSchools(_rule: unknown, value: unknown, callback: (error?: Error) => void) {
-  if (!Array.isArray(value) || value.length < 2) {
+function validateMembers(_rule: unknown, value: unknown, callback: (error?: Error) => void) {
+  if (form.value.memberSchoolIds.length < 2) {
     callback(new Error("请至少选择 2 所学校"));
     return;
   }
-  callback();
-}
-
-function validateTeachers(_rule: unknown, value: unknown, callback: (error?: Error) => void) {
   if (!Array.isArray(value) || value.length < 1) {
     callback(new Error("请至少选择 1 名参与教师"));
     return;
@@ -183,47 +174,26 @@ function goBack() {
   void router.push(listPath);
 }
 
-function openSchoolPicker() {
-  schoolPickerVisible.value = true;
-}
-
 function openTeacherPicker() {
   teacherPickerVisible.value = true;
-}
-
-function setLeadSchool(id: string) {
-  form.value.leadSchoolId = id;
-}
-
-function removeSchool(id: string) {
-  form.value.memberSchoolIds = form.value.memberSchoolIds.filter((item) => item !== id);
-  form.value.teacherIds = form.value.teacherIds.filter((teacherId) => {
-    const teacher = teachers.value.find((item) => item.id === teacherId);
-    return teacher ? teacher.schoolId !== id : false;
-  });
-  if (form.value.leadSchoolId === id) {
-    form.value.leadSchoolId = form.value.memberSchoolIds[0] ?? "";
-  }
 }
 
 function removeTeacher(id: string) {
   form.value.teacherIds = form.value.teacherIds.filter((item) => item !== id);
 }
 
-function handleSchoolConfirm(payload: OrgMemberPickerSchoolResult | OrgMemberPickerPersonResult) {
-  if (!("leadId" in payload) || !payload.leadId) return;
-  const removed = form.value.memberSchoolIds.filter((id) => !payload.selectedIds.includes(id));
-  form.value.memberSchoolIds = [...payload.selectedIds];
-  form.value.leadSchoolId = payload.leadId;
-  if (!removed.length) return;
-  form.value.teacherIds = form.value.teacherIds.filter((id) => {
-    const teacher = teachers.value.find((item) => item.id === id);
-    return teacher ? payload.selectedIds.includes(teacher.schoolId) : false;
-  });
+function syncLeadSchool() {
+  if (!form.value.memberSchoolIds.includes(form.value.leadSchoolId)) {
+    form.value.leadSchoolId = form.value.memberSchoolIds[0] ?? "";
+  }
 }
 
 function handleTeacherConfirm(payload: OrgMemberPickerSchoolResult | OrgMemberPickerPersonResult) {
   form.value.teacherIds = [...payload.selectedIds];
+  if (!form.value.allianceId && "orgIds" in payload) {
+    form.value.memberSchoolIds = [...payload.orgIds];
+  }
+  syncLeadSchool();
 }
 
 async function handleAllianceChange(allianceId: string) {
@@ -256,25 +226,29 @@ async function loadOptions() {
 }
 
 function validateTypedFields() {
-  if (form.value.type === "lesson-prep" && !form.value.topic.title.trim()) {
-    ElMessage.warning("请填写课题名称");
-    return false;
+  if (hasPrep.value) {
+    const topic = form.value.topic;
+    if (!topic.stage || !topic.subject || !topic.grade || !topic.textbookVersion || !topic.chapter) {
+      ElMessage.warning("请完善集体备课课题信息");
+      return false;
+    }
   }
-  if (form.value.type === "lesson-observation" && !form.value.observation.courseName.trim()) {
-    ElMessage.warning("请填写课程名称");
-    return false;
+  if (hasObservation.value) {
+    const error = validateObservationForm(form.value.observation);
+    if (error) {
+      ElMessage.warning(error);
+      return false;
+    }
   }
   return true;
 }
 
 function buildCreateInput() {
-  const observation = {
-    ...form.value.observation,
-    scheduledAt: form.value.observation.scheduledAt || form.value.scheduledAt,
-  };
+  const types = [...form.value.types];
   return {
     name: form.value.name.trim(),
-    type: form.value.type,
+    type: primaryActivityType(types),
+    types,
     allianceId: form.value.allianceId,
     scheduledAt: form.value.scheduledAt,
     location: form.value.location.trim(),
@@ -282,9 +256,12 @@ function buildCreateInput() {
     leadSchoolId: form.value.leadSchoolId,
     memberSchoolIds: [...form.value.memberSchoolIds],
     teacherIds: [...form.value.teacherIds],
-    topic: form.value.type === "lesson-prep" ? { ...form.value.topic } : null,
-    tasks: form.value.tasks.map((task) => ({ ...task })),
-    observation: form.value.type === "lesson-observation" ? observation : null,
+    topic: hasPrep.value ? { ...form.value.topic } : null,
+    tasks: form.value.tasks.map((task) => ({
+      ...task,
+      assignees: task.assignees.map((item) => ({ ...item })),
+    })),
+    observation: hasObservation.value ? formToObservation(form.value.observation, null) : null,
   };
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page">
+  <div class="detail-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: listPath }">活动管理</el-breadcrumb-item>
@@ -23,8 +23,8 @@
             :detail="detail"
             @updated="detail = $event"
           />
-          <ActivityDetailDiscussion v-else-if="activeTab === 'discussion'" :detail="detail" />
-          <ActivityDetailArchive v-else-if="activeTab === 'archive'" :detail="detail" />
+          <ActivityDetailDiscussion v-else-if="activeTab === 'discussion'" />
+          <ActivityDetailArchive v-else-if="activeTab === 'archive'" />
         </section>
       </template>
       <el-empty v-else-if="!loading" description="未找到该活动" />

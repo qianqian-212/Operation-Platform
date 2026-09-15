@@ -1,59 +1,35 @@
 <template>
-  <section class="form-card">
-    <h2 class="card-title">参与学校与教师</h2>
-    <p class="card-desc">至少选择 2 所学校，并指定 1 所牵头校与参与教师。</p>
-    <el-form-item label="成员学校" prop="memberSchoolIds" required>
-      <el-button :icon="Plus" @click="emit('pick-schools')">添加学校</el-button>
-      <div v-if="schools.length" class="pick-panel">
-        <div class="pick-panel-head">
-          <span>已选学校</span>
-          <span>{{ schools.length }} 所</span>
-        </div>
-        <div class="pick-tags">
-          <el-tag
-            v-for="school in schools"
-            :key="school.id"
-            type="primary"
-            effect="plain"
-            closable
-            @close="emit('remove-school', school.id)"
-          >
-            {{ school.name }}
-          </el-tag>
-        </div>
-      </div>
-    </el-form-item>
-
-    <el-form-item v-if="schools.length" label="牵头学校" prop="leadSchoolId" required>
-      <el-radio-group :model-value="leadSchoolId" @change="onLeadChange">
-        <el-radio v-for="school in schools" :key="school.id" :value="school.id">
-          {{ school.name }}
-        </el-radio>
-      </el-radio-group>
-    </el-form-item>
-
+  <section class="form-section">
+    <div class="section-head">
+      <h2 class="card-title">参与学校与教师</h2>
+      <p class="card-desc">牵头学校与成员学校由联盟配置决定，不可变动。需在至少 2 所学校中选择参与教师。</p>
+    </div>
     <el-form-item label="参与教师" prop="teacherIds" required>
-      <el-button :icon="Plus" :disabled="schools.length === 0" @click="emit('pick-teachers')">
-        添加老师
-      </el-button>
-      <div v-if="teacherGroups.length" class="pick-panel">
-        <div class="pick-panel-head">
-          <span>已选教师</span>
-          <span>{{ teachers.length }} 人</span>
-        </div>
-        <div v-for="group in teacherGroups" :key="group.schoolId" class="pick-group">
-          <p class="pick-group-title">{{ group.schoolName }}</p>
-          <div class="pick-tags">
-            <el-tag
-              v-for="teacher in group.teachers"
-              :key="teacher.id"
-              type="primary"
-              effect="plain"
-              closable
-              @close="emit('remove-teacher', teacher.id)"
-            >
-              {{ teacher.name }}
-            </el-tag>
+      <div class="pick-field">
+        <el-button :icon="Plus" @click="emit('pick-teachers')">选择教师</el-button>
+        <div v-if="teacherGroups.length" class="pick-panel">
+          <div class="pick-panel-head">已选择</div>
+          <div class="pick-panel-body">
+            <div v-for="group in teacherGroups" :key="group.schoolId" class="pick-group">
+              <p class="pick-group-title">
+                {{ group.schoolName }}
+                <el-tag v-if="group.schoolId === leadSchoolId" type="primary" effect="plain" size="small">
+                  牵头学校
+                </el-tag>
+              </p>
+              <div class="pick-tags">
+                <el-tag
+                  v-for="teacher in group.teachers"
+                  :key="teacher.id"
+                  type="primary"
+                  effect="plain"
+                  closable
+                  @close="emit('remove-teacher', teacher.id)"
+                >
+                  {{ teacher.name }}
+                </el-tag>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -78,10 +54,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "pick-schools": [];
   "pick-teachers": [];
-  "set-lead": [id: string];
-  "remove-school": [id: string];
   "remove-teacher": [id: string];
 }>();
 
@@ -94,10 +67,6 @@ const teacherGroups = computed(() =>
     }))
     .filter((group) => group.teachers.length > 0),
 );
-
-function onLeadChange(value: string | number | boolean) {
-  if (typeof value === "string") emit("set-lead", value);
-}
 </script>
 
 <style scoped src="./create-activity-sections.css"></style>

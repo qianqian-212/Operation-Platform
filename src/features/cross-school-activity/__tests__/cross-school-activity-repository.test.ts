@@ -77,8 +77,19 @@ describe("cross-school activity repository", () => {
         grade: "四年级",
         title: "写景习作",
         period: "1课时",
+        textbookVersion: "统编版",
+        chapter: "第一单元",
       },
-      tasks: [{ name: "主备教案", ownerId: "teacher-chenhaodong", resourceLabel: "教案" }],
+      tasks: [
+        {
+          id: "task-plan",
+          name: "主备教案",
+          source: "custom",
+          requireFile: true,
+          assignees: [{ teacherId: "teacher-chenhaodong", role: "lead" }],
+          note: "",
+        },
+      ],
       observation: null,
     });
 

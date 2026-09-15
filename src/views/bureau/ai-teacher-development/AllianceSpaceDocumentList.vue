@@ -19,8 +19,24 @@
         <StatusTag :color="DOCUMENT_STATUS_MAP[document.status].tagColor">
           {{ DOCUMENT_STATUS_MAP[document.status].label }}
         </StatusTag>
-        <span class="action-link" @click="emit('view', document.title)">查看</span>
-        <span class="action-link" @click="emit('download', document.title)">下载</span>
+        <div class="doc-actions">
+          <el-button
+            class="doc-action"
+            link
+            :icon="Download"
+            aria-label="下载"
+            title="下载"
+            @click="emit('download', document.title)"
+          />
+          <el-button
+            class="doc-action"
+            link
+            :icon="View"
+            aria-label="查看"
+            title="查看"
+            @click="emit('view', document.title)"
+          />
+        </div>
       </div>
     </article>
     <el-empty v-if="documents.length === 0" description="暂无在线文档" :image-size="72" />
@@ -28,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { Document } from "@element-plus/icons-vue";
+import { Document, Download, View } from "@element-plus/icons-vue";
 import StatusTag from "@/components/StatusTag.vue";
 import {
   DOCUMENT_STATUS_MAP,
@@ -126,13 +142,26 @@ const emit = defineEmits<{
   margin-left: 0;
 }
 
-.action-link {
-  font-size: var(--font-size-md);
-  color: var(--color-primary);
-  cursor: pointer;
+.doc-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
 }
 
-.action-link:hover {
-  color: var(--color-primary-hover);
+.doc-action {
+  margin: 0;
+  min-width: auto;
+  padding: var(--spacing-4);
+  color: var(--color-secondary);
+  --el-button-text-color: var(--color-secondary);
+  --el-button-hover-text-color: var(--color-primary);
+}
+
+.doc-action + .doc-action {
+  margin-left: 0;
+}
+
+.doc-action:hover {
+  color: var(--color-primary);
 }
 </style>

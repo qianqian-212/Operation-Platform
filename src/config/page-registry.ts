@@ -295,7 +295,7 @@ export const pageRegistry: PageRegistryItem[] = [
   ),
   page(
     "bureau-cross-school-activity",
-    "跨校教研活动",
+    "活动管理",
     "/bureau/ai-teacher-development/cross-school-research/activities",
     bureau,
     () => import("@/views/bureau/ai-teacher-development/CrossSchoolActivityView.vue"),

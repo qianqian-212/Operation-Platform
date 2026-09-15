@@ -1,5 +1,11 @@
 <template>
-  <el-dialog v-model="visible" title="成员学校" width="800px" append-to-body>
+  <el-dialog
+    v-model="visible"
+    title="成员学校"
+    width="800px"
+    align-center
+    append-to-body
+  >
     <el-table :data="schools" stripe border>
       <el-table-column label="序号" width="72" align="center">
         <template #default="{ $index }">{{ $index + 1 }}</template>
@@ -20,6 +26,9 @@
       <el-table-column prop="teacherCount" label="教师数" width="90" align="center" />
       <el-table-column prop="activityCount" label="活动数" width="90" align="center" />
     </el-table>
+    <template #footer>
+      <el-button type="primary" @click="visible = false">关闭</el-button>
+    </template>
   </el-dialog>
 </template>
 

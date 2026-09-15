@@ -4,6 +4,8 @@ export type ActivityDiscussionStatus = "hot" | "summarized" | "discussing";
 export type ActivityArchiveKind = "reflection" | "output";
 export type ActivityTaskKind = "file" | "text";
 export type ActivityTaskStatus = "final" | "pending";
+export type ActivityTaskSource = "system" | "custom";
+export type ActivityTaskRole = "participant" | "lead" | "reviewer";
 
 export interface CrossSchoolActivityRow {
   id: string;
@@ -32,6 +34,8 @@ export interface ActivityLessonTopic {
   grade: string;
   title: string;
   period: string;
+  textbookVersion: string;
+  chapter: string;
 }
 
 export interface ActivityTask {
@@ -119,15 +123,24 @@ export interface CrossSchoolActivityFilter {
   allianceId: string;
 }
 
+export interface ActivityTaskAssignee {
+  teacherId: string;
+  role: ActivityTaskRole;
+}
+
 export interface ActivityTaskInput {
+  id: string;
   name: string;
-  ownerId: string;
-  resourceLabel: string;
+  source: ActivityTaskSource;
+  requireFile: boolean;
+  assignees: ActivityTaskAssignee[];
+  note: string;
 }
 
 export interface CrossSchoolActivityCreateInput {
   name: string;
   type: CrossSchoolActivityType;
+  types?: CrossSchoolActivityType[];
   allianceId: string;
   scheduledAt: string;
   location: string;
@@ -173,9 +186,9 @@ export const ACTIVITY_TASK_KIND_MAP: Record<ActivityTaskKind, string> = {
 
 export const ACTIVITY_TASK_STATUS_MAP: Record<
   ActivityTaskStatus,
-  { label: string; tagColor: "green" | "orange" }
+  { label: string; tagColor: "blue" | "orange" }
 > = {
-  final: { label: "最终版", tagColor: "green" },
+  final: { label: "最终版", tagColor: "blue" },
   pending: { label: "待提交", tagColor: "orange" },
 };
 
@@ -193,8 +206,16 @@ export const ARCHIVE_KIND_MAP: Record<ActivityArchiveKind, string> = {
   output: "成果沉淀",
 };
 
+export const ACTIVITY_TASK_ROLE_MAP: Record<ActivityTaskRole, string> = {
+  participant: "参与",
+  lead: "主备",
+  reviewer: "审阅",
+};
+
 export const LESSON_STAGE_OPTIONS = ["小学", "初中", "高中", "九年一贯"] as const;
 export const LESSON_SUBJECT_OPTIONS = ["语文", "数学", "英语", "科学", "物理"] as const;
+export const LESSON_TEXTBOOK_OPTIONS = ["统编版", "人教版", "苏教版", "北师大版"] as const;
+export const LESSON_CHAPTER_OPTIONS = ["第一单元", "第二单元", "第三单元", "第四单元"] as const;
 export const LESSON_GRADE_OPTIONS = [
   "一年级",
   "二年级",
@@ -220,6 +241,16 @@ export const OBSERVATION_TEMPLATE_OPTIONS = [
   "跨校听评课量表（通用）",
   "小学语文评课模板",
   "初中数学评课模板",
+] as const;
+export const OBSERVATION_PERIOD_OPTIONS = [
+  "第1节",
+  "第2节",
+  "第3节",
+  "第4节",
+  "第5节",
+  "第6节",
+  "第7节",
+  "第8节",
 ] as const;
 
 export function createEmptyObservation(): ActivityObservation {

@@ -11,9 +11,6 @@
         :options="tabs"
         aria-label="联盟专属空间分类"
       />
-      <el-button type="primary" :icon="Plus" @click="emit('create', activeTab)">
-        {{ actionLabel }}
-      </el-button>
     </div>
 
     <div class="space-content">
@@ -33,8 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { Plus } from "@element-plus/icons-vue";
+import { ref } from "vue";
 import type {
   AllianceSpaceDiscussion,
   AllianceSpaceDocument,
@@ -57,7 +53,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  create: [tab: AllianceSpaceTab];
   view: [title: string];
   download: [title: string];
 }>();
@@ -69,12 +64,6 @@ const tabs = [
   { label: "讨论区", value: "discussions" },
   { label: "文件共享", value: "files" },
 ] as const;
-
-const actionLabel = computed(() => {
-  if (activeTab.value === "discussions") return "发起讨论";
-  if (activeTab.value === "files") return "上传文件";
-  return "新建文档";
-});
 </script>
 
 <style scoped>
@@ -112,7 +101,6 @@ const actionLabel = computed(() => {
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-16);
   flex-wrap: wrap;
 }

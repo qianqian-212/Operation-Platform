@@ -30,8 +30,9 @@ describe("alliance detail panels", () => {
       props: { schools: detail.memberSchools, visible: true },
       global: { plugins: [ElementPlus] },
     });
-    expect(wrapper.findComponent({ name: "ElDialog" }).props("title")).toBe("成员学校");
-    expect(wrapper.findComponent({ name: "ElDialog" }).props("modelValue")).toBe(true);
+    const dialog = wrapper.getComponent({ name: "ElDialog" });
+    expect(dialog.props("title")).toBe("成员学校");
+    expect(dialog.props("modelValue")).toBe(true);
   });
 
   it("adds view and download actions to space documents", async () => {
@@ -39,11 +40,13 @@ describe("alliance detail panels", () => {
       props: { documents: detail.documents },
       global: { plugins: [ElementPlus] },
     });
-    const actions = wrapper.findAll(".action-link");
-    expect(actions[0]?.text()).toBe("查看");
-    expect(actions[1]?.text()).toBe("下载");
-    await actions[0]?.trigger("click");
+    const actions = wrapper.findAll(".doc-action");
+    expect(actions[0]?.attributes("aria-label")).toBe("下载");
+    expect(actions[1]?.attributes("aria-label")).toBe("查看");
+    await actions[1]?.trigger("click");
     expect(wrapper.emitted("view")?.[0]).toEqual([detail.documents[0]?.title]);
+    await actions[0]?.trigger("click");
+    expect(wrapper.emitted("download")?.[0]).toEqual([detail.documents[0]?.title]);
   });
 
   it("renders discussion rows with initiator and status", () => {

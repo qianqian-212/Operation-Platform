@@ -42,7 +42,7 @@ describe("cross-school activity views", () => {
   it("renders the activity list with screenshot seed rows", async () => {
     const wrapper = await mountPage(CrossSchoolActivityView, listPath);
     await flushPromises();
-    expect(wrapper.text()).toContain("跨校教研活动");
+    expect(wrapper.get(".toolbar-title").text()).toBe("活动管理");
     expect(wrapper.text()).toContain("牵头学校统筹组织跨校教研活动");
     expect(wrapper.text()).toContain("跨校集体备课·小学语文三年级《富饶的西沙群岛》");
     expect(wrapper.text()).toContain("9人/5校");
@@ -53,10 +53,28 @@ describe("cross-school activity views", () => {
     const wrapper = await mountPage(CreateCrossSchoolActivityView, `${listPath}/create`);
     await flushPromises();
     expect(wrapper.text()).toContain("创建跨校教研活动");
-    expect(wrapper.text()).toContain("活动基本信息");
+    expect(wrapper.text()).toContain("基本信息");
     expect(wrapper.text()).toContain("参与学校与教师");
-    expect(wrapper.text()).toContain("集体备课 · 课题信息");
+    expect(wrapper.text()).toContain("集体备课课题信息");
     expect(wrapper.text()).toContain("任务分工");
+    expect(wrapper.text()).toContain("集体备课");
+    expect(wrapper.text()).toContain("听评课");
+    expect(wrapper.text()).toContain("活动描述");
+    expect(wrapper.text()).toContain("可多选，支持同时开展集体备课与听评课");
+    expect(wrapper.text()).not.toContain("听评课设置");
+  });
+
+  it("shows observation settings after checking 听评课", async () => {
+    const wrapper = await mountPage(CreateCrossSchoolActivityView, `${listPath}/create`);
+    await flushPromises();
+    const observationBox = wrapper.findAll(".el-checkbox").find((item) => item.text() === "听评课");
+    expect(observationBox).toBeTruthy();
+    await observationBox?.find("input").setValue();
+    await flushPromises();
+    expect(wrapper.text()).toContain("听评课设置");
+    expect(wrapper.text()).toContain("课程名称");
+    expect(wrapper.html()).toContain("请选择节数");
+    expect(wrapper.text()).toContain("集体备课课题信息");
   });
 
   it("renders activity detail summary and task cards matching the seed record", async () => {
@@ -75,6 +93,10 @@ describe("cross-school activity views", () => {
     expect(wrapper.text()).toContain("任务分工");
     expect(wrapper.text()).toContain("听评课设置");
     expect(wrapper.text()).toContain("主备教案·第一课时");
+    expect(wrapper.text()).toContain("文件");
+    expect(wrapper.text()).toContain("文本");
+    expect(wrapper.get(".task-kind.is-file").text()).toBe("文件");
+    expect(wrapper.get(".task-kind.is-text").text()).toBe("文本");
     expect(wrapper.text()).toContain("最终版");
     expect(wrapper.text()).toContain("待提交");
     expect(wrapper.text()).not.toContain("概览");
@@ -93,9 +115,27 @@ describe("cross-school activity views", () => {
     await flushPromises();
     expect(wrapper.text()).toContain("课程名称");
     expect(wrapper.text()).toContain("授课老师");
-    expect(wrapper.text()).toContain("评课老师从联盟成员学校的教师中选择");
+    expect(wrapper.text()).toContain("学科/年级");
+    expect(wrapper.html()).toContain("请选择节数");
     expect(wrapper.text()).toContain("线下评课");
     expect(wrapper.text()).toContain("直播评课");
     expect(wrapper.text()).toContain("视频评课");
+  });
+
+  it("keeps discussion and archive tabs empty", async () => {
+    const wrapper = await mountPage(
+      CrossSchoolActivityDetailView,
+      `${listPath}/activity-chinese`,
+    );
+    await flushPromises();
+    const panes = wrapper.findAll(".el-tabs__item");
+    const discussionTab = panes.find((pane) => pane.text() === "讨论投票");
+    await discussionTab?.trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("讨论投票功能即将开放");
+    const archiveTab = panes.find((pane) => pane.text() === "归档管理");
+    await archiveTab?.trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("归档管理功能即将开放");
   });
 });

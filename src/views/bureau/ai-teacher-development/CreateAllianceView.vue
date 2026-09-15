@@ -1,18 +1,17 @@
 <template>
-  <div class="create-page">
+  <div class="create-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: listPath }">教研联盟管理</el-breadcrumb-item>
         <el-breadcrumb-item>创建教研联盟</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
-
     <div class="create-body">
       <section class="form-card">
         <h1 class="page-title">创建教研联盟</h1>
         <el-form
-          ref="formRef"
-          class="alliance-form"
+        ref="formRef"
+        class="alliance-form"
           label-position="top"
           require-asterisk-position="left"
           :model="form"

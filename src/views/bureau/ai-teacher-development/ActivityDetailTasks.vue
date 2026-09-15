@@ -3,7 +3,9 @@
     <li v-for="item in detail.tasks" :key="item.id" class="task-card">
       <div class="task-main">
         <div class="task-title-row">
-          <span class="task-kind">{{ ACTIVITY_TASK_KIND_MAP[item.kind] }}</span>
+          <span class="task-kind" :class="item.kind === 'file' ? 'is-file' : 'is-text'">
+            {{ ACTIVITY_TASK_KIND_MAP[item.kind] }}
+          </span>
           <h3 class="task-name">{{ item.name }}</h3>
         </div>
         <p class="task-meta">负责人：{{ item.ownerName }}（{{ item.schoolName }}）</p>

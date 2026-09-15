@@ -44,7 +44,7 @@
     <div class="page-body">
       <div class="toolbar">
         <div class="toolbar-heading">
-          <h1 class="toolbar-title">跨校教研活动</h1>
+          <h1 class="toolbar-title">活动管理</h1>
           <p class="toolbar-subtitle">牵头学校统筹组织跨校教研活动</p>
         </div>
         <div class="toolbar-right">

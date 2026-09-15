@@ -13,19 +13,19 @@
     <p class="description">{{ detail.description }}</p>
     <div class="metric-row">
       <div v-for="metric in metrics" :key="metric.label" class="metric-item">
-        <span class="metric-value">{{ metric.value }}</span>
-        <div class="metric-label-row">
+        <div class="metric-copy">
+          <span class="metric-value">{{ metric.value }}</span>
           <span class="metric-label">{{ metric.label }}</span>
-          <button
-            v-if="metric.action"
-            type="button"
-            class="metric-action"
-            @click="emit('view-schools')"
-          >
-            查看
-            <el-icon><ArrowRight /></el-icon>
-          </button>
         </div>
+        <button
+          v-if="metric.action"
+          type="button"
+          class="metric-action"
+          @click="emit('view-schools')"
+        >
+          查看
+          <el-icon><ArrowRight /></el-icon>
+        </button>
       </div>
     </div>
   </section>
@@ -111,14 +111,20 @@ const metrics = computed(() => [
 
 .metric-item {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: var(--spacing-4);
-  padding: var(--spacing-12);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  min-height: 72px;
+  padding: var(--spacing-12) var(--spacing-16);
   background: var(--color-bg);
   border-radius: var(--radius-md);
-  text-align: left;
+}
+
+.metric-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
 }
 
 .metric-value {
@@ -126,12 +132,6 @@ const metrics = computed(() => [
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   line-height: 28px;
-}
-
-.metric-label-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-8);
 }
 
 .metric-label {
@@ -151,6 +151,7 @@ const metrics = computed(() => [
   font-size: var(--font-size-sm);
   line-height: var(--line-height-md);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .metric-action:hover {

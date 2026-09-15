@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page">
+  <div class="detail-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: listPath }">教研联盟管理</el-breadcrumb-item>
@@ -15,7 +15,6 @@
           :space="detail.space"
           :documents="detail.documents"
           :discussions="detail.discussions"
-          @create="handleSpaceCreate"
           @view="handleSpaceView"
           @download="handleSpaceDownload"
         />
@@ -35,7 +34,6 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type {
   AllianceActivity,
-  AllianceSpaceTab,
   TeachingResearchAllianceDetail,
 } from "@/features/teaching-research-alliance/types";
 import { useTeachingResearchAllianceStore } from "@/stores/teaching-research-alliance";
@@ -58,12 +56,6 @@ function handleViewActivity(activity: AllianceActivity) {
   void router.push(
     `/bureau/ai-teacher-development/cross-school-research/activities/${activity.id}`,
   );
-}
-
-function handleSpaceCreate(tab: AllianceSpaceTab) {
-  const label =
-    tab === "discussions" ? "发起讨论" : tab === "files" ? "上传文件" : "新建文档";
-  ElMessage.info(`「${label}」即将开放`);
 }
 
 function handleSpaceView(title: string) {
@@ -102,24 +94,11 @@ watch(
 </script>
 
 <style scoped>
-.detail-page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--color-bg);
-}
-
-.breadcrumb-bar {
-  padding: var(--spacing-16) var(--spacing-24);
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
 .detail-body {
   flex: 1;
   overflow: auto;
-  padding: var(--spacing-24);
+  margin: 0 var(--spacing-24) var(--spacing-24);
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-16);

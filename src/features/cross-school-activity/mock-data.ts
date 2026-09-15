@@ -114,6 +114,8 @@ function chinesePrepTopic(): ActivityLessonTopic {
     grade: "三年级",
     title: "富饶的西沙群岛",
     period: "2课时",
+    textbookVersion: "统编版",
+    chapter: "第一单元",
   };
 }
 
@@ -286,6 +288,8 @@ function englishPrepDetail(): CrossSchoolActivityDetail {
       grade: "四年级",
       title: "阅读教学策略研讨",
       period: "1课时",
+      textbookVersion: "人教版",
+      chapter: "第二单元",
     },
     tasks: [
       task(
@@ -410,22 +414,28 @@ function normalizeObservation(input: ActivityObservation): ActivityObservation {
   };
 }
 
+function primaryAssigneeId(item: CrossSchoolActivityCreateInput["tasks"][number]) {
+  const lead = item.assignees.find((assignee) => assignee.role === "lead");
+  return lead?.teacherId ?? item.assignees[0]?.teacherId ?? "";
+}
+
 function buildTasks(input: CrossSchoolActivityCreateInput): ActivityTask[] {
   return input.tasks
     .filter((item) => item.name.trim())
-    .map((item, index) =>
-      task(
-        `task-${index + 1}`,
+    .map((item, index) => {
+      const ownerId = primaryAssigneeId(item);
+      return task(
+        item.id || `task-${index + 1}`,
         item.name.trim(),
-        item.ownerId,
-        teacherName(item.ownerId),
-        schoolName(teacherSchoolId(item.ownerId)),
-        "file",
+        ownerId,
+        teacherName(ownerId),
+        schoolName(teacherSchoolId(ownerId)),
+        item.requireFile ? "file" : "text",
         "pending",
-        item.resourceLabel.trim(),
         "",
-      ),
-    );
+        "",
+      );
+    });
 }
 
 function resolveAllianceName(allianceId: string) {
@@ -483,10 +493,10 @@ export function createActivityMockRow(
     initiatorName: teacherName(input.teacherIds[0] ?? ""),
     description: input.description.trim(),
     participants,
-    topic: input.type === "lesson-prep" && input.topic ? { ...input.topic } : null,
-    tasks: input.type === "lesson-prep" ? buildTasks(input) : [],
+    topic: (input.types ?? [input.type]).includes("lesson-prep") && input.topic ? { ...input.topic } : null,
+    tasks: buildTasks(input),
     observation:
-      input.type === "lesson-observation" && input.observation
+      (input.types ?? [input.type]).includes("lesson-observation") && input.observation
         ? normalizeObservation(input.observation)
         : null,
     discussions: [],

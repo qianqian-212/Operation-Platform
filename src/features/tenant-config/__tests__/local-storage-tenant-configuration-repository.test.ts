@@ -226,4 +226,22 @@ describe("tenant configuration repository", () => {
       ),
     ).toBe(true);
   });
+
+  it("renames the stored bureau activity page to 活动管理", () => {
+    const repository = new LocalStorageTenantConfigurationRepository(localStorage);
+    const configuration = repository.list(bureau).configuration;
+    configuration.menuRecords = configuration.menuRecords.map((record) =>
+      record.pageKey === "bureau-cross-school-activity"
+        ? { ...record, name: "跨校教研活动" }
+        : record,
+    );
+    repository.replace(bureau, configuration);
+
+    const reloaded = repository.list(bureau);
+    expect(
+      reloaded.configuration.menuRecords.find(
+        (record) => record.pageKey === "bureau-cross-school-activity",
+      )?.name,
+    ).toBe("活动管理");
+  });
 });

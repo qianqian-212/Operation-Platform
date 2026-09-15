@@ -1,15 +1,22 @@
 import {
   createEmptyObservation,
+  OBSERVATION_PERIOD_OPTIONS,
   OBSERVATION_SUBJECT_GRADE_OPTIONS,
   type ActivityCourseMaterial,
   type ActivityObservation,
 } from "@/features/cross-school-activity/types";
 
 const SUBJECT_GRADE_SET = new Set<string>(OBSERVATION_SUBJECT_GRADE_OPTIONS);
+const PERIOD_SET = new Set<string>(OBSERVATION_PERIOD_OPTIONS);
 
 export function subjectGradeOptions(current: string) {
   if (current && !SUBJECT_GRADE_SET.has(current)) return [current, ...OBSERVATION_SUBJECT_GRADE_OPTIONS];
   return [...OBSERVATION_SUBJECT_GRADE_OPTIONS];
+}
+
+export function periodOptions(current: string) {
+  if (current && !PERIOD_SET.has(current)) return [current, ...OBSERVATION_PERIOD_OPTIONS];
+  return [...OBSERVATION_PERIOD_OPTIONS];
 }
 
 export type ObservationPickerRole = "instructor" | "reviewer";
@@ -19,7 +26,7 @@ export interface ObservationFormState {
   instructorId: string;
   instructorName: string;
   scheduledDate: string;
-  scheduledTime: string;
+  scheduledPeriod: string;
   subjectGrade: string;
   assessmentTemplate: string;
   materials: ActivityCourseMaterial[];
@@ -37,8 +44,8 @@ export function splitScheduledAt(value: string) {
   return { date, time };
 }
 
-export function joinScheduledAt(date: string, time: string) {
-  return [date.trim(), time.trim()].filter(Boolean).join(" ");
+export function joinScheduledAt(date: string, period: string) {
+  return [date.trim(), period.trim()].filter(Boolean).join(" ");
 }
 
 export function toSubjectGrade(subject: string, grade: string) {
@@ -57,7 +64,7 @@ export function emptyObservationForm(): ObservationFormState {
     instructorId: "",
     instructorName: "",
     scheduledDate: "",
-    scheduledTime: "",
+    scheduledPeriod: "",
     subjectGrade: "",
     assessmentTemplate: "",
     materials: [],
@@ -75,7 +82,7 @@ export function observationToForm(observation: ActivityObservation | null): Obse
     instructorId: observation.instructorId,
     instructorName: observation.instructorName,
     scheduledDate: scheduled.date,
-    scheduledTime: scheduled.time,
+    scheduledPeriod: scheduled.time,
     subjectGrade: toSubjectGrade(observation.subject, observation.grade),
     assessmentTemplate: observation.assessmentTemplate,
     materials: observation.materials.map((item) => ({ ...item })),
@@ -96,7 +103,7 @@ export function formToObservation(
     courseName: form.courseName.trim(),
     instructorId: form.instructorId,
     instructorName: form.instructorName,
-    scheduledAt: joinScheduledAt(form.scheduledDate, form.scheduledTime),
+    scheduledAt: joinScheduledAt(form.scheduledDate, form.scheduledPeriod),
     subject,
     grade,
     reviewerId: form.reviewerId,
@@ -110,7 +117,7 @@ export function formToObservation(
 export function validateObservationForm(form: ObservationFormState) {
   if (!form.courseName.trim()) return "请填写课程名称";
   if (!form.instructorId) return "请选择授课老师";
-  if (!form.scheduledDate || !form.scheduledTime) return "请选择授课时间";
+  if (!form.scheduledDate || !form.scheduledPeriod) return "请选择授课时间";
   if (!form.subjectGrade) return "请选择学科/年级";
   if (!form.assessmentTemplate) return "请选择考核模板";
   if (!form.materials.length) return "请上传课程资料";

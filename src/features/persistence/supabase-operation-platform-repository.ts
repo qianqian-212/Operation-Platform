@@ -9,7 +9,7 @@ import type {
   WorkbenchWidgetAssignment,
 } from "@/features/workbench/types";
 import { reconcileWorkbenchWidgetAssignment } from "@/features/workbench/workbench-widget-assignment";
-import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
+import { normalizeLoadedMenuRecords } from "@/features/menu-config/align-template-menu-names";
 import {
   defaultAdministrativeRegionForTenant,
   normalizeTenantAdministrativeRegion,
@@ -190,7 +190,7 @@ function configurationFromRow(row: ConfigurationRow, tenant: TenantInfo) {
     revision: Number(row.revision),
     configuration: {
       ...row.configuration,
-      menuRecords: ensurePlatformSystemMenus(tenant, row.configuration.menuRecords),
+      menuRecords: normalizeLoadedMenuRecords(tenant, row.configuration.menuRecords),
     },
   } satisfies RemoteTenantConfiguration;
 }

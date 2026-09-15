@@ -118,7 +118,7 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "bureau-teaching-research-alliance",
     });
-    expect(child(crossSchool.id, "跨校教研活动")).toMatchObject({
+    expect(child(crossSchool.id, "活动管理")).toMatchObject({
       type: "page",
       pageKey: "bureau-cross-school-activity",
     });

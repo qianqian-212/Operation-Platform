@@ -135,7 +135,7 @@ describe("page registry", () => {
 
   it("registers the bureau cross-school activity list and detail pages", () => {
     expect(pageRegistryByKey.get("bureau-cross-school-activity")).toMatchObject({
-      title: "跨校教研活动",
+      title: "活动管理",
       path: "/bureau/ai-teacher-development/cross-school-research/activities",
       tenantTypes: ["bureau"],
       status: "available",
