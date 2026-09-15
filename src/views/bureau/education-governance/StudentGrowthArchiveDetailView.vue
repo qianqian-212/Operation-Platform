@@ -24,7 +24,7 @@ function handleBack() {
 </script>
 
 <template>
-  <div class="detail-page">
+  <div class="detail-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <ElBreadcrumb separator="/">
         <ElBreadcrumbItem :to="{ path: '/bureau/education-governance/student-growth-archive' }">
@@ -58,14 +58,6 @@ function handleBack() {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  gap: var(--spacing-16);
-}
-
-.breadcrumb-bar {
-  flex-shrink: 0;
-  padding: var(--spacing-12) var(--spacing-16);
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-border);
 }
 
 .detail-card {
@@ -74,6 +66,7 @@ function handleBack() {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 var(--spacing-24) var(--spacing-24);
   background: var(--color-white);
   border-radius: var(--radius-md);
   padding: var(--spacing-24);

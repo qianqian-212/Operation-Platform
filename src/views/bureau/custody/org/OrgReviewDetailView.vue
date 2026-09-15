@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page">
+  <div class="detail-page page-with-breadcrumb">
     <!-- 面包屑 -->
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
@@ -274,14 +274,6 @@ function handleApprove() {
   flex-direction: column;
   height: 100%;
   background: var(--color-bg);
-  /* 突破父级 app-content-inner 的 padding */
-  margin: calc(-1 * var(--content-padding));
-}
-
-/* 面包屑 */
-.breadcrumb-bar {
-  padding: 16px 24px;
-  flex-shrink: 0;
 }
 
 /* 详情卡片 - 可滚动区域 */

@@ -324,38 +324,3 @@ function handleConfirm() {
 }
 </style>
 
-<style>
-.edit-settings-dialog.el-dialog {
-  border-radius: 8px;
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0;
-}
-
-.edit-settings-dialog .el-dialog__header {
-  padding: 16px 24px;
-  margin-right: 0;
-  flex-shrink: 0;
-}
-
-.edit-settings-dialog .el-dialog__header .el-dialog__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-title);
-  line-height: 24px;
-}
-
-.edit-settings-dialog .el-dialog__body {
-  padding: 16px 24px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.edit-settings-dialog .el-dialog__footer {
-  padding: 10px 24px 24px;
-  flex-shrink: 0;
-}
-</style>

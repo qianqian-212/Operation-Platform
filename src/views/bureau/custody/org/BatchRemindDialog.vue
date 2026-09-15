@@ -189,39 +189,3 @@ function handleSend() {
 }
 </style>
 
-<style>
-/* el-dialog 样式覆盖 — 完全按设计稿 */
-.batch-remind-dialog.el-dialog {
-  border-radius: 8px;
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0;
-}
-
-.batch-remind-dialog .el-dialog__header {
-  padding: 16px 24px;
-  margin-right: 0;
-  flex-shrink: 0;
-}
-
-.batch-remind-dialog .el-dialog__header .el-dialog__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-title);
-  line-height: 24px;
-}
-
-.batch-remind-dialog .el-dialog__body {
-  padding: 16px 24px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.batch-remind-dialog .el-dialog__footer {
-  padding: 10px 24px 24px;
-  flex-shrink: 0;
-}
-</style>
