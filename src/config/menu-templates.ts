@@ -76,6 +76,8 @@ const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "智慧大脑/数据驾驶舱/区域教育总览": "bureau-regional-education-overview",
   "AI教师发展/教研与科研/跨校协同教研/教研联盟": "bureau-teaching-research-alliance",
   "AI教师发展/教研与科研/跨校协同教研/活动管理": "bureau-cross-school-activity",
+  "AI教师发展/教研与科研/跨校协同教研/集体备课管理": "bureau-collective-lesson-prep",
+  "AI教师发展/教研与科研/跨校协同教研/听评课管理": "bureau-lesson-observation",
 };
 
 interface FlattenedOutlinePage {

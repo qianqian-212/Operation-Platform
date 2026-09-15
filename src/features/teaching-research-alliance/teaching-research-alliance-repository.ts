@@ -5,15 +5,16 @@ import {
   getAllianceMockDetail,
   listAllianceMockRows,
   setAllianceMockStatus,
+  summarizeAllianceMockStats,
 } from "@/features/teaching-research-alliance/mock-data";
 import type {
   AllianceStatus,
-  PageResult,
   SchoolOption,
   TeacherOption,
   TeachingResearchAllianceCreateInput,
   TeachingResearchAllianceDetail,
   TeachingResearchAllianceFilter,
+  TeachingResearchAllianceListResult,
   TeachingResearchAllianceRow,
 } from "@/features/teaching-research-alliance/types";
 
@@ -23,7 +24,7 @@ export interface TeachingResearchAllianceRepository {
     filter: TeachingResearchAllianceFilter,
     page: number,
     pageSize: number,
-  ): Promise<PageResult<TeachingResearchAllianceRow>>;
+  ): Promise<TeachingResearchAllianceListResult>;
   detail(tenantId: string, id: string): Promise<TeachingResearchAllianceDetail | undefined>;
   create(
     tenantId: string,
@@ -48,6 +49,7 @@ const localTeachingResearchAllianceRepository: TeachingResearchAllianceRepositor
     return {
       list: matched.slice(start, start + pageSize),
       total: matched.length,
+      stats: summarizeAllianceMockStats(),
     };
   },
 

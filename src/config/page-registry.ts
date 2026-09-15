@@ -327,6 +327,38 @@ export const pageRegistry: PageRegistryItem[] = [
       description: "查看跨校教研活动摘要，并管理任务分工、听评课设置、讨论投票与归档。",
     },
   ),
+  page(
+    "bureau-collective-lesson-prep",
+    "集体备课管理",
+    "/bureau/ai-teacher-development/cross-school-research/lesson-prep",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/CollectiveLessonPrepView.vue"),
+    {
+      description: "按教材目录管理跨校集体备课，查看进度、成果并进入备课。",
+    },
+  ),
+  page(
+    "bureau-lesson-observation",
+    "听评课管理",
+    "/bureau/ai-teacher-development/cross-school-research/lesson-observation",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LessonObservationView.vue"),
+    {
+      description: "管理跨校听评课记录，支持按老师、联盟、学校和评课方式检索并查看评价报告。",
+    },
+  ),
+  page(
+    "bureau-lesson-observation-detail",
+    "听评课详情",
+    "/bureau/ai-teacher-development/cross-school-research/lesson-observation/:id",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LessonObservationDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-lesson-observation",
+      description: "查看跨校听评课摘要、课程评价报告、评课明细与档案文件。",
+    },
+  ),
 
   // 教育局 · 组织与运营商
   page("bureau-org-structure", "组织架构", "/bureau/org/structure", bureau),

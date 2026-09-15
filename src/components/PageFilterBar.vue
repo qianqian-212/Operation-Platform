@@ -1,8 +1,7 @@
 <template>
   <div class="page-filter-bar">
-    <div class="filter-fields">
+    <div class="filter-fields" :class="{ 'is-four-columns': fourColumns }">
       <slot />
-      <!-- 按钮跟在控件后面，跟随 flex-wrap 自动换行 -->
       <div class="filter-actions">
         <slot name="actions">
           <el-button type="primary" :icon="Search" @click="emit('search')">搜索</el-button>
@@ -16,11 +15,14 @@
 <script setup lang="ts">
 import { Search } from "@element-plus/icons-vue";
 
+defineOptions({ name: "PageFilterBar" });
+
 withDefaults(
   defineProps<{
     showReset?: boolean;
+    fourColumns?: boolean;
   }>(),
-  { showReset: false },
+  { showReset: false, fourColumns: false },
 );
 
 const emit = defineEmits<{
@@ -42,6 +44,16 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   gap: var(--spacing-16) var(--spacing-24);
   align-items: center;
+}
+
+.filter-fields.is-four-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.filter-fields.is-four-columns :slotted(.form-item) {
+  width: auto;
+  min-width: 0;
 }
 
 .filter-actions {

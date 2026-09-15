@@ -122,6 +122,14 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "bureau-cross-school-activity",
     });
+    expect(child(crossSchool.id, "集体备课管理")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-collective-lesson-prep",
+    });
+    expect(child(crossSchool.id, "听评课管理")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-lesson-observation",
+    });
   });
 
   it("preserves representative school menu hierarchy and flattens only beyond level four", () => {

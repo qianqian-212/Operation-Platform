@@ -3,11 +3,13 @@ import { defineStore } from "pinia";
 import {
   teachingResearchAllianceRepository,
 } from "@/features/teaching-research-alliance/teaching-research-alliance-repository";
-import type {
-  AllianceStatus,
-  TeachingResearchAllianceCreateInput,
-  TeachingResearchAllianceFilter,
-  TeachingResearchAllianceRow,
+import {
+  emptyAllianceStats,
+  type AllianceStatus,
+  type TeachingResearchAllianceCreateInput,
+  type TeachingResearchAllianceFilter,
+  type TeachingResearchAllianceRow,
+  type TeachingResearchAllianceStats,
 } from "@/features/teaching-research-alliance/types";
 import { useUserStore } from "@/stores/user";
 
@@ -28,6 +30,7 @@ export const useTeachingResearchAllianceStore = defineStore(
     const currentPage = ref(1);
     const pageSize = ref(10);
     const total = ref(0);
+    const stats = ref<TeachingResearchAllianceStats>(emptyAllianceStats());
     let requestSequence = 0;
 
     async function loadList() {
@@ -44,6 +47,7 @@ export const useTeachingResearchAllianceStore = defineStore(
         if (sequence !== requestSequence) return;
         tableData.value = result.list;
         total.value = result.total;
+        stats.value = result.stats;
       } finally {
         if (sequence === requestSequence) loading.value = false;
       }
@@ -101,6 +105,7 @@ export const useTeachingResearchAllianceStore = defineStore(
       currentPage,
       pageSize,
       total,
+      stats,
       loadList,
       search,
       resetFilter,

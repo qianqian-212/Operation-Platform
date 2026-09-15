@@ -12,6 +12,20 @@ describe("teaching research alliance repository", () => {
     resetAllianceMockData();
   });
 
+  it("returns overview stats for all alliances", async () => {
+    const result = await teachingResearchAllianceRepository.list(
+      "bureau-001",
+      { name: "", status: "" },
+      1,
+      10,
+    );
+    expect(result.stats).toEqual({
+      allianceCount: 3,
+      schoolCount: 9,
+      activityCount: 51,
+      teacherCount: 379,
+    });
+  });
   it("filters alliances by name and status", async () => {
     const byName = await teachingResearchAllianceRepository.list(
       "bureau-001",

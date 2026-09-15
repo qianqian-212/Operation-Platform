@@ -1,6 +1,6 @@
 <template>
   <div class="page-wrapper">
-    <PageFilterBar show-reset @search="handleSearch" @reset="handleReset">
+    <PageFilterBar four-columns show-reset @search="handleSearch" @reset="handleReset">
       <div class="form-item">
         <span class="form-label">类型：</span>
         <el-select v-model="filterForm.type" placeholder="全部类型" clearable>
@@ -196,9 +196,9 @@ function handleViewDetail(row: CrossSchoolActivityRow) {
 .form-item {
   display: flex;
   align-items: center;
+  gap: var(--spacing-8);
   height: 32px;
-  width: 260px;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .form-label {

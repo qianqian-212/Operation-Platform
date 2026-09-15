@@ -160,6 +160,36 @@ describe("page registry", () => {
     });
   });
 
+  it("registers the bureau collective lesson prep page", () => {
+    expect(pageRegistryByKey.get("bureau-collective-lesson-prep")).toMatchObject({
+      title: "集体备课管理",
+      path: "/bureau/ai-teacher-development/cross-school-research/lesson-prep",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+  });
+
+  it("registers the bureau lesson observation list and detail pages", () => {
+    expect(pageRegistryByKey.get("bureau-lesson-observation")).toMatchObject({
+      title: "听评课管理",
+      path: "/bureau/ai-teacher-development/cross-school-research/lesson-observation",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-lesson-observation-detail")).toMatchObject({
+      title: "听评课详情",
+      path: "/bureau/ai-teacher-development/cross-school-research/lesson-observation/:id",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "bureau-lesson-observation",
+    });
+  });
+
   it("registers a reusable menu-scoped developing placeholder page", () => {
     const page = pageRegistryByKey.get(DEVELOPING_PAGE_KEY);
 

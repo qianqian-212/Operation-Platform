@@ -87,6 +87,23 @@ export interface TeachingResearchAllianceFilter {
   status: AllianceStatus | "";
 }
 
+export interface TeachingResearchAllianceStats {
+  allianceCount: number;
+  schoolCount: number;
+  activityCount: number;
+  teacherCount: number;
+}
+
+export function emptyAllianceStats(): TeachingResearchAllianceStats {
+  return { allianceCount: 0, schoolCount: 0, activityCount: 0, teacherCount: 0 };
+}
+
+export interface TeachingResearchAllianceListResult {
+  list: TeachingResearchAllianceRow[];
+  total: number;
+  stats: TeachingResearchAllianceStats;
+}
+
 export interface TeachingResearchAllianceCreateInput {
   name: string;
   leadSchoolId: string;

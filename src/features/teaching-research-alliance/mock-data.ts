@@ -6,6 +6,7 @@ import type {
   TeachingResearchAllianceCreateInput,
   TeachingResearchAllianceDetail,
   TeachingResearchAllianceRow,
+  TeachingResearchAllianceStats,
 } from "@/features/teaching-research-alliance/types";
 import { SCHOOL_STAGE_LABEL } from "@/features/teaching-research-alliance/types";
 
@@ -63,6 +64,25 @@ function teacherName(id: string) {
 
 function schoolStage(id: string): SchoolStage {
   return ALLIANCE_SCHOOL_OPTIONS.find((school) => school.id === id)?.stage ?? "primary";
+}
+
+export function summarizeAllianceStats(
+  details: readonly TeachingResearchAllianceDetail[],
+): TeachingResearchAllianceStats {
+  const schoolIds = new Set<string>();
+  let activityCount = 0;
+  let teacherCount = 0;
+  for (const item of details) {
+    for (const school of item.memberSchools) schoolIds.add(school.id);
+    activityCount += item.activityCount;
+    teacherCount += item.teacherCount;
+  }
+  return {
+    allianceCount: details.length,
+    schoolCount: schoolIds.size,
+    activityCount,
+    teacherCount,
+  };
 }
 
 function toListRow(detail: TeachingResearchAllianceDetail): TeachingResearchAllianceRow {
@@ -312,6 +332,10 @@ export function resetAllianceMockData() {
 
 export function listAllianceMockRows() {
   return alliances.map((detail) => toListRow(detail));
+}
+
+export function summarizeAllianceMockStats() {
+  return summarizeAllianceStats(alliances);
 }
 
 export function getAllianceMockDetail(id: string) {

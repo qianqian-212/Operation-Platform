@@ -1,6 +1,8 @@
 <template>
   <div class="page-wrapper">
-    <PageFilterBar show-reset @search="handleSearch" @reset="handleReset">
+    <AllianceManagementStats :stats="stats" />
+    <div class="page-main">
+      <PageFilterBar four-columns show-reset @search="handleSearch" @reset="handleReset">
       <div class="form-item">
         <span class="form-label">联盟名称：</span>
         <el-input
@@ -28,7 +30,7 @@
           <p class="toolbar-subtitle">教育局创建和管理跨校教研联盟</p>
         </div>
         <div class="toolbar-right">
-          <el-button type="primary" :icon="Plus" @click="handleCreate">创建联盟</el-button>
+          <el-button type="primary" :icon="DocumentAdd" @click="handleCreate">创建联盟</el-button>
         </div>
       </div>
 
@@ -89,6 +91,7 @@
         />
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -96,7 +99,7 @@
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { Plus, Search } from "@element-plus/icons-vue";
+import { DocumentAdd, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import PageFilterBar from "@/components/PageFilterBar.vue";
 import StatusTag from "@/components/StatusTag.vue";
@@ -106,6 +109,7 @@ import {
   type TeachingResearchAllianceRow,
 } from "@/features/teaching-research-alliance/types";
 import { useTeachingResearchAllianceStore } from "@/stores/teaching-research-alliance";
+import AllianceManagementStats from "@/views/bureau/ai-teacher-development/AllianceManagementStats.vue";
 
 defineOptions({ name: "AllianceManagementView" });
 
@@ -118,6 +122,7 @@ const {
   currentPage,
   pageSize,
   total,
+  stats,
 } = storeToRefs(allianceStore);
 
 function statusMeta(status: AllianceStatus) {
@@ -180,7 +185,18 @@ async function handleToggleStatus(row: TeachingResearchAllianceRow) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  gap: var(--spacing-16);
   background: var(--color-bg);
+}
+
+.page-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-white);
 }
 
 .page-body {
@@ -196,9 +212,9 @@ async function handleToggleStatus(row: TeachingResearchAllianceRow) {
 .form-item {
   display: flex;
   align-items: center;
+  gap: var(--spacing-8);
   height: 32px;
-  width: 280px;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .form-label {

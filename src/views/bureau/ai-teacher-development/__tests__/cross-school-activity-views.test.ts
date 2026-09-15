@@ -47,6 +47,7 @@ describe("cross-school activity views", () => {
     expect(wrapper.text()).toContain("跨校集体备课·小学语文三年级《富饶的西沙群岛》");
     expect(wrapper.text()).toContain("9人/5校");
     expect(wrapper.text()).toContain("详情");
+    expect(wrapper.get(".filter-fields").classes()).toContain("is-four-columns");
   });
 
   it("renders the create form sections for lesson prep", async () => {
