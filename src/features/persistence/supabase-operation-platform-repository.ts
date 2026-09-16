@@ -10,6 +10,7 @@ import type {
 } from "@/features/workbench/types";
 import { reconcileWorkbenchWidgetAssignment } from "@/features/workbench/workbench-widget-assignment";
 import { normalizeLoadedMenuRecords } from "@/features/menu-config/align-template-menu-names";
+import { grantMissingTemplateMenuIds } from "@/features/menu-config/ensure-template-menu-pages";
 import {
   defaultAdministrativeRegionForTenant,
   normalizeTenantAdministrativeRegion,
@@ -186,11 +187,17 @@ function configurationFromRow(row: ConfigurationRow, tenant: TenantInfo) {
   if (!isValidTenantConfiguration(row.configuration, tenant)) {
     throw new Error(`组织「${tenant.name}」的远端配置格式无效`);
   }
+  const menuRecords = normalizeLoadedMenuRecords(tenant, row.configuration.menuRecords);
   return {
     revision: Number(row.revision),
     configuration: {
       ...row.configuration,
-      menuRecords: normalizeLoadedMenuRecords(tenant, row.configuration.menuRecords),
+      menuRecords,
+      roles: grantMissingTemplateMenuIds(
+        row.configuration.roles,
+        row.configuration.menuRecords,
+        menuRecords,
+      ),
     },
   } satisfies RemoteTenantConfiguration;
 }

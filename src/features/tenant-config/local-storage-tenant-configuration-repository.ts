@@ -7,6 +7,10 @@ import {
   normalizeLoadedMenuRecords,
 } from "@/features/menu-config/align-template-menu-names";
 import {
+  grantMissingTemplateMenuIds,
+  roleMenuIdsDiffer,
+} from "@/features/menu-config/ensure-template-menu-pages";
+import {
   tenantMenuRepository,
   tenantMenuStorageKey,
 } from "@/features/menu-config/local-storage-menu-repository";
@@ -52,8 +56,15 @@ function withNormalizedMenus(
   configuration: TenantConfiguration,
 ): TenantConfiguration {
   const menuRecords = normalizeLoadedMenuRecords(tenant, configuration.menuRecords);
-  if (!menuRecordsDiffer(menuRecords, configuration.menuRecords)) return configuration;
-  return { ...configuration, menuRecords };
+  const roles = grantMissingTemplateMenuIds(
+    configuration.roles,
+    configuration.menuRecords,
+    menuRecords,
+  );
+  const menusChanged = menuRecordsDiffer(menuRecords, configuration.menuRecords);
+  const rolesChanged = roleMenuIdsDiffer(roles, configuration.roles);
+  if (!menusChanged && !rolesChanged) return configuration;
+  return { ...configuration, menuRecords, roles };
 }
 
 function cloneConfiguration(configuration: TenantConfiguration): TenantConfiguration {
@@ -85,7 +96,10 @@ export class LocalStorageTenantConfigurationRepository {
         return this.recoverInvalidConfiguration(tenant, raw);
       }
       const configuration = withNormalizedMenus(tenant, cloneConfiguration(parsed));
-      if (menuRecordsDiffer(configuration.menuRecords, parsed.menuRecords)) {
+      if (
+        menuRecordsDiffer(configuration.menuRecords, parsed.menuRecords) ||
+        roleMenuIdsDiffer(configuration.roles, parsed.roles)
+      ) {
         return { configuration: this.replace(tenant, configuration), recoveryNotice: null };
       }
       return { configuration, recoveryNotice: null };

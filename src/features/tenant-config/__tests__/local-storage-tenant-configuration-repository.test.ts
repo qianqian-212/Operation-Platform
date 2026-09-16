@@ -244,4 +244,36 @@ describe("tenant configuration repository", () => {
       )?.name,
     ).toBe("活动管理");
   });
+
+  it("adds missing bureau cross-school pages to an already initialized tenant", () => {
+    const repository = new LocalStorageTenantConfigurationRepository(localStorage);
+    const configuration = repository.list(bureau).configuration;
+    const removedKeys = new Set(["bureau-collective-lesson-prep", "bureau-lesson-observation"]);
+    const removedIds = new Set(
+      configuration.menuRecords
+        .filter((record) => record.pageKey && removedKeys.has(record.pageKey))
+        .map((record) => record.id),
+    );
+    configuration.menuRecords = configuration.menuRecords.filter(
+      (record) => !record.pageKey || !removedKeys.has(record.pageKey),
+    );
+    configuration.roles = configuration.roles.map((role) => ({
+      ...role,
+      menuIds: role.menuIds.filter((menuId) => !removedIds.has(menuId)),
+    }));
+    repository.replace(bureau, configuration);
+
+    const reloaded = repository.list(bureau);
+    const prep = reloaded.configuration.menuRecords.find(
+      (record) => record.pageKey === "bureau-collective-lesson-prep",
+    );
+    const observation = reloaded.configuration.menuRecords.find(
+      (record) => record.pageKey === "bureau-lesson-observation",
+    );
+    expect(prep?.name).toBe("集体备课管理");
+    expect(observation?.name).toBe("听评课管理");
+    expect(reloaded.configuration.roles[1]?.menuIds).toEqual(
+      expect.arrayContaining([prep?.id, observation?.id]),
+    );
+  });
 });

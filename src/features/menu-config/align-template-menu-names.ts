@@ -1,3 +1,4 @@
+import { ensureTemplateMenuPages } from "@/features/menu-config/ensure-template-menu-pages";
 import { ensurePlatformSystemMenus } from "@/features/menu-config/platform-system-menus";
 import type { MenuConfigRecord } from "@/features/menu-config/types";
 import type { TenantInfo } from "@/types/user";
@@ -42,5 +43,7 @@ export function normalizeLoadedMenuRecords(
   tenant: TenantInfo,
   records: readonly MenuConfigRecord[],
 ) {
-  return alignTemplateMenuNames(ensurePlatformSystemMenus(tenant, records));
+  return alignTemplateMenuNames(
+    ensureTemplateMenuPages(tenant, ensurePlatformSystemMenus(tenant, records)),
+  );
 }
