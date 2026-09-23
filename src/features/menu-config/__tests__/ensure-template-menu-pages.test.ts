@@ -48,6 +48,71 @@ describe("ensureTemplateMenuPages", () => {
     expect(ensureTemplateMenuPages(bureau, ensured)).toHaveLength(ensured.length);
   });
 
+  it("converts leftover 教学监测与研修管理 leaf and inserts 研修标准配置", () => {
+    const template = cloneTenantTemplate(bureau);
+    const teacherDevelopment = template.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
+    const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
+    const stored = template
+      .filter((record) => record.parentId !== monitoring.id)
+      .map((record) =>
+        record.id === monitoring.id
+          ? {
+              ...record,
+              type: "page" as const,
+              pageKey: DEVELOPING_PAGE_KEY,
+            }
+          : record,
+      )
+      .filter((record) => record.pageKey !== "bureau-training-standard-config");
+
+    const ensured = normalizeLoadedMenuRecords(bureau, stored);
+    const directory = child(ensured, teachingResearch.id, "教学监测与研修管理")!;
+    expect(directory.type).toBe("directory");
+    expect(child(ensured, directory.id, "研修标准配置")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-standard-config",
+    });
+  });
+
+  it("inserts missing school 我的成果 under 教学监测与研修管理", () => {
+    const school: TenantInfo = {
+      id: "school-menu-ensure",
+      name: "演示学校",
+      shortName: "演示学校",
+      type: "school",
+      enabled: true,
+    };
+    const template = cloneTenantTemplate(school);
+    const teacherDevelopment = template.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
+    const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
+    const stored = template
+      .filter((record) => record.parentId !== monitoring.id)
+      .map((record) =>
+        record.id === monitoring.id
+          ? {
+              ...record,
+              type: "page" as const,
+              pageKey: DEVELOPING_PAGE_KEY,
+            }
+          : record,
+      )
+      .filter((record) => record.pageKey !== "school-my-training-achievements");
+
+    const ensured = normalizeLoadedMenuRecords(school, stored);
+    const directory = child(ensured, teachingResearch.id, "教学监测与研修管理")!;
+    expect(directory.type).toBe("directory");
+    expect(child(ensured, directory.id, "我的成果")).toMatchObject({
+      type: "page",
+      pageKey: "school-my-training-achievements",
+    });
+  });
+
   it("converts a leftover 跨校协同教研 leaf into a directory before inserting pages", () => {
     const template = cloneTenantTemplate(bureau);
     const teacherDevelopment = template.find(

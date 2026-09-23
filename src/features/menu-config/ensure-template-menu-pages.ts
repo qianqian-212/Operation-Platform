@@ -9,7 +9,9 @@ const REQUIRED_TEMPLATE_PAGE_KEYS: Partial<Record<TenantType, readonly string[]>
     "bureau-cross-school-activity",
     "bureau-collective-lesson-prep",
     "bureau-lesson-observation",
+    "bureau-training-standard-config",
   ],
+  school: ["school-my-training-achievements"],
 };
 
 function cloneRecords(records: readonly MenuConfigRecord[]) {
@@ -113,7 +115,9 @@ export function grantMissingTemplateMenuIds(
     .map((record) => record.id);
   if (!addedIds.length) return roles.map((role) => ({ ...role, menuIds: [...role.menuIds] }));
 
-  const requiredKeys = new Set(REQUIRED_TEMPLATE_PAGE_KEYS.bureau ?? []);
+  const requiredKeys = new Set(
+    Object.values(REQUIRED_TEMPLATE_PAGE_KEYS).flatMap((keys) => keys ?? []),
+  );
   const anchorIds = new Set(
     previous
       .filter((record) => record.type === "page" && record.pageKey && requiredKeys.has(record.pageKey))

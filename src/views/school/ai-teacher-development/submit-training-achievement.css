@@ -1,0 +1,59 @@
+.create-body {
+  flex: 1;
+  overflow: auto;
+  margin: 0 var(--spacing-24) var(--spacing-24);
+}
+
+.form-card {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-24);
+}
+
+.page-title {
+  margin: 0 0 var(--spacing-8);
+  color: var(--color-title);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 32px;
+}
+
+.page-subtitle {
+  margin: 0 0 var(--spacing-16);
+  font-size: var(--font-size-sm);
+  color: var(--color-secondary);
+  line-height: var(--line-height-md);
+}
+
+.form-note {
+  margin: 0 0 var(--spacing-24);
+  padding: var(--spacing-12) var(--spacing-16);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+.achievement-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-24);
+}
+
+.achievement-form :deep(.el-form-item__label) {
+  color: var(--color-title);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+}
+
+.achievement-form :deep(.el-input),
+.achievement-form :deep(.el-textarea),
+.achievement-form :deep(.el-select) {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-8);
+}

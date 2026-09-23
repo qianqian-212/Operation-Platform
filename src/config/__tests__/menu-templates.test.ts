@@ -32,6 +32,7 @@ describe("tenant menu templates", () => {
     ).toEqual([
       "家校共育",
       "教育教学",
+      "AI教师发展",
       "教育评价",
       "教育管理",
       "平安校园",
@@ -129,6 +130,29 @@ describe("tenant menu templates", () => {
     expect(child(crossSchool.id, "听评课管理")).toMatchObject({
       type: "page",
       pageKey: "bureau-lesson-observation",
+    });
+    const monitoring = child(teachingResearch.id, "教学监测与研修管理");
+    expect(monitoring).toMatchObject({ type: "directory" });
+    expect(child(monitoring.id, "研修标准配置")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-standard-config",
+    });
+  });
+
+  it("preserves the school AI teacher development achievements entry", () => {
+    const records = tenantMenuTemplates.school;
+    const child = (parentId: string, name: string) =>
+      records.find((record) => record.parentId === parentId && record.name === name)!;
+
+    const teacherDevelopment = records.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(teacherDevelopment.id, "教研与科研");
+    const monitoring = child(teachingResearch.id, "教学监测与研修管理");
+    expect(monitoring).toMatchObject({ type: "directory" });
+    expect(child(monitoring.id, "我的成果")).toMatchObject({
+      type: "page",
+      pageKey: "school-my-training-achievements",
     });
   });
 

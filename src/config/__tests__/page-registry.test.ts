@@ -190,6 +190,44 @@ describe("page registry", () => {
     });
   });
 
+  it("registers the bureau training standard config page", () => {
+    expect(pageRegistryByKey.get("bureau-training-standard-config")).toMatchObject({
+      title: "研修标准配置",
+      path: "/bureau/ai-teacher-development/teaching-monitoring/standards",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+  });
+
+  it("registers the school my training achievement pages", () => {
+    expect(pageRegistryByKey.get("school-my-training-achievements")).toMatchObject({
+      title: "我的成果",
+      path: "/ai-teacher-development/teaching-monitoring/achievements",
+      tenantTypes: ["school"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-my-training-achievements-submit")).toMatchObject({
+      title: "提交研修成果",
+      path: "/ai-teacher-development/teaching-monitoring/achievements/submit",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-my-training-achievements",
+    });
+    expect(pageRegistryByKey.get("school-my-training-achievements-detail")).toMatchObject({
+      title: "成果详情",
+      path: "/ai-teacher-development/teaching-monitoring/achievements/:id",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-my-training-achievements",
+    });
+  });
+
   it("registers a reusable menu-scoped developing placeholder page", () => {
     const page = pageRegistryByKey.get(DEVELOPING_PAGE_KEY);
 

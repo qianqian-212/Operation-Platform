@@ -157,6 +157,42 @@ export const pageRegistry: PageRegistryItem[] = [
   ),
   page("visitor", "访客管理", "/security/visitor", school),
 
+  // 学校 · AI教师发展 · 教学监测与研修管理 · 我的成果
+  page(
+    "school-my-training-achievements",
+    "我的成果",
+    "/ai-teacher-development/teaching-monitoring/achievements",
+    school,
+    () => import("@/views/school/ai-teacher-development/MyTrainingAchievementView.vue"),
+    {
+      description: "教师查看已提交的研修成果、审核状态与获得学分，并支持新建或驳回后重提。",
+    },
+  ),
+  page(
+    "school-my-training-achievements-submit",
+    "提交研修成果",
+    "/ai-teacher-development/teaching-monitoring/achievements/submit",
+    school,
+    () => import("@/views/school/ai-teacher-development/SubmitTrainingAchievementView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-my-training-achievements",
+      description: "填写研修成果基本信息并上传证明材料，支持保存草稿或提交审核。",
+    },
+  ),
+  page(
+    "school-my-training-achievements-detail",
+    "成果详情",
+    "/ai-teacher-development/teaching-monitoring/achievements/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/MyTrainingAchievementDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-my-training-achievements",
+      description: "查看研修成果基本信息、附件材料与审核时间线。",
+    },
+  ),
+
   // 教育局 · 托管学堂
   page("bureau-course-data-analysis", "课程数据分析", "/bureau/custody/course-data/analysis", bureau),
   page("bureau-school-signup-stats", "学校报名统计", "/bureau/custody/course-data/school-signup", bureau),
@@ -357,6 +393,16 @@ export const pageRegistry: PageRegistryItem[] = [
       selectable: false,
       menuOwnerKey: "bureau-lesson-observation",
       description: "查看跨校听评课摘要、课程评价报告、评课明细与档案文件。",
+    },
+  ),
+  page(
+    "bureau-training-standard-config",
+    "研修标准配置",
+    "/bureau/ai-teacher-development/teaching-monitoring/standards",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/TrainingStandardConfigView.vue"),
+    {
+      description: "区级配置研修类型、等级分值与年度学分预警阈值，支持按学期维护。",
     },
   ),
 

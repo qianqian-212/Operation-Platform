@@ -51,6 +51,7 @@ function pageKeyForPath(path: string) {
 const schoolModuleIcons: Record<string, MenuIconKey> = {
   家校共育: "chat",
   教育教学: "notebook",
+  AI教师发展: "GraduationCap",
   教育评价: "data",
   教育管理: "office",
   平安校园: "shield",
@@ -69,6 +70,10 @@ const bureauModuleIcons: Record<string, MenuIconKey> = {
   智慧大脑: "ChartNoAxesCombined",
 };
 
+const schoolPageKeysByOutlinePath: Readonly<Record<string, string>> = {
+  "AI教师发展/教研与科研/教学监测与研修管理/我的成果": "school-my-training-achievements",
+};
+
 const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI精准教学/智慧体育/智慧体育数据驾驶舱": "bureau-smart-sports-cockpit",
   "AI教育治理/学生发展评价/学生成长概览": "bureau-student-growth-portrait",
@@ -78,6 +83,7 @@ const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI教师发展/教研与科研/跨校协同教研/活动管理": "bureau-cross-school-activity",
   "AI教师发展/教研与科研/跨校协同教研/集体备课管理": "bureau-collective-lesson-prep",
   "AI教师发展/教研与科研/跨校协同教研/听评课管理": "bureau-lesson-observation",
+  "AI教师发展/教研与科研/教学监测与研修管理/研修标准配置": "bureau-training-standard-config",
 };
 
 interface FlattenedOutlinePage {
@@ -235,7 +241,12 @@ function buildTemplate(tenantType: TenantType): MenuConfigRecord[] {
 }
 
 export const tenantMenuTemplates: Record<TenantType, MenuConfigRecord[]> = {
-  school: buildOutlineTemplate("school", schoolMenuOutline, schoolModuleIcons),
+  school: buildOutlineTemplate(
+    "school",
+    schoolMenuOutline,
+    schoolModuleIcons,
+    schoolPageKeysByOutlinePath,
+  ),
   bureau: buildOutlineTemplate(
     "bureau",
     bureauMenuOutline,
