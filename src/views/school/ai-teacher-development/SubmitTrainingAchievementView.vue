@@ -9,28 +9,30 @@
 
     <div class="create-body">
       <section class="form-card">
-        <h1 class="page-title">{{ pageHeading }}</h1>
+        <div class="form-inner">
+          <h1 class="page-title">{{ pageHeading }}</h1>
 
-        <el-form
-          ref="formRef"
-          class="achievement-form"
-          label-position="top"
-          require-asterisk-position="left"
-          :model="form"
-          :rules="rules"
-        >
-          <SubmitTrainingAchievementBasicFields
-            v-model:form="form"
-            @download-guide="handleDownloadGuide"
-          />
-          <SubmitTrainingAchievementUploadFields v-model:form="form" />
-          <div class="form-actions">
-            <el-button type="primary" :loading="submitting" @click="handleSubmit">
-              提交审核
-            </el-button>
-            <el-button @click="goBack">取消</el-button>
-          </div>
-        </el-form>
+          <el-form
+            ref="formRef"
+            class="achievement-form"
+            label-position="top"
+            require-asterisk-position="left"
+            :model="form"
+            :rules="rules"
+          >
+            <SubmitTrainingAchievementBasicFields
+              v-model:form="form"
+              @download-guide="handleDownloadGuide"
+            />
+            <SubmitTrainingAchievementUploadFields v-model:form="form" />
+            <div class="form-actions">
+              <el-button type="primary" :loading="submitting" @click="handleSubmit">
+                提交审核
+              </el-button>
+              <el-button @click="goBack">取消</el-button>
+            </div>
+          </el-form>
+        </div>
       </section>
     </div>
   </div>

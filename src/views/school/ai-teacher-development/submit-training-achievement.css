@@ -5,12 +5,15 @@
 }
 
 .form-card {
-  width: 800px;
-  max-width: 100%;
-  margin: 0 auto;
   background: var(--color-white);
   border-radius: var(--radius-lg);
   padding: var(--spacing-24);
+}
+
+.form-inner {
+  width: 800px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .page-title {
