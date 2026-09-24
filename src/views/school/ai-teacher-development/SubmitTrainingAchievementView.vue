@@ -2,7 +2,7 @@
   <div class="create-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: listPath }">我的成果列表</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: listPath }">我的成果</el-breadcrumb-item>
         <el-breadcrumb-item>{{ pageHeading }}</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
@@ -10,10 +10,6 @@
     <div class="create-body">
       <section class="form-card">
         <h1 class="page-title">{{ pageHeading }}</h1>
-        <p class="page-subtitle">请填写成果信息并上传证明材料，带 * 为必填项</p>
-        <p class="form-note">
-          研修类型已与类别合并。请先选择研修类型，再选择对应等级；常见类型包括教学成果、培训进修、科研获奖、论文发表与校本研修。
-        </p>
 
         <el-form
           ref="formRef"
@@ -32,7 +28,6 @@
             <el-button type="primary" :loading="submitting" @click="handleSubmit">
               提交审核
             </el-button>
-            <el-button :loading="submitting" @click="handleSaveDraft">保存草稿</el-button>
             <el-button @click="goBack">取消</el-button>
           </div>
         </el-form>
@@ -74,7 +69,7 @@ const rules: FormRules = {
   semester: [{ required: true, message: "请选择所属学期", trigger: "change" }],
   abstract: [
     { required: true, message: "请填写摘要", trigger: "blur" },
-    { min: 50, message: "摘要至少 50 字", trigger: "blur" },
+    { min: 200, message: "摘要至少 200 字", trigger: "blur" },
   ],
 };
 
@@ -113,37 +108,24 @@ async function hydrateForEdit() {
   };
 }
 
-async function persist(asDraft: boolean) {
-  if (!asDraft) {
-    const files = [...form.value.certificateFiles, ...form.value.reportFiles];
-    if (!files.length) {
-      ElMessage.warning("请至少上传一项证明材料");
-      return;
-    }
+async function handleSubmit() {
+  const files = [...form.value.certificateFiles, ...form.value.reportFiles];
+  if (!files.length) {
+    ElMessage.warning("请至少上传一项证明材料");
+    return;
   }
   const valid = await formRef.value?.validate().catch(() => false);
   if (!valid) return;
   submitting.value = true;
   try {
-    await achievementStore.submit(
-      { ...form.value, asDraft },
-      editingId.value || undefined,
-    );
-    ElMessage.success(asDraft ? "草稿已保存" : "已提交审核");
+    await achievementStore.submit({ ...form.value, asDraft: false }, editingId.value || undefined);
+    ElMessage.success("已提交审核");
     void router.push(listPath);
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "提交失败");
   } finally {
     submitting.value = false;
   }
-}
-
-function handleSaveDraft() {
-  void persist(true);
-}
-
-function handleSubmit() {
-  void persist(false);
 }
 
 onMounted(() => {

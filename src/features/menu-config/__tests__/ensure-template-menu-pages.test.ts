@@ -119,6 +119,12 @@ describe("ensureTemplateMenuPages", () => {
     )!;
     const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
     const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
+    const trainingPageKeys = new Set([
+      "school-my-training-achievements",
+      "school-training-achievement-audit",
+      "school-training-warning-teachers",
+      "school-training-statistics",
+    ]);
     const stored = template
       .filter((record) => record.parentId !== monitoring.id)
       .map((record) =>
@@ -130,7 +136,7 @@ describe("ensureTemplateMenuPages", () => {
             }
           : record,
       )
-      .filter((record) => record.pageKey !== "school-my-training-achievements");
+      .filter((record) => !trainingPageKeys.has(record.pageKey ?? ""));
 
     const ensured = normalizeLoadedMenuRecords(school, stored);
     const directory = child(ensured, teachingResearch.id, "教学监测与研修管理")!;
@@ -138,6 +144,18 @@ describe("ensureTemplateMenuPages", () => {
     expect(child(ensured, directory.id, "我的成果")).toMatchObject({
       type: "page",
       pageKey: "school-my-training-achievements",
+    });
+    expect(child(ensured, directory.id, "成果审核")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-achievement-audit",
+    });
+    expect(child(ensured, directory.id, "预警教师名单")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-warning-teachers",
+    });
+    expect(child(ensured, directory.id, "研修统计")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-statistics",
     });
   });
 

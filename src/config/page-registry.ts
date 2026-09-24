@@ -277,7 +277,7 @@ export const pageRegistry: PageRegistryItem[] = [
     {
       selectable: false,
       menuOwnerKey: "school-my-training-achievements",
-      description: "填写研修成果基本信息并上传证明材料，支持保存草稿或提交审核。",
+      description: "填写研修成果基本信息并上传证明材料后提交审核。",
     },
   ),
   page(
@@ -290,6 +290,48 @@ export const pageRegistry: PageRegistryItem[] = [
       selectable: false,
       menuOwnerKey: "school-my-training-achievements",
       description: "查看研修成果基本信息、附件材料与审核时间线。",
+    },
+  ),
+  page(
+    "school-training-achievement-audit",
+    "成果审核",
+    "/ai-teacher-development/teaching-monitoring/achievement-audit",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolAchievementAuditView.vue"),
+    {
+      description: "校级初审教师研修成果，通过后提交区级终审。",
+    },
+  ),
+  page(
+    "school-training-achievement-audit-detail",
+    "成果审核详情",
+    "/ai-teacher-development/teaching-monitoring/achievement-audit/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolAchievementAuditDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-training-achievement-audit",
+      description: "查看成果材料并完成校级初审通过或驳回。",
+    },
+  ),
+  page(
+    "school-training-warning-teachers",
+    "预警教师名单",
+    "/ai-teacher-development/teaching-monitoring/warning-teachers",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolWarningTeachersView.vue"),
+    {
+      description: "查看本校教师学分达标情况与未达标预警名单。",
+    },
+  ),
+  page(
+    "school-training-statistics",
+    "研修统计",
+    "/ai-teacher-development/teaching-monitoring/statistics",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolTrainingStatisticsView.vue"),
+    {
+      description: "按学科统计本校研修成果数量、占比与平均学分。",
     },
   ),
 

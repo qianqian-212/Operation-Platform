@@ -1,9 +1,6 @@
 <template>
   <section class="form-section">
-    <div class="section-heading">
-      <h2 class="section-title">证明材料上传</h2>
-      <span class="section-hint">至少上传一项</span>
-    </div>
+    <h2 class="section-title">证明材料上传 (至少上传一项)</h2>
 
     <div class="upload-grid">
       <div class="upload-panel">
@@ -15,10 +12,10 @@
           :on-change="onCertificateChange"
         >
           <div class="upload-inner">
-            <el-icon class="upload-icon"><Trophy /></el-icon>
-            <p class="upload-title">获奖证书 / 证明文件</p>
-            <p class="upload-desc">点击或拖拽上传证书扫描件</p>
-            <p class="upload-limit">支持 PDF、图片，不超过 20MB</p>
+            <el-icon class="upload-icon" :size="36"><Reading /></el-icon>
+            <p class="upload-title">获奖证书/证明文件</p>
+            <p class="upload-desc">点击上传证书扫描件</p>
+            <p class="upload-limit">支持 PDF、图片，不超过20MB</p>
           </div>
         </el-upload>
         <ul v-if="form.certificateFiles.length" class="file-list">
@@ -39,10 +36,10 @@
           :on-change="onReportChange"
         >
           <div class="upload-inner">
-            <el-icon class="upload-icon"><Document /></el-icon>
-            <p class="upload-title">成果报告 / 论文</p>
-            <p class="upload-desc">点击或拖拽上传成果文档</p>
-            <p class="upload-limit">支持 Word、PDF，不超过 30MB</p>
+            <el-icon class="upload-icon" :size="36"><Document /></el-icon>
+            <p class="upload-title">成果报告/论文</p>
+            <p class="upload-desc">点击上传成果文档</p>
+            <p class="upload-limit">支持 Word、PDF，不超过30MB</p>
           </div>
         </el-upload>
         <ul v-if="form.reportFiles.length" class="file-list">
@@ -59,7 +56,7 @@
 
 <script setup lang="ts">
 import type { UploadFile } from "element-plus";
-import { Document, Trophy } from "@element-plus/icons-vue";
+import { Document, Reading } from "@element-plus/icons-vue";
 import type {
   TrainingAchievementAttachment,
   TrainingAchievementFormInput,
@@ -121,16 +118,13 @@ function removeReport(id: string) {
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-12);
-}
-
-.section-heading {
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-12);
+  gap: var(--spacing-16);
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
   margin: 0;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
@@ -138,9 +132,13 @@ function removeReport(id: string) {
   line-height: 24px;
 }
 
-.section-hint {
-  font-size: var(--font-size-sm);
-  color: var(--color-error);
+.section-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .upload-grid {
@@ -156,27 +154,38 @@ function removeReport(id: string) {
   min-width: 0;
 }
 
-.upload-panel :deep(.el-upload),
-.upload-panel :deep(.el-upload-dragger) {
+.upload-panel :deep(.el-upload) {
   width: 100%;
+  --el-upload-dragger-padding-horizontal: 0;
+  --el-upload-dragger-padding-vertical: 0;
 }
 
 .upload-panel :deep(.el-upload-dragger) {
-  padding: var(--spacing-24);
+  width: 100%;
+  height: auto;
+  min-height: 148px;
+  padding: var(--spacing-24) var(--spacing-16);
+  border: 1px dashed var(--color-border-deep);
   border-radius: var(--radius-lg);
   background: var(--color-bg);
+}
+
+.upload-panel :deep(.el-upload-dragger:hover) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .upload-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-8);
+  justify-content: center;
+  gap: 6px;
 }
 
 .upload-icon {
-  font-size: 28px;
   color: var(--color-primary);
+  margin-bottom: 2px;
 }
 
 .upload-title {
@@ -184,18 +193,21 @@ function removeReport(id: string) {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-title);
+  line-height: var(--line-height-md);
 }
 
 .upload-desc {
   margin: 0;
   font-size: var(--font-size-md);
   color: var(--color-body);
+  line-height: var(--line-height-md);
 }
 
 .upload-limit {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-secondary);
+  line-height: var(--line-height-md);
 }
 
 .file-list {

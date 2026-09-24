@@ -347,6 +347,36 @@ describe("page registry", () => {
     });
   });
 
+  it("registers school training audit, warning and statistics pages", () => {
+    expect(pageRegistryByKey.get("school-training-achievement-audit")).toMatchObject({
+      title: "成果审核",
+      path: "/ai-teacher-development/teaching-monitoring/achievement-audit",
+      tenantTypes: ["school"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-training-achievement-audit-detail")).toMatchObject({
+      title: "成果审核详情",
+      path: "/ai-teacher-development/teaching-monitoring/achievement-audit/:id",
+      tenantTypes: ["school"],
+      selectable: false,
+      menuOwnerKey: "school-training-achievement-audit",
+    });
+    expect(pageRegistryByKey.get("school-training-warning-teachers")).toMatchObject({
+      title: "预警教师名单",
+      path: "/ai-teacher-development/teaching-monitoring/warning-teachers",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-training-statistics")).toMatchObject({
+      title: "研修统计",
+      path: "/ai-teacher-development/teaching-monitoring/statistics",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
+  });
+
   it("registers a reusable menu-scoped developing placeholder page", () => {
     const page = pageRegistryByKey.get(DEVELOPING_PAGE_KEY);
 

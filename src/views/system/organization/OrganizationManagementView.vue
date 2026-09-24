@@ -47,7 +47,7 @@
       </div>
 
       <div class="table-wrapper">
-        <el-table :data="filteredTenants" row-key="id" stripe border height="100%">
+        <el-table :data="filteredTenants" row-key="id" stripe border>
           <el-table-column
             column-key="name"
             label="组织名称"
@@ -351,9 +351,13 @@ async function handleRemove(tenant: TenantInfo) {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .record-count {

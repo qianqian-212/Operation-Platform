@@ -66,7 +66,7 @@
       </div>
 
       <div class="table-wrapper">
-        <el-table v-loading="loading" :data="tableData" stripe border height="100%">
+        <el-table v-loading="loading" :data="tableData" stripe border>
           <el-table-column label="序号" width="72" align="center">
             <template #default="{ $index }">
               {{ formatObservationIndex((currentPage - 1) * pageSize + $index + 1) }}
@@ -263,8 +263,13 @@ function handleViewDetail(row: LessonObservationRow) {
 }
 
 .table-wrapper {
-  flex: 1;
-  overflow: hidden;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .action-link {

@@ -23,6 +23,9 @@ const REQUIRED_TEMPLATE_PAGE_KEYS: Partial<Record<TenantType, readonly string[]>
     "school-lesson-observation",
     "school-achievement-sharing",
     "school-my-training-achievements",
+    "school-training-achievement-audit",
+    "school-training-warning-teachers",
+    "school-training-statistics",
   ],
 };
 

@@ -51,17 +51,14 @@
 
     <div class="page-body">
       <div class="toolbar">
-        <div class="toolbar-heading">
-          <h1 class="toolbar-title">我的成果列表</h1>
-          <p class="toolbar-subtitle">查看所有提交的研修成果及审核状态</p>
-        </div>
+        <h1 class="toolbar-title">我的成果列表</h1>
         <div class="toolbar-right">
           <el-button type="primary" :icon="Plus" @click="handleCreate">新建研修成果</el-button>
         </div>
       </div>
 
       <div class="table-wrapper">
-        <el-table v-loading="loading" :data="tableData" stripe border height="100%">
+        <el-table v-loading="loading" :data="tableData" stripe border>
           <el-table-column label="序号" width="72" align="center">
             <template #default="{ $index }">
               {{ (currentPage - 1) * pageSize + $index + 1 }}
@@ -237,16 +234,10 @@ function handleResubmit(row: TrainingAchievementRow) {
 
 .toolbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
   gap: var(--spacing-16);
-}
-
-.toolbar-heading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
 }
 
 .toolbar-title {
@@ -257,21 +248,19 @@ function handleResubmit(row: TrainingAchievementRow) {
   line-height: 24px;
 }
 
-.toolbar-subtitle {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-secondary);
-  line-height: var(--line-height-md);
-}
-
 .toolbar-right {
   display: flex;
   align-items: center;
 }
 
 .table-wrapper {
-  flex: 1;
-  overflow: hidden;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .is-rejected {

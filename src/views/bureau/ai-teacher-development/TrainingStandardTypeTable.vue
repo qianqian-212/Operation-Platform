@@ -5,7 +5,6 @@
     border
     :span-method="spanMethod"
     class="standard-table"
-    height="100%"
   >
     <el-table-column prop="typeName" label="研修类型" min-width="120" />
     <el-table-column prop="levelName" label="等级" min-width="120" />

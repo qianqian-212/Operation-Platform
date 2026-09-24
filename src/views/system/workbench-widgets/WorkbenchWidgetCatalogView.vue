@@ -62,7 +62,7 @@
       </div>
 
       <div class="table-wrapper">
-        <el-table :data="filteredRows" row-key="key" stripe border height="100%">
+        <el-table :data="filteredRows" row-key="key" stripe border>
           <el-table-column label="组件" min-width="240" fixed="left" show-overflow-tooltip>
             <template #default="{ row }">
               <div class="primary-cell">
@@ -249,9 +249,13 @@ async function handleReset() {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .record-count {

@@ -16,8 +16,7 @@ function sampleInput(
     semester: "2026-fall",
     subject: "语文",
     stage: "小学",
-    abstract:
-      "围绕单元整体教学开展实践研究，形成可迁移案例与课例资源，服务区域校本研修改进与课堂提质，沉淀可复制经验。",
+    abstract: `${"围绕单元整体教学开展实践研究，形成可迁移案例与课例资源，服务区域校本研修改进与课堂提质。".repeat(5)}`,
     certificateFiles: [
       {
         id: "cert-1",

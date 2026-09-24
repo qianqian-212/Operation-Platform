@@ -196,6 +196,18 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "school-my-training-achievements",
     });
+    expect(child(monitoring.id, "成果审核")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-achievement-audit",
+    });
+    expect(child(monitoring.id, "预警教师名单")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-warning-teachers",
+    });
+    expect(child(monitoring.id, "研修统计")).toMatchObject({
+      type: "page",
+      pageKey: "school-training-statistics",
+    });
   });
 
   it("preserves representative school menu hierarchy and flattens only beyond level four", () => {

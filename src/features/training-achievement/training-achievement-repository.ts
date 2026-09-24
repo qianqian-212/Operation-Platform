@@ -49,7 +49,7 @@ function validateFormInput(input: TrainingAchievementFormInput) {
   if (!input.semester) throw new Error("请选择所属学期");
   const abstract = input.abstract.trim();
   if (!abstract) throw new Error("请填写摘要");
-  if (abstract.length < 50) throw new Error("摘要至少 50 字");
+  if (abstract.length < 200) throw new Error("摘要至少 200 字");
   if (input.asDraft) return;
   const files = [...input.certificateFiles, ...input.reportFiles];
   if (!files.length) throw new Error("请至少上传一项证明材料");

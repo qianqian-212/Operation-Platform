@@ -5,34 +5,20 @@
 }
 
 .form-card {
+  width: 800px;
+  max-width: 100%;
+  margin: 0 auto;
   background: var(--color-white);
   border-radius: var(--radius-lg);
   padding: var(--spacing-24);
 }
 
 .page-title {
-  margin: 0 0 var(--spacing-8);
+  margin: 0 0 var(--spacing-24);
   color: var(--color-title);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   line-height: 32px;
-}
-
-.page-subtitle {
-  margin: 0 0 var(--spacing-16);
-  font-size: var(--font-size-sm);
-  color: var(--color-secondary);
-  line-height: var(--line-height-md);
-}
-
-.form-note {
-  margin: 0 0 var(--spacing-24);
-  padding: var(--spacing-12) var(--spacing-16);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-secondary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-md);
 }
 
 .achievement-form {
@@ -55,5 +41,5 @@
 
 .form-actions {
   display: flex;
-  gap: var(--spacing-8);
+  gap: var(--spacing-12);
 }

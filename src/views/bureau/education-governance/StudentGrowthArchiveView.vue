@@ -179,7 +179,6 @@ function handleViewDetail(row: ArchiveStudentRow) {
             row-key="studentId"
             stripe
             border
-            height="100%"
             aria-label="学生列表"
           >
             <ElTableColumn
@@ -379,9 +378,9 @@ function handleViewDetail(row: ArchiveStudentRow) {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   align-items: stretch;
   justify-content: center;

@@ -250,7 +250,12 @@ onMounted(() => {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
+  min-height: 0;
   overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 </style>
