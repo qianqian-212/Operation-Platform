@@ -70,4 +70,4 @@ export interface TrainingWarningTeacherDetail {
   items: TrainingWarningCreditItem[];
 }
 
-export type TrainingWarningSortKey = "reach-asc" | "reach-desc" | "name";
+export type TrainingWarningSortKey = "reach-rate" | "unreached" | "name";

@@ -31,10 +31,11 @@ export function listTrainingWarningSchools(
   if (schoolKeyword.trim()) {
     rows = rows.filter((item) => item.schoolName.includes(schoolKeyword.trim()));
   }
-  rows = rows.sort((left, right) => {
+  rows = [...rows].sort((left, right) => {
     if (sort === "name") return left.schoolName.localeCompare(right.schoolName, "zh-CN");
-    if (sort === "reach-asc") return left.reachRatePercent - right.reachRatePercent;
-    return right.reachRatePercent - left.reachRatePercent;
+    if (sort === "unreached") return right.unreachedCount - left.unreachedCount;
+    // 默认按达标率升序：低达标率优先展示
+    return left.reachRatePercent - right.reachRatePercent;
   });
   const teacherCount = SCHOOLS.reduce((sum, item) => sum + item.teacherCount, 0);
   const reachedCount = SCHOOLS.reduce((sum, item) => sum + item.reachedCount, 0);
@@ -69,24 +70,27 @@ export function getTrainingWarningSchoolDetail(
   const school = SCHOOLS.find((item) => item.id === schoolId);
   if (!school) throw new Error("学校不存在");
   const teachers = Array.from({ length: 12 }, (_, index) => {
-    const reached = index % 4 !== 0;
-    const currentCredits = reached ? 32 + (index % 5) : 12 + (index % 8);
+    const reached = index > 1;
+    const currentCredits = reached ? 24 : 18;
+    const completionPercent = reached ? 80 : 25;
     return {
       id: `${schoolId}-t-${index + 1}`,
       name: "张晓晓",
-      subject: index % 2 === 0 ? "语文" : "数学",
+      subject: "语文",
       currentCredits,
       creditLine: 30,
-      completionPercent: Math.min(100, Math.round((currentCredits / 30) * 100)),
+      completionPercent,
       reached,
     };
-  }).filter((item) => {
-    if (status === "reached" && !item.reached) return false;
-    if (status === "unreached" && item.reached) return false;
-    if (subject && item.subject !== subject) return false;
-    if (teacherName.trim() && !item.name.includes(teacherName.trim())) return false;
-    return true;
-  });
+  })
+    .filter((item) => {
+      if (status === "reached" && !item.reached) return false;
+      if (status === "unreached" && item.reached) return false;
+      if (subject && item.subject !== subject) return false;
+      if (teacherName.trim() && !item.name.includes(teacherName.trim())) return false;
+      return true;
+    })
+    .sort((left, right) => left.completionPercent - right.completionPercent);
   const start = (page - 1) * pageSize;
   return {
     schoolId: school.id,
@@ -103,7 +107,8 @@ export function getTrainingWarningSchoolDetail(
 }
 
 export function getTrainingWarningTeacherDetail(teacherId: string): TrainingWarningTeacherDetail {
-  const school = SCHOOLS[0]!;
+  const schoolId = teacherId.split("-t-")[0] ?? "";
+  const school = SCHOOLS.find((item) => item.id === schoolId) ?? SCHOOLS[0]!;
   return {
     id: teacherId,
     name: "张晓晓",
@@ -130,10 +135,40 @@ export function getTrainingWarningTeacherDetail(teacherId: string): TrainingWarn
         title: "单元整体教学案例研究",
         typeLabel: "教学成果",
         levelLabel: "市级",
-        at: "2026-08-20 10:00",
+        at: "2026-09-09 12:00",
         statusLabel: "区级审核中",
         statusTone: "orange",
         credits: 8,
+      },
+      {
+        id: "c3",
+        title: "2026年省级骨干教师培训",
+        typeLabel: "培训进修",
+        levelLabel: "省级",
+        at: "2026-09-09 12:00",
+        statusLabel: "已通过",
+        statusTone: "green",
+        credits: 10,
+      },
+      {
+        id: "c4",
+        title: "2026年省级骨干教师培训",
+        typeLabel: "培训进修",
+        levelLabel: "省级",
+        at: "2026-09-09 12:00",
+        statusLabel: "区级审核中",
+        statusTone: "orange",
+        credits: 10,
+      },
+      {
+        id: "c5",
+        title: "2026年省级骨干教师培训",
+        typeLabel: "培训进修",
+        levelLabel: "省级",
+        at: "2026-09-09 12:00",
+        statusLabel: "已通过",
+        statusTone: "green",
+        credits: 10,
       },
     ],
   };

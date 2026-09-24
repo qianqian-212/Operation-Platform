@@ -35,7 +35,7 @@
       </div>
 
       <div class="table-wrapper">
-        <el-table :data="rows" border height="100%">
+        <el-table :data="rows" border>
           <el-table-column label="序号" width="72" align="center">
             <template #default="{ $index }">
               {{ (currentPage - 1) * pageSize + $index + 1 }}
@@ -53,7 +53,7 @@
         </el-table>
       </div>
 
-      <div class="pagination-bar">
+      <div v-if="total > 10" class="pagination-bar">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -228,12 +228,18 @@ function handleExport() {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .pagination-bar {
   display: flex;
   justify-content: flex-end;
+  margin-top: var(--spacing-16);
 }
 </style>

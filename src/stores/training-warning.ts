@@ -23,7 +23,7 @@ export const useTrainingWarningStore = defineStore("training-warning", () => {
   const schoolRows = ref<TrainingWarningSchoolRow[]>([]);
   const schoolTotal = ref(0);
   const schoolKeyword = ref("");
-  const sortKey = ref<TrainingWarningSortKey>("reach-asc");
+  const sortKey = ref<TrainingWarningSortKey>("reach-rate");
   const schoolPage = ref(1);
   const schoolPageSize = ref(10);
 
@@ -65,12 +65,20 @@ export const useTrainingWarningStore = defineStore("training-warning", () => {
 
   function resetSchoolFilter() {
     schoolKeyword.value = "";
-    sortKey.value = "reach-asc";
+    sortKey.value = "reach-rate";
     schoolPage.value = 1;
     return loadSchools();
   }
 
   async function loadSchoolDetail(schoolId: string) {
+    if (!schoolId) {
+      schoolDetailId.value = "";
+      schoolDetailName.value = "";
+      schoolStats.value = emptyStats();
+      teachers.value = [];
+      teacherTotal.value = 0;
+      return;
+    }
     loading.value = true;
     try {
       const result = await trainingWarningRepository.schoolDetail(

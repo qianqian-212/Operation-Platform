@@ -145,6 +145,18 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "bureau-training-standard-config",
     });
+    expect(child(monitoring.id, "成果终审")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-achievement-review",
+    });
+    expect(child(monitoring.id, "预警管理")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-warning",
+    });
+    expect(child(monitoring.id, "研修统计")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-statistics",
+    });
   });
 
   it("preserves the school AI teacher development achievements entry", async () => {

@@ -1,14 +1,26 @@
 <template>
   <div v-loading="loading" class="page-wrapper">
-    <el-alert
-      v-if="banner"
-      class="warning-banner"
-      type="warning"
-      show-icon
-      :closable="true"
-      :title="`全区共有${banner.unreachedTeacherCount}名教师学分未达标`"
-      :description="`共涉及${banner.schoolCount}所学校｜达标线：${banner.creditLine}学分/学期｜预警阈值：低于${banner.triggerPercent}%`"
-    />
+    <div v-if="banner && bannerVisible" class="warning-banner" role="status">
+      <el-icon class="banner-icon" :size="18"><WarningFilled /></el-icon>
+      <p class="banner-title">
+        全区共有{{ banner.unreachedTeacherCount }}名教师学分未达标
+      </p>
+      <div class="banner-meta">
+        <span>共涉及{{ banner.schoolCount }}所学校</span>
+        <span class="banner-divider" aria-hidden="true" />
+        <span>达标线：{{ banner.creditLine }}学分/学期</span>
+        <span class="banner-divider" aria-hidden="true" />
+        <span>预警阈值：低于{{ banner.triggerPercent }}%</span>
+      </div>
+      <button
+        type="button"
+        class="banner-close"
+        aria-label="关闭预警提示"
+        @click="bannerVisible = false"
+      >
+        <el-icon :size="16"><Close /></el-icon>
+      </button>
+    </div>
 
     <section class="stats-row" aria-label="预警概览">
       <article v-for="card in statCards" :key="card.key" class="stat-card">
@@ -31,14 +43,14 @@
           </div>
         </PageFilterBar>
         <el-select v-model="sortKey" class="sort-select" @change="handleSearch">
-          <el-option label="按达标率升序" value="reach-asc" />
-          <el-option label="按达标率降序" value="reach-desc" />
-          <el-option label="按学校名称" value="name" />
+          <el-option label="按达标率排序" value="reach-rate" />
+          <el-option label="按未达标人数排序" value="unreached" />
+          <el-option label="按学校名称排序" value="name" />
         </el-select>
       </div>
 
       <div class="table-wrapper">
-        <el-table :data="schoolRows" border height="100%">
+        <el-table :data="schoolRows" border>
           <el-table-column label="序号" width="72" align="center">
             <template #default="{ $index }">
               {{ (schoolPage - 1) * schoolPageSize + $index + 1 }}
@@ -77,7 +89,7 @@
         </el-table>
       </div>
 
-      <div class="pagination-bar">
+      <div v-if="schoolTotal > 10" class="pagination-bar">
         <el-pagination
           v-model:current-page="schoolPage"
           v-model:page-size="schoolPageSize"
@@ -94,10 +106,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { CircleCheck, CircleClose, Clock, User } from "@element-plus/icons-vue";
+import {
+  CircleCheck,
+  CircleClose,
+  Clock,
+  Close,
+  User,
+  WarningFilled,
+} from "@element-plus/icons-vue";
 import PageFilterBar from "@/components/PageFilterBar.vue";
 import type { TrainingWarningSchoolRow } from "@/features/training-warning/types";
 import { useTrainingWarningStore } from "@/stores/training-warning";
@@ -106,6 +125,7 @@ defineOptions({ name: "TrainingWarningView" });
 
 const router = useRouter();
 const warningStore = useTrainingWarningStore();
+const bannerVisible = ref(true);
 const {
   loading,
   banner,
@@ -168,7 +188,64 @@ function openSchool(schoolId: string) {
 }
 
 .warning-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
   flex-shrink: 0;
+  min-height: 48px;
+  padding: var(--spacing-12) var(--spacing-16);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-light);
+}
+
+.banner-icon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.banner-title {
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--color-warning-dark-text, var(--color-warning));
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-md);
+}
+
+.banner-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-12);
+  min-width: 0;
+  color: var(--color-title);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+}
+
+.banner-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border-strong, var(--color-border));
+  flex-shrink: 0;
+}
+
+.banner-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.banner-close:hover {
+  color: var(--color-title);
 }
 
 .stats-row {
@@ -249,7 +326,7 @@ function openSchool(schoolId: string) {
 }
 
 .sort-select {
-  width: 160px;
+  width: 176px;
   flex-shrink: 0;
 }
 
@@ -266,8 +343,17 @@ function openSchool(schoolId: string) {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table) {
+  --el-table-border-color: var(--color-border);
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .rate-cell {
@@ -295,5 +381,6 @@ function openSchool(schoolId: string) {
 .pagination-bar {
   display: flex;
   justify-content: flex-end;
+  margin-top: var(--spacing-16);
 }
 </style>

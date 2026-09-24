@@ -58,13 +58,19 @@ describe("ensureTemplateMenuPages", () => {
     expect(ensureTemplateMenuPages(bureau, ensured)).toHaveLength(ensured.length);
   });
 
-  it("converts leftover 教学监测与研修管理 leaf and inserts 研修标准配置", () => {
+  it("converts leftover 教学监测与研修管理 leaf and inserts training pages", () => {
     const template = cloneTenantTemplate(bureau);
     const teacherDevelopment = template.find(
       (record) => record.parentId === null && record.name === "AI教师发展",
     )!;
     const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
     const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
+    const trainingPageKeys = new Set([
+      "bureau-training-standard-config",
+      "bureau-training-achievement-review",
+      "bureau-training-warning",
+      "bureau-training-statistics",
+    ]);
     const stored = template
       .filter((record) => record.parentId !== monitoring.id)
       .map((record) =>
@@ -76,7 +82,7 @@ describe("ensureTemplateMenuPages", () => {
             }
           : record,
       )
-      .filter((record) => record.pageKey !== "bureau-training-standard-config");
+      .filter((record) => !trainingPageKeys.has(record.pageKey ?? ""));
 
     const ensured = normalizeLoadedMenuRecords(bureau, stored);
     const directory = child(ensured, teachingResearch.id, "教学监测与研修管理")!;
@@ -84,6 +90,18 @@ describe("ensureTemplateMenuPages", () => {
     expect(child(ensured, directory.id, "研修标准配置")).toMatchObject({
       type: "page",
       pageKey: "bureau-training-standard-config",
+    });
+    expect(child(ensured, directory.id, "成果终审")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-achievement-review",
+    });
+    expect(child(ensured, directory.id, "预警管理")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-warning",
+    });
+    expect(child(ensured, directory.id, "研修统计")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-training-statistics",
     });
   });
 
@@ -230,6 +248,12 @@ describe("ensureTemplateMenuPages", () => {
     )!;
     const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
     const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
+    const trainingPageKeys = new Set([
+      "bureau-training-standard-config",
+      "bureau-training-achievement-review",
+      "bureau-training-warning",
+      "bureau-training-statistics",
+    ]);
     const stored = template
       .filter((record) => record.parentId !== monitoring.id)
       .map((record) =>
@@ -241,12 +265,15 @@ describe("ensureTemplateMenuPages", () => {
             }
           : record,
       )
-      .filter((record) => record.pageKey !== "bureau-training-standard-config");
+      .filter((record) => !trainingPageKeys.has(record.pageKey ?? ""));
 
     const roles = createDefaultRoles(bureau, stored);
     const next = ensureTemplateMenuPages(bureau, stored);
     const granted = grantMissingTemplateMenuIds(roles, stored, next);
     const standards = next.find((record) => record.pageKey === "bureau-training-standard-config")!;
+    const review = next.find((record) => record.pageKey === "bureau-training-achievement-review")!;
+    const warning = next.find((record) => record.pageKey === "bureau-training-warning")!;
+    const statistics = next.find((record) => record.pageKey === "bureau-training-statistics")!;
     const leafIds = new Set(
       next
         .filter((record) => record.type === "page" || record.type === "external")
@@ -257,6 +284,9 @@ describe("ensureTemplateMenuPages", () => {
       expect(role.menuIds.every((id) => leafIds.has(id))).toBe(true);
       expect(role.menuIds).not.toContain(monitoring.id);
       expect(role.menuIds).toContain(standards.id);
+      expect(role.menuIds).toContain(review.id);
+      expect(role.menuIds).toContain(warning.id);
+      expect(role.menuIds).toContain(statistics.id);
     }
   });
 });

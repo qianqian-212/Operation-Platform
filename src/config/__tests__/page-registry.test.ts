@@ -290,6 +290,36 @@ describe("page registry", () => {
     });
   });
 
+  it("registers bureau training review, warning and statistics pages", () => {
+    expect(pageRegistryByKey.get("bureau-training-achievement-review")).toMatchObject({
+      title: "成果终审",
+      path: "/bureau/ai-teacher-development/teaching-monitoring/achievement-review",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-training-warning")).toMatchObject({
+      title: "预警管理",
+      path: "/bureau/ai-teacher-development/teaching-monitoring/warnings",
+      tenantTypes: ["bureau"],
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-training-warning-school-detail")).toMatchObject({
+      title: "教师学分详情",
+      path: "/bureau/ai-teacher-development/teaching-monitoring/warnings/:schoolId",
+      tenantTypes: ["bureau"],
+      selectable: false,
+      menuOwnerKey: "bureau-training-warning",
+    });
+    expect(pageRegistryByKey.get("bureau-training-statistics")).toMatchObject({
+      title: "研修统计",
+      path: "/bureau/ai-teacher-development/teaching-monitoring/statistics",
+      tenantTypes: ["bureau"],
+      selectable: true,
+    });
+  });
+
   it("registers the school my training achievement pages", () => {
     expect(pageRegistryByKey.get("school-my-training-achievements")).toMatchObject({
       title: "我的成果",

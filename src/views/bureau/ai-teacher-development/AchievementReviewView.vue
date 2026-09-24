@@ -3,17 +3,29 @@
     <AchievementReviewStats :stats="stats" />
 
     <div class="page-body">
-      <el-tabs :model-value="filterForm.statusTab" @tab-change="handleTabChange">
+      <el-tabs
+        class="review-tabs"
+        :model-value="filterForm.statusTab"
+        @tab-change="handleTabChange"
+      >
         <el-tab-pane :label="`待终审(${tabCounts.pending})`" name="pending" />
         <el-tab-pane :label="`已通过(${tabCounts.approved})`" name="approved" />
         <el-tab-pane :label="`已驳回(${tabCounts.rejected})`" name="rejected" />
         <el-tab-pane label="全部" name="all" />
       </el-tabs>
 
-      <PageFilterBar show-reset @search="handleSearch" @reset="handleReset">
+      <PageFilterBar
+        class="review-filter"
+        show-reset
+        @search="handleSearch"
+        @reset="handleReset"
+      >
         <div class="form-item">
           <span class="form-label">学校：</span>
-          <el-input v-model="filterForm.schoolName" placeholder="请选择" clearable />
+          <el-select v-model="filterForm.schoolName" placeholder="请选择" clearable>
+            <el-option label="阳光小学" value="阳光小学" />
+            <el-option label="实验小学" value="实验小学" />
+          </el-select>
         </div>
         <div class="form-item">
           <span class="form-label">类型：</span>
@@ -39,7 +51,7 @@
       </PageFilterBar>
 
       <div class="table-wrapper">
-        <el-table v-loading="loading" :data="rows" border height="100%">
+        <el-table v-loading="loading" :data="rows" border>
           <el-table-column label="序号" width="72" align="center">
             <template #default="{ $index }">
               {{ (currentPage - 1) * pageSize + $index + 1 }}
@@ -95,7 +107,7 @@
         </el-table>
       </div>
 
-      <div class="pagination-bar">
+      <div v-if="total > 10" class="pagination-bar">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -266,10 +278,25 @@ function notifyFile(name: string) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-12);
+  gap: 0;
   padding: var(--spacing-16) var(--spacing-24) var(--spacing-24);
   background: var(--color-white);
   border-radius: var(--radius-lg);
+}
+
+.review-tabs :deep(.el-tabs__header) {
+  margin-bottom: 0;
+}
+
+.review-tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.review-filter.page-filter-bar,
+.page-body > :deep(.review-filter.page-filter-bar) {
+  padding: var(--spacing-16) 0;
+  border-bottom: 0;
 }
 
 .form-item {
@@ -297,9 +324,13 @@ function notifyFile(name: string) {
 }
 
 .table-wrapper {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.table-wrapper :deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .action-link {
@@ -316,5 +347,6 @@ function notifyFile(name: string) {
   display: flex;
   justify-content: flex-end;
   flex-shrink: 0;
+  margin-top: var(--spacing-16);
 }
 </style>

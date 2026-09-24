@@ -20,9 +20,9 @@ import {
   Document,
   DocumentChecked,
   DocumentAdd,
-  Eye,
   Timer,
   Star,
+  View,
 } from "@element-plus/icons-vue";
 import type { AchievementReviewStats } from "@/features/training-achievement-review/types";
 
@@ -66,7 +66,7 @@ const cards = computed(() => [
     icon: DocumentAdd,
   },
   { key: "likes", label: "总点赞数", display: String(props.stats.likeCount), icon: Document },
-  { key: "views", label: "总浏览量", display: String(props.stats.viewCount), icon: Eye },
+  { key: "views", label: "总浏览量", display: String(props.stats.viewCount), icon: View },
 ]);
 </script>
 
