@@ -104,13 +104,13 @@
           </el-table-column>
           <el-table-column label="操作" fixed="right" width="140">
             <template #default="{ row }: { row: TrainingAchievementRow }">
+              <span class="action-link" @click="handleViewDetail(row)">查看</span>
               <span
                 v-if="isRejectedStatus(row.status)"
                 class="action-link"
                 @click="handleResubmit(row)"
                 >修改重提</span
               >
-              <span class="action-link" @click="handleViewDetail(row)">查看</span>
             </template>
           </el-table-column>
         </el-table>
@@ -204,6 +204,7 @@ function handleResubmit(row: TrainingAchievementRow) {
   overflow: hidden;
   padding: var(--spacing-24);
   background: var(--color-white);
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-16);

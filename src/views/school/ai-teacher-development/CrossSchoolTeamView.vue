@@ -153,7 +153,7 @@ function handleViewDetail(row: CrossSchoolTeamRow) {
   flex-direction: column;
   overflow: hidden;
   background: var(--color-white);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
 }
 
 .page-body {

@@ -259,10 +259,13 @@ function buildCreateInput() {
     memberSchoolIds: [...form.value.memberSchoolIds],
     teacherIds: [...form.value.teacherIds],
     topic: hasPrep.value ? { ...form.value.topic } : null,
-    tasks: form.value.tasks.map((task) => ({
-      ...task,
-      assignees: task.assignees.map((item) => ({ ...item })),
-    })),
+    tasks: form.value.tasks
+      .filter((task) => task.source === "system" || task.name.trim())
+      .map((task) => ({
+        ...task,
+        name: task.name.trim(),
+        assignees: task.assignees.map((item) => ({ ...item })),
+      })),
     observation: hasObservation.value ? formToObservation(form.value.observation, null) : null,
   };
 }

@@ -313,7 +313,7 @@ function handleExport() {
   flex-direction: column;
   padding: var(--spacing-16) var(--spacing-24) var(--spacing-24);
   background: var(--color-white);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: auto;
 }
 

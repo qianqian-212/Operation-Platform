@@ -51,7 +51,7 @@ export function systemTask(id: string, name: string): ActivityTaskInput {
     id,
     name,
     source: "system",
-    requireFile: false,
+    requireFile: true,
     assignees: [],
     note: "",
   };
@@ -60,9 +60,9 @@ export function systemTask(id: string, name: string): ActivityTaskInput {
 export function emptyCustomTask(): ActivityTaskInput {
   return {
     id: `task-custom-${crypto.randomUUID()}`,
-    name: "任务名称",
+    name: "",
     source: "custom",
-    requireFile: false,
+    requireFile: true,
     assignees: [],
     note: "",
   };

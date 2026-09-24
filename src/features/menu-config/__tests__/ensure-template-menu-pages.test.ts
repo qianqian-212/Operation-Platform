@@ -121,6 +121,7 @@ describe("ensureTemplateMenuPages", () => {
     const monitoring = child(template, teachingResearch.id, "教学监测与研修管理")!;
     const trainingPageKeys = new Set([
       "school-my-training-achievements",
+      "school-excellent-achievements",
       "school-training-achievement-audit",
       "school-training-warning-teachers",
       "school-training-statistics",
@@ -144,6 +145,10 @@ describe("ensureTemplateMenuPages", () => {
     expect(child(ensured, directory.id, "我的成果")).toMatchObject({
       type: "page",
       pageKey: "school-my-training-achievements",
+    });
+    expect(child(ensured, directory.id, "优秀成果展示")).toMatchObject({
+      type: "page",
+      pageKey: "school-excellent-achievements",
     });
     expect(child(ensured, directory.id, "成果审核")).toMatchObject({
       type: "page",

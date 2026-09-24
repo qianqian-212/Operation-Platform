@@ -375,6 +375,19 @@ describe("page registry", () => {
       tenantTypes: ["school"],
       selectable: true,
     });
+    expect(pageRegistryByKey.get("school-excellent-achievements")).toMatchObject({
+      title: "优秀成果展示",
+      path: "/ai-teacher-development/teaching-monitoring/excellent-achievements",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-excellent-achievements-detail")).toMatchObject({
+      title: "优秀成果详情",
+      path: "/ai-teacher-development/teaching-monitoring/excellent-achievements/:id",
+      tenantTypes: ["school"],
+      selectable: false,
+      menuOwnerKey: "school-excellent-achievements",
+    });
   });
 
   it("registers a reusable menu-scoped developing placeholder page", () => {

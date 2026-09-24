@@ -77,6 +77,7 @@ const schoolPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI教师发展/教研与科研/跨校协同教研/听评课管理": "school-lesson-observation",
   "AI教师发展/教研与科研/跨校协同教研/成果共享": "school-achievement-sharing",
   "AI教师发展/教研与科研/教学监测与研修管理/我的成果": "school-my-training-achievements",
+  "AI教师发展/教研与科研/教学监测与研修管理/优秀成果展示": "school-excellent-achievements",
   "AI教师发展/教研与科研/教学监测与研修管理/成果审核": "school-training-achievement-audit",
   "AI教师发展/教研与科研/教学监测与研修管理/预警教师名单": "school-training-warning-teachers",
   "AI教师发展/教研与科研/教学监测与研修管理/研修统计": "school-training-statistics",

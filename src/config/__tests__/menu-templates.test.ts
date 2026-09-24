@@ -196,6 +196,10 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "school-my-training-achievements",
     });
+    expect(child(monitoring.id, "优秀成果展示")).toMatchObject({
+      type: "page",
+      pageKey: "school-excellent-achievements",
+    });
     expect(child(monitoring.id, "成果审核")).toMatchObject({
       type: "page",
       pageKey: "school-training-achievement-audit",

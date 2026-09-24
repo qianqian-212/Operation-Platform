@@ -176,7 +176,7 @@ function handleExport() {
   gap: var(--spacing-12);
   padding: var(--spacing-16) var(--spacing-24) var(--spacing-24);
   background: var(--color-white);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .toolbar {

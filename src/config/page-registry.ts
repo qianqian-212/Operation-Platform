@@ -334,6 +334,28 @@ export const pageRegistry: PageRegistryItem[] = [
       description: "按学科统计本校研修成果数量、占比与平均学分。",
     },
   ),
+  page(
+    "school-excellent-achievements",
+    "优秀成果展示",
+    "/ai-teacher-development/teaching-monitoring/excellent-achievements",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolExcellentAchievementsView.vue"),
+    {
+      description: "浏览区级加精推荐的优秀研修成果，支持筛选、点赞与下载。",
+    },
+  ),
+  page(
+    "school-excellent-achievements-detail",
+    "优秀成果详情",
+    "/ai-teacher-development/teaching-monitoring/excellent-achievements/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolExcellentAchievementDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-excellent-achievements",
+      description: "查看优秀研修成果摘要、附件材料与作者信息。",
+    },
+  ),
 
   // 教育局 · 托管学堂
   page("bureau-course-data-analysis", "课程数据分析", "/bureau/custody/course-data/analysis", bureau),

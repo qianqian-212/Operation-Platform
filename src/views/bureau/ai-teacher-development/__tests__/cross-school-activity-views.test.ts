@@ -58,8 +58,12 @@ describe("cross-school activity views", () => {
     expect(wrapper.text()).toContain("参与学校与教师");
     expect(wrapper.text()).toContain("集体备课课题信息");
     expect(wrapper.text()).toContain("任务分工");
+    expect(wrapper.text()).toContain("集体备课和听评课为默认任务");
     expect(wrapper.text()).toContain("集体备课");
     expect(wrapper.text()).toContain("听评课");
+    expect(wrapper.text()).toContain("添加任务");
+    expect(wrapper.text()).toContain("文件上传");
+    expect(wrapper.text()).toContain("参与教师");
     expect(wrapper.text()).toContain("活动描述");
     expect(wrapper.text()).toContain("可多选，支持同时开展集体备课与听评课");
     expect(wrapper.text()).not.toContain("听评课设置");
