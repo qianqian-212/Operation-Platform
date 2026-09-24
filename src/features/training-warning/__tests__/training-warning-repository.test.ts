@@ -17,7 +17,7 @@ describe("training warning repository", () => {
     expect(result.stats.teacherCount).toBeGreaterThan(0);
     expect(result.rows[0]?.schoolName).toBeTruthy();
     expect(result.rows[0]!.reachRatePercent).toBeLessThanOrEqual(
-      result.rows.at(-1)!.reachRatePercent,
+      result.rows[result.rows.length - 1]!.reachRatePercent,
     );
   });
 
