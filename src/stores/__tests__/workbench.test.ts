@@ -33,11 +33,11 @@ describe("workbench store", () => {
 
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
     expect(store.profile).toBe("admin");
-    expect(store.totalCount).toBe(8);
+    expect(store.totalCount).toBe(12);
 
     store.load(school, "user-a", STAFF_ROLE_ID, emptyTree);
     expect(store.profile).toBe("business");
-    expect(store.totalCount).toBe(6);
+    expect(store.totalCount).toBe(10);
   });
 
   it("loads only widgets assigned to the current tenant type", async () => {
@@ -53,7 +53,7 @@ describe("workbench store", () => {
     store.load(school, "user-a", ADMIN_ROLE_ID, emptyTree);
 
     expect(store.items.some((item) => item.widgetKey === "stats-overview")).toBe(false);
-    expect(store.totalCount).toBe(7);
+    expect(store.totalCount).toBe(11);
   });
 
   it("groups only internal page entries by their configured top-level module", () => {
@@ -127,8 +127,8 @@ describe("workbench store", () => {
     const original = { x: first.x, y: first.y };
 
     store.setVisible(first.widgetKey, false);
-    expect(store.totalCount).toBe(8);
-    expect(store.visibleCount).toBe(7);
+    expect(store.totalCount).toBe(12);
+    expect(store.visibleCount).toBe(11);
     expect(store.items.find((item) => item.widgetKey === first.widgetKey)).toMatchObject({
       visible: false,
       ...original,
@@ -140,7 +140,7 @@ describe("workbench store", () => {
 
     expect(restored.visible).toBe(true);
     expect({ x: restored.x, y: restored.y }).not.toEqual(original);
-    expect(store.totalCount).toBe(8);
+    expect(store.totalCount).toBe(12);
   });
 
   it("expands a classic widget by logical rows and only pushes horizontally intersecting widgets", () => {
@@ -156,15 +156,15 @@ describe("workbench store", () => {
     )!;
 
     expect({ alert: alert.y, notices: notices.y, quickLinks: quickLinks.y }).toEqual({
-      alert: 2,
-      notices: 3,
-      quickLinks: 3,
+      alert: 5,
+      notices: 6,
+      quickLinks: 6,
     });
     expect(store.setClassicRowSpan(alert.widgetKey, 2)).toBe(true);
 
     expect(alert.h).toBe(2);
-    expect(notices.y).toBe(3);
-    expect(quickLinks.y).toBe(4);
+    expect(notices.y).toBe(6);
+    expect(quickLinks.y).toBe(7);
   });
 
   it("cancels a draft without persistence and saves one override atomically", async () => {

@@ -2,7 +2,7 @@
   <div class="detail-page page-with-breadcrumb">
     <div class="breadcrumb-bar">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: listPath }">听评课管理</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: listPath }">{{ listLabel }}</el-breadcrumb-item>
         <el-breadcrumb-item>听评课详情</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
@@ -46,9 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
+import { crossSchoolLessonObservationListPath } from "@/features/cross-school-activity/cross-school-paths";
 import type { LessonObservationDetail } from "@/features/lesson-observation/types";
 import { useLessonObservationStore } from "@/stores/lesson-observation";
 import LessonObservationArchives from "@/views/bureau/ai-teacher-development/LessonObservationArchives.vue";
@@ -58,12 +59,13 @@ import LessonObservationSummaryCard from "@/views/bureau/ai-teacher-development/
 
 defineOptions({ name: "LessonObservationDetailView" });
 
-const listPath = "/bureau/ai-teacher-development/cross-school-research/lesson-observation";
 const detailTabs = [
   { key: "report", label: "课程评价报告" },
   { key: "reviewers", label: "评课明细" },
 ] as const;
 const route = useRoute();
+const listPath = computed(() => crossSchoolLessonObservationListPath(route.path));
+const listLabel = "听评课管理";
 const observationStore = useLessonObservationStore();
 const loading = ref(false);
 const detail = ref<LessonObservationDetail | null>(null);

@@ -130,10 +130,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { Plus, Search } from "@element-plus/icons-vue";
 import PageFilterBar from "@/components/PageFilterBar.vue";
+import { crossSchoolLessonObservationListPath } from "@/features/cross-school-activity/cross-school-paths";
 import {
   formatObservationIndex,
   formatObservationSchedule,
@@ -146,7 +147,9 @@ import { useLessonObservationStore } from "@/stores/lesson-observation";
 
 defineOptions({ name: "LessonObservationView" });
 
+const route = useRoute();
 const router = useRouter();
+const listBasePath = computed(() => crossSchoolLessonObservationListPath(route.path));
 const observationStore = useLessonObservationStore();
 const {
   loading,
@@ -192,9 +195,7 @@ function handlePageChange(page: number) {
 }
 
 function handleViewDetail(row: LessonObservationRow) {
-  void router.push(
-    `/bureau/ai-teacher-development/cross-school-research/lesson-observation/${row.id}`,
-  );
+  void router.push(`${listBasePath.value}/${row.id}`);
 }
 </script>
 

@@ -37,17 +37,30 @@ describe("alignTemplateMenuNames", () => {
     expect(menuRecordsDiffer(aligned, aligned)).toBe(false);
   });
 
-  it("applies the rename when loading an already initialized bureau tenant", () => {
-    const stored = cloneTenantTemplate(bureau).map((record) =>
-      record.pageKey === "bureau-cross-school-activity"
-        ? { ...record, name: "跨校教研活动" }
-        : record,
-    );
+  it("renames school lesson prep and observation pages to management labels", () => {
+    const school: TenantInfo = {
+      id: "school-menu-rename",
+      name: "演示学校",
+      shortName: "演示学校",
+      type: "school",
+      enabled: true,
+    };
+    const stored = cloneTenantTemplate(school).map((record) => {
+      if (record.pageKey === "school-collective-lesson-prep") {
+        return { ...record, name: "集体备课" };
+      }
+      if (record.pageKey === "school-lesson-observation") {
+        return { ...record, name: "听评课" };
+      }
+      return record;
+    });
 
+    const aligned = normalizeLoadedMenuRecords(school, stored);
     expect(
-      normalizeLoadedMenuRecords(bureau, stored).find(
-        (record) => record.pageKey === "bureau-cross-school-activity",
-      )?.name,
-    ).toBe("活动管理");
+      aligned.find((record) => record.pageKey === "school-collective-lesson-prep")?.name,
+    ).toBe("集体备课管理");
+    expect(
+      aligned.find((record) => record.pageKey === "school-lesson-observation")?.name,
+    ).toBe("听评课管理");
   });
 });

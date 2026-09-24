@@ -131,6 +131,14 @@ describe("tenant menu templates", () => {
       type: "page",
       pageKey: "bureau-lesson-observation",
     });
+    expect(child(crossSchool.id, "成果共享")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-achievement-sharing",
+    });
+    expect(child(crossSchool.id, "效果评估")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-effect-evaluation",
+    });
     const monitoring = child(teachingResearch.id, "教学监测与研修管理");
     expect(monitoring).toMatchObject({ type: "directory" });
     expect(child(monitoring.id, "研修标准配置")).toMatchObject({
@@ -139,7 +147,7 @@ describe("tenant menu templates", () => {
     });
   });
 
-  it("preserves the school AI teacher development achievements entry", () => {
+  it("preserves the school AI teacher development achievements entry", async () => {
     const records = tenantMenuTemplates.school;
     const child = (parentId: string, name: string) =>
       records.find((record) => record.parentId === parentId && record.name === name)!;
@@ -148,6 +156,28 @@ describe("tenant menu templates", () => {
       (record) => record.parentId === null && record.name === "AI教师发展",
     )!;
     const teachingResearch = child(teacherDevelopment.id, "教研与科研");
+    const crossSchool = child(teachingResearch.id, "跨校协同教研");
+    expect(crossSchool).toMatchObject({ type: "directory" });
+    expect(child(crossSchool.id, "跨校团队")).toMatchObject({
+      type: "page",
+      pageKey: "school-cross-school-team",
+    });
+    expect(child(crossSchool.id, "活动管理")).toMatchObject({
+      type: "page",
+      pageKey: "school-cross-school-activity",
+    });
+    expect(child(crossSchool.id, "集体备课管理")).toMatchObject({
+      type: "page",
+      pageKey: "school-collective-lesson-prep",
+    });
+    expect(child(crossSchool.id, "听评课管理")).toMatchObject({
+      type: "page",
+      pageKey: "school-lesson-observation",
+    });
+    expect(child(crossSchool.id, "成果共享")).toMatchObject({
+      type: "page",
+      pageKey: "school-achievement-sharing",
+    });
     const monitoring = child(teachingResearch.id, "教学监测与研修管理");
     expect(monitoring).toMatchObject({ type: "directory" });
     expect(child(monitoring.id, "我的成果")).toMatchObject({

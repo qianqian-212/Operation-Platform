@@ -58,7 +58,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { CircleCheckFilled } from "@element-plus/icons-vue";
+import { crossSchoolActivityListPath } from "@/features/cross-school-activity/cross-school-paths";
 import {
   COLLECTIVE_LESSON_PREP_STATUS_MAP,
   type CollectiveLessonPrepItem,
@@ -72,10 +74,11 @@ const props = defineProps<{
   item: CollectiveLessonPrepItem;
 }>();
 
+const route = useRoute();
 const isComplete = computed(() => props.item.progress >= 100);
 
 const activityPath = computed(
-  () => `/bureau/ai-teacher-development/cross-school-research/activities/${props.item.activityId}`,
+  () => `${crossSchoolActivityListPath(route.path)}/${props.item.activityId}`,
 );
 </script>
 

@@ -9,9 +9,21 @@ const REQUIRED_TEMPLATE_PAGE_KEYS: Partial<Record<TenantType, readonly string[]>
     "bureau-cross-school-activity",
     "bureau-collective-lesson-prep",
     "bureau-lesson-observation",
+    "bureau-achievement-sharing",
+    "bureau-effect-evaluation",
     "bureau-training-standard-config",
+    "bureau-training-achievement-review",
+    "bureau-training-warning",
+    "bureau-training-statistics",
   ],
-  school: ["school-my-training-achievements"],
+  school: [
+    "school-cross-school-team",
+    "school-cross-school-activity",
+    "school-collective-lesson-prep",
+    "school-lesson-observation",
+    "school-achievement-sharing",
+    "school-my-training-achievements",
+  ],
 };
 
 function cloneRecords(records: readonly MenuConfigRecord[]) {
@@ -65,10 +77,57 @@ function convertNamedLeafToDirectory(records: MenuConfigRecord[], name: string) 
   return leaf.id;
 }
 
+function ensureTemplateDirectory(
+  records: MenuConfigRecord[],
+  template: readonly MenuConfigRecord[],
+  templateDirectoryId: string,
+  tenantId: string,
+): string | null {
+  const existing = records.find((record) => record.id === templateDirectoryId);
+  if (existing && (existing.type === "directory" || existing.type === "module")) {
+    return existing.id;
+  }
+
+  const directory = template.find(
+    (record) =>
+      record.id === templateDirectoryId &&
+      (record.type === "directory" || record.type === "module"),
+  );
+  if (!directory) return null;
+
+  const parentId = directory.parentId
+    ? ensureTemplateDirectory(records, template, directory.parentId, tenantId)
+    : null;
+  if (directory.parentId && !parentId) return null;
+
+  const byName =
+    records.find(
+      (record) =>
+        (record.type === "directory" || record.type === "module") &&
+        record.name === directory.name &&
+        record.parentId === parentId,
+    )?.id ?? null;
+  if (byName) return byName;
+
+  const converted = convertNamedLeafToDirectory(records, directory.name);
+  if (converted) return converted;
+
+  const id = `${tenantId}:${directory.id}`;
+  records.push({
+    ...directory,
+    id,
+    tenantId,
+    parentId,
+    sort: parentId ? nextChildSort(records, parentId) : directory.sort,
+  });
+  return id;
+}
+
 function resolveParentId(
   records: MenuConfigRecord[],
   template: readonly MenuConfigRecord[],
   pageKey: string,
+  tenantId: string,
 ) {
   const page = templatePage(template, pageKey);
   const parent = page?.parentId ? template.find((record) => record.id === page.parentId) : undefined;
@@ -76,7 +135,16 @@ function resolveParentId(
   return (
     findSiblingParentId(records, template, parent.id, pageKey) ??
     records.find((record) => record.type === "directory" && record.name === parent.name)?.id ??
-    convertNamedLeafToDirectory(records, parent.name)
+    convertNamedLeafToDirectory(records, parent.name) ??
+    ensureTemplateDirectory(records, template, parent.id, tenantId)
+  );
+}
+
+function leafMenuIdSet(records: readonly MenuConfigRecord[]) {
+  return new Set(
+    records
+      .filter((record) => record.type === "page" || record.type === "external")
+      .map((record) => record.id),
   );
 }
 
@@ -90,7 +158,7 @@ export function ensureTemplateMenuPages(
   const next = cloneRecords(records);
   for (const pageKey of required) {
     if (next.some((record) => record.type === "page" && record.pageKey === pageKey)) continue;
-    const parentId = resolveParentId(next, template, pageKey);
+    const parentId = resolveParentId(next, template, pageKey, tenant.id);
     const page = parentId ? templatePage(template, pageKey) : undefined;
     if (!parentId || !page) continue;
     next.push({
@@ -110,10 +178,16 @@ export function grantMissingTemplateMenuIds(
   next: readonly MenuConfigRecord[],
 ) {
   const previousIds = new Set(previous.map((record) => record.id));
+  const leafIds = leafMenuIdSet(next);
   const addedIds = next
     .filter((record) => record.type === "page" && record.visible && !previousIds.has(record.id))
     .map((record) => record.id);
-  if (!addedIds.length) return roles.map((role) => ({ ...role, menuIds: [...role.menuIds] }));
+
+  const convertedIds = new Set<string>();
+  for (const record of previous) {
+    const updated = next.find((item) => item.id === record.id);
+    if (record.type === "page" && updated?.type === "directory") convertedIds.add(record.id);
+  }
 
   const requiredKeys = new Set(
     Object.values(REQUIRED_TEMPLATE_PAGE_KEYS).flatMap((keys) => keys ?? []),
@@ -123,18 +197,20 @@ export function grantMissingTemplateMenuIds(
       .filter((record) => record.type === "page" && record.pageKey && requiredKeys.has(record.pageKey))
       .map((record) => record.id),
   );
-  for (const record of previous) {
-    const updated = next.find((item) => item.id === record.id);
-    if (record.type === "page" && updated?.type === "directory") anchorIds.add(record.id);
+  for (const id of convertedIds) anchorIds.add(id);
+
+  const needsPrune = roles.some((role) => role.menuIds.some((id) => !leafIds.has(id)));
+  if (!addedIds.length && !needsPrune) {
+    return roles.map((role) => ({ ...role, menuIds: [...role.menuIds] }));
   }
 
   return roles.map((role) => {
-    if (!role.menuIds.some((id) => anchorIds.has(id))) {
-      return { ...role, menuIds: [...role.menuIds] };
-    }
-    const menuIds = [...role.menuIds];
-    for (const id of addedIds) {
-      if (!menuIds.includes(id)) menuIds.push(id);
+    const hadAnchor = role.menuIds.some((id) => anchorIds.has(id));
+    const menuIds = role.menuIds.filter((id) => leafIds.has(id));
+    if (hadAnchor) {
+      for (const id of addedIds) {
+        if (!menuIds.includes(id)) menuIds.push(id);
+      }
     }
     return { ...role, menuIds };
   });

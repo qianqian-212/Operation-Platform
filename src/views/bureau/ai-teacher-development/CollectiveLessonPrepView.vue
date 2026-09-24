@@ -1,6 +1,6 @@
 <template>
   <div class="page-wrapper">
-    <h1 class="sr-only">集体备课管理</h1>
+    <h1 class="sr-only">{{ pageTitle }}</h1>
     <CollectiveLessonPrepStats :stats="stats" />
     <section class="workspace" aria-label="备课目录与列表">
       <CollectiveLessonPrepTree
@@ -42,6 +42,7 @@ import CollectiveLessonPrepTree from "./CollectiveLessonPrepTree.vue";
 
 defineOptions({ name: "CollectiveLessonPrepView" });
 
+const pageTitle = "集体备课管理";
 const treeCollapsed = ref(false);
 const prepStore = useCollectiveLessonPrepStore();
 const {

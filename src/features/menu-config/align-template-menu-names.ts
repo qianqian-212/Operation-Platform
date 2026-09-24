@@ -7,7 +7,11 @@ const TEMPLATE_PAGE_MENU_RENAMES: ReadonlyArray<{
   pageKey: string;
   from: string;
   to: string;
-}> = [{ pageKey: "bureau-cross-school-activity", from: "跨校教研活动", to: "活动管理" }];
+}> = [
+  { pageKey: "bureau-cross-school-activity", from: "跨校教研活动", to: "活动管理" },
+  { pageKey: "school-collective-lesson-prep", from: "集体备课", to: "集体备课管理" },
+  { pageKey: "school-lesson-observation", from: "听评课", to: "听评课管理" },
+];
 
 export function alignTemplateMenuNames(
   records: readonly MenuConfigRecord[],

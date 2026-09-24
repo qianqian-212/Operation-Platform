@@ -56,14 +56,19 @@ export const useMenuConfigStore = defineStore("menu-config", () => {
 
   function load(tenant: TenantInfo) {
     const requestId = ++loadRequestId;
-    const cached = operationPlatformPersistence.peekTenantState(tenant);
-    if (cached) {
-      loading.value = false;
-      applyLoadedConfiguration(tenant, cached.configuration);
-      return;
+    loading.value = true;
+    try {
+      const cached = operationPlatformPersistence.peekTenantState(tenant);
+      if (cached) {
+        applyLoadedConfiguration(tenant, cached.configuration);
+        if (requestId === loadRequestId) loading.value = false;
+        return Promise.resolve();
+      }
+    } catch (error) {
+      if (requestId === loadRequestId) loading.value = false;
+      return Promise.reject(error);
     }
 
-    loading.value = true;
     return operationPlatformPersistence.loadTenantState(tenant)
       .then((state) => {
         if (requestId !== loadRequestId) return;

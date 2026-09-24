@@ -309,9 +309,16 @@ async function handleReset() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-16);
-  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+.menu-config-page > :deep(.page-filter-bar),
+.menu-config-page > :deep(.system-entry-card) {
+  flex-shrink: 0;
 }
 
 .table-card {

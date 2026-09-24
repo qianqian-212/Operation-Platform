@@ -97,14 +97,16 @@ export class LocalStorageTenantConfigurationRepository {
       }
       const configuration = withNormalizedMenus(tenant, cloneConfiguration(parsed));
       if (
-        menuRecordsDiffer(configuration.menuRecords, parsed.menuRecords) ||
-        roleMenuIdsDiffer(configuration.roles, parsed.roles)
+        !menuRecordsDiffer(configuration.menuRecords, parsed.menuRecords) &&
+        !roleMenuIdsDiffer(configuration.roles, parsed.roles)
       ) {
-        return { configuration: this.replace(tenant, configuration), recoveryNotice: null };
+        return { configuration, recoveryNotice: null };
       }
-      return { configuration, recoveryNotice: null };
-    } catch (error) {
-      if (error instanceof TenantConfigurationPersistenceError) throw error;
+      if (!isValidTenantConfiguration(configuration, tenant)) {
+        return this.recoverInvalidConfiguration(tenant, raw);
+      }
+      return { configuration: this.replace(tenant, configuration), recoveryNotice: null };
+    } catch {
       return this.recoverInvalidConfiguration(tenant, raw);
     }
   }

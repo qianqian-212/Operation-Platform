@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   workbenchHeaderActionLabel,
   workbenchHeaderActionNotice,
+  workbenchHeaderActionPath,
 } from "@/features/workbench/workbench-header-action";
 import {
   allianceListData,
@@ -17,9 +18,12 @@ describe("workbench header action", () => {
     expect(workbenchHeaderActionLabel(null)).toBeNull();
   });
 
-  it("maps widget kinds to pending-page notices", () => {
+  it("maps widget kinds to pending-page notices or routes", () => {
     expect(workbenchHeaderActionNotice("alliance-list")).toContain("教研联盟");
-    expect(workbenchHeaderActionNotice("effect-evaluation")).toContain("效果评估");
     expect(workbenchHeaderActionNotice("cross-school-activities")).toContain("跨校活动");
+    expect(workbenchHeaderActionNotice("effect-evaluation")).toBeNull();
+    expect(workbenchHeaderActionPath("effect-evaluation")).toBe(
+      "/bureau/ai-teacher-development/cross-school-research/effect-evaluation",
+    );
   });
 });

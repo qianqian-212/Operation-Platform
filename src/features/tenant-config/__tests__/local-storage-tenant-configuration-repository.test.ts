@@ -248,7 +248,12 @@ describe("tenant configuration repository", () => {
   it("adds missing bureau cross-school pages to an already initialized tenant", () => {
     const repository = new LocalStorageTenantConfigurationRepository(localStorage);
     const configuration = repository.list(bureau).configuration;
-    const removedKeys = new Set(["bureau-collective-lesson-prep", "bureau-lesson-observation"]);
+    const removedKeys = new Set([
+      "bureau-collective-lesson-prep",
+      "bureau-lesson-observation",
+      "bureau-achievement-sharing",
+      "bureau-effect-evaluation",
+    ]);
     const removedIds = new Set(
       configuration.menuRecords
         .filter((record) => record.pageKey && removedKeys.has(record.pageKey))
@@ -270,10 +275,75 @@ describe("tenant configuration repository", () => {
     const observation = reloaded.configuration.menuRecords.find(
       (record) => record.pageKey === "bureau-lesson-observation",
     );
+    const sharing = reloaded.configuration.menuRecords.find(
+      (record) => record.pageKey === "bureau-achievement-sharing",
+    );
+    const evaluation = reloaded.configuration.menuRecords.find(
+      (record) => record.pageKey === "bureau-effect-evaluation",
+    );
     expect(prep?.name).toBe("集体备课管理");
     expect(observation?.name).toBe("听评课管理");
+    expect(sharing?.name).toBe("成果共享");
+    expect(evaluation?.name).toBe("效果评估");
     expect(reloaded.configuration.roles[1]?.menuIds).toEqual(
-      expect.arrayContaining([prep?.id, observation?.id]),
+      expect.arrayContaining([prep?.id, observation?.id, sharing?.id, evaluation?.id]),
     );
+  });
+
+  it("persists after converting 教学监测与研修管理 leaf without crashing list", () => {
+    const repository = new LocalStorageTenantConfigurationRepository(localStorage);
+    const configuration = repository.list(bureau).configuration;
+    const monitoring = configuration.menuRecords.find(
+      (record) => record.name === "教学监测与研修管理",
+    )!;
+    const childIds = new Set(
+      configuration.menuRecords
+        .filter((record) => record.parentId === monitoring.id)
+        .map((record) => record.id),
+    );
+    configuration.menuRecords = configuration.menuRecords
+      .filter((record) => record.parentId !== monitoring.id)
+      .map((record) =>
+        record.id === monitoring.id
+          ? {
+              ...record,
+              type: "page" as const,
+              pageKey: "developing-placeholder",
+              externalUrl: null,
+              externalOpenMode: null,
+            }
+          : record,
+      );
+    configuration.roles = configuration.roles.map((role) => ({
+      ...role,
+      menuIds: [
+        ...new Set([
+          ...role.menuIds.filter((menuId) => !childIds.has(menuId)),
+          monitoring.id,
+        ]),
+      ],
+    }));
+    repository.replace(bureau, configuration);
+
+    const reloaded = repository.list(bureau);
+    const directory = reloaded.configuration.menuRecords.find(
+      (record) => record.id === monitoring.id,
+    );
+    const standards = reloaded.configuration.menuRecords.find(
+      (record) => record.pageKey === "bureau-training-standard-config",
+    );
+    const leafIds = new Set(
+      reloaded.configuration.menuRecords
+        .filter((record) => record.type === "page" || record.type === "external")
+        .map((record) => record.id),
+    );
+
+    expect(directory?.type).toBe("directory");
+    expect(standards).toBeTruthy();
+    expect(reloaded.recoveryNotice).toBeNull();
+    for (const role of reloaded.configuration.roles) {
+      expect(role.menuIds.every((id) => leafIds.has(id))).toBe(true);
+      expect(role.menuIds).toContain(standards?.id);
+    }
   });
 });

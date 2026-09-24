@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ElMessage, type FormInstance, type FormRules } from "element-plus";
 import OrgMemberPickerDialog from "@/components/org-member-picker/OrgMemberPickerDialog.vue";
 import type {
@@ -74,6 +74,7 @@ import type {
   OrgMemberPickerSchoolResult,
 } from "@/components/org-member-picker/types";
 import { crossSchoolActivityRepository } from "@/features/cross-school-activity/cross-school-activity-repository";
+import { crossSchoolActivityListPath } from "@/features/cross-school-activity/cross-school-paths";
 import type { ActivityAllianceOption } from "@/features/cross-school-activity/types";
 import { teachingResearchAllianceRepository } from "@/features/teaching-research-alliance/teaching-research-alliance-repository";
 import { SCHOOL_STAGE_LABEL, type SchoolOption, type TeacherOption } from "@/features/teaching-research-alliance/types";
@@ -89,8 +90,9 @@ import { formToObservation, validateObservationForm } from "@/views/bureau/ai-te
 
 defineOptions({ name: "CreateCrossSchoolActivityView" });
 
-const listPath = "/bureau/ai-teacher-development/cross-school-research/activities";
+const route = useRoute();
 const router = useRouter();
+const listPath = computed(() => crossSchoolActivityListPath(route.path));
 const userStore = useUserStore();
 const activityStore = useCrossSchoolActivityStore();
 const formRef = ref<FormInstance>();
@@ -171,7 +173,7 @@ function schoolName(id: string) {
 }
 
 function goBack() {
-  void router.push(listPath);
+  void router.push(listPath.value);
 }
 
 function openTeacherPicker() {
@@ -273,7 +275,7 @@ async function handleSubmit() {
   try {
     await activityStore.createActivity(buildCreateInput());
     ElMessage.success("已创建跨校教研活动");
-    void router.push(listPath);
+    void router.push(listPath.value);
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "创建活动失败");
   } finally {

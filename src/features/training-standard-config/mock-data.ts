@@ -23,7 +23,9 @@ const seedBySemester: Record<string, TrainingStandardConfig> = {
       {
         id: "type-research-award",
         name: "科研获奖",
+        description: "适用于国家级、省级、市级教学成果奖与科研课题成果认定。",
         attachmentName: "科研获奖评分标准.pdf",
+        attachmentSizeLabel: "856 KB",
         levels: [
           {
             id: "lvl-1",
@@ -51,7 +53,9 @@ const seedBySemester: Record<string, TrainingStandardConfig> = {
       {
         id: "type-paper",
         name: "论文发表",
+        description: "适用于核心期刊、省级期刊与市级刊物论文发表认定。",
         attachmentName: "科研获奖评分标准.pdf",
+        attachmentSizeLabel: "856 KB",
         levels: [
           {
             id: "lvl-4",
@@ -79,7 +83,9 @@ const seedBySemester: Record<string, TrainingStandardConfig> = {
       {
         id: "type-self-study",
         name: "提高自学",
+        description: "适用于学历提升、资格证书与自主学习等成果认定。",
         attachmentName: "提高自学认定标准.pdf",
+        attachmentSizeLabel: "640 KB",
         levels: [
           {
             id: "lvl-7",
@@ -107,7 +113,9 @@ const seedBySemester: Record<string, TrainingStandardConfig> = {
       {
         id: "type-training",
         name: "培训进修",
+        description: "适用于国家、省、市/区各级专项培训进修认定。",
         attachmentName: "培训进修认定标准.pdf",
+        attachmentSizeLabel: "720 KB",
         levels: [
           {
             id: "lvl-10",
@@ -135,7 +143,9 @@ const seedBySemester: Record<string, TrainingStandardConfig> = {
       {
         id: "type-school-based",
         name: "校本研修",
+        description: "适用于校级重点、一般项目与常规研修活动认定。",
         attachmentName: "校本研修认定标准.pdf",
+        attachmentSizeLabel: "512 KB",
         levels: [
           {
             id: "lvl-13",

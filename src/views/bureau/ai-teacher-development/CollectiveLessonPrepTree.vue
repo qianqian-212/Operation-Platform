@@ -1,5 +1,5 @@
 <template>
-  <aside id="collective-lesson-prep-tree" class="tree-panel" aria-label="教材目录">
+  <aside :id="panelId" class="tree-panel" aria-label="教材目录">
     <el-tree
       :key="`${expandedKeys.join('|')}:${currentNodeKey}`"
       :data="nodes"
@@ -23,14 +23,19 @@ import type { CurriculumNode } from "@/features/collective-lesson-prep/types";
 
 defineOptions({ name: "CollectiveLessonPrepTree" });
 
-defineProps<{
-  /** 教材目录树 */
-  nodes: CurriculumNode[];
-  /** 默认展开的节点 */
-  expandedKeys: string[];
-  /** 当前选中节点 */
-  currentNodeKey: string;
-}>();
+withDefaults(
+  defineProps<{
+    /** 教材目录树 */
+    nodes: CurriculumNode[];
+    /** 默认展开的节点 */
+    expandedKeys: string[];
+    /** 当前选中节点 */
+    currentNodeKey: string;
+    /** 侧栏 DOM id，供工具栏 aria-controls 关联 */
+    panelId?: string;
+  }>(),
+  { panelId: "collective-lesson-prep-tree" },
+);
 
 const emit = defineEmits<{
   select: [nodeId: string];

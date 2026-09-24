@@ -160,6 +160,76 @@ describe("page registry", () => {
     });
   });
 
+  it("registers the school cross-school research list pages", () => {
+    expect(pageRegistryByKey.get("school-cross-school-team")).toMatchObject({
+      title: "跨校团队",
+      path: "/ai-teacher-development/cross-school-research/teams",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-cross-school-team-detail")).toMatchObject({
+      title: "跨校团队详情",
+      path: "/ai-teacher-development/cross-school-research/teams/:id",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-cross-school-team",
+    });
+    expect(pageRegistryByKey.get("school-cross-school-activity")).toMatchObject({
+      title: "活动管理",
+      path: "/ai-teacher-development/cross-school-research/activities",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-cross-school-activity-create")).toMatchObject({
+      title: "创建跨校教研活动",
+      path: "/ai-teacher-development/cross-school-research/activities/create",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-cross-school-activity",
+    });
+    expect(pageRegistryByKey.get("school-cross-school-activity-detail")).toMatchObject({
+      title: "跨校教研活动详情",
+      path: "/ai-teacher-development/cross-school-research/activities/:id",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-cross-school-activity",
+    });
+    expect(pageRegistryByKey.get("school-collective-lesson-prep")).toMatchObject({
+      title: "集体备课管理",
+      path: "/ai-teacher-development/cross-school-research/lesson-prep",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-lesson-observation")).toMatchObject({
+      title: "听评课管理",
+      path: "/ai-teacher-development/cross-school-research/lesson-observation",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-lesson-observation-detail")).toMatchObject({
+      title: "听评课详情",
+      path: "/ai-teacher-development/cross-school-research/lesson-observation/:id",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: false,
+      menuOwnerKey: "school-lesson-observation",
+    });
+    expect(pageRegistryByKey.get("school-achievement-sharing")).toMatchObject({
+      title: "成果共享",
+      path: "/ai-teacher-development/cross-school-research/achievement-sharing",
+      tenantTypes: ["school"],
+      status: "available",
+      selectable: true,
+    });
+  });
+
   it("registers the bureau collective lesson prep page", () => {
     expect(pageRegistryByKey.get("bureau-collective-lesson-prep")).toMatchObject({
       title: "集体备课管理",
@@ -187,6 +257,25 @@ describe("page registry", () => {
       status: "available",
       selectable: false,
       menuOwnerKey: "bureau-lesson-observation",
+    });
+  });
+
+  it("registers the bureau achievement sharing and effect evaluation pages", () => {
+    expect(pageRegistryByKey.get("bureau-achievement-sharing")).toMatchObject({
+      title: "成果共享",
+      path: "/bureau/ai-teacher-development/cross-school-research/achievement-sharing",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-effect-evaluation")).toMatchObject({
+      title: "效果评估",
+      path: "/bureau/ai-teacher-development/cross-school-research/effect-evaluation",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
     });
   });
 

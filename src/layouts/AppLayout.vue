@@ -129,7 +129,9 @@ watch(
 }
 
 .app-content-inner {
+  box-sizing: border-box;
   min-height: 100%;
+  height: 100%;
   padding: var(--content-padding);
 }
 

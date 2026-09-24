@@ -33,8 +33,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { crossSchoolActivityListPath } from "@/features/cross-school-activity/cross-school-paths";
 import type { CrossSchoolActivityDetail } from "@/features/cross-school-activity/types";
 import { useCrossSchoolActivityStore } from "@/stores/cross-school-activity";
 import ActivityDetailArchive from "@/views/bureau/ai-teacher-development/ActivityDetailArchive.vue";
@@ -45,8 +46,8 @@ import ActivityDetailTasks from "@/views/bureau/ai-teacher-development/ActivityD
 
 defineOptions({ name: "CrossSchoolActivityDetailView" });
 
-const listPath = "/bureau/ai-teacher-development/cross-school-research/activities";
 const route = useRoute();
+const listPath = computed(() => crossSchoolActivityListPath(route.path));
 const activityStore = useCrossSchoolActivityStore();
 const loading = ref(false);
 const detail = ref<CrossSchoolActivityDetail | null>(null);

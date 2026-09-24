@@ -126,6 +126,7 @@ import { attachWorkbenchDragPreview, releaseWorkbenchDragPreview } from "@/featu
 import {
   workbenchHeaderActionLabel,
   workbenchHeaderActionNotice,
+  workbenchHeaderActionPath,
 } from "@/features/workbench/workbench-header-action";
 import type {
   SimpleWorkbenchLayoutType,
@@ -135,6 +136,7 @@ import type {
   WorkbenchWidgetItem,
 } from "@/features/workbench/types";
 import { useWorkbenchStore } from "@/stores/workbench";
+import { useRouter } from "vue-router";
 
 const props = defineProps<{
   item: WorkbenchWidgetItem;
@@ -152,6 +154,7 @@ const emit = defineEmits<{
 }>();
 
 const workbenchStore = useWorkbenchStore();
+const router = useRouter();
 const loading = ref(true);
 const cardElement = ref<HTMLElement | null>(null);
 const contentMeasureElement = ref<HTMLElement | null>(null);
@@ -238,7 +241,13 @@ function handleCommand(command: WorkbenchWidgetAction) {
 function handleHeaderAction() {
   const kind = definition.value?.kind;
   if (!kind) return;
-  ElMessage.info(workbenchHeaderActionNotice(kind));
+  const path = workbenchHeaderActionPath(kind);
+  if (path) {
+    void router.push(path);
+    return;
+  }
+  const notice = workbenchHeaderActionNotice(kind);
+  if (notice) ElMessage.info(notice);
 }
 
 function handleDragStart(event: DragEvent) {

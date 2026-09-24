@@ -170,9 +170,9 @@ function handleTeacherConfirm(payload: OrgMemberPickerSchoolResult | OrgMemberPi
 }
 </script>
 
-<style scoped>
-@import "./create-activity-sections.css";
+<style scoped src="./create-activity-sections.css"></style>
 
+<style scoped>
 .observation-fields .field-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

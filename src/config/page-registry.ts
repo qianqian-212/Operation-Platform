@@ -157,6 +157,106 @@ export const pageRegistry: PageRegistryItem[] = [
   ),
   page("visitor", "访客管理", "/security/visitor", school),
 
+  // 学校 · AI教师发展 · 跨校协同教研
+  page(
+    "school-cross-school-team",
+    "跨校团队",
+    "/ai-teacher-development/cross-school-research/teams",
+    school,
+    () => import("@/views/school/ai-teacher-development/CrossSchoolTeamView.vue"),
+    {
+      description: "学校查看参与的跨校教研团队，支持按联盟、学科检索并进入团队详情。",
+    },
+  ),
+  page(
+    "school-cross-school-team-detail",
+    "跨校团队详情",
+    "/ai-teacher-development/cross-school-research/teams/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/CrossSchoolTeamDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-cross-school-team",
+      description: "查看跨校教研团队摘要、成员、活动与成果。",
+    },
+  ),
+  page(
+    "school-cross-school-activity",
+    "活动管理",
+    "/ai-teacher-development/cross-school-research/activities",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/CrossSchoolActivityView.vue"),
+    {
+      description: "学校统筹组织跨校教研活动，支持按类型、状态和联盟检索并进入活动详情。",
+    },
+  ),
+  page(
+    "school-cross-school-activity-create",
+    "创建跨校教研活动",
+    "/ai-teacher-development/cross-school-research/activities/create",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/CreateCrossSchoolActivityView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-cross-school-activity",
+      description: "学校发起跨校集体备课或听评课，配置参与学校、教师与任务分工。",
+    },
+  ),
+  page(
+    "school-cross-school-activity-detail",
+    "跨校教研活动详情",
+    "/ai-teacher-development/cross-school-research/activities/:id",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/CrossSchoolActivityDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-cross-school-activity",
+      description: "查看跨校教研活动摘要，并管理任务分工、听评课设置、讨论投票与归档。",
+    },
+  ),
+  page(
+    "school-collective-lesson-prep",
+    "集体备课管理",
+    "/ai-teacher-development/cross-school-research/lesson-prep",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/CollectiveLessonPrepView.vue"),
+    {
+      description: "按教材目录管理跨校集体备课，查看进度、成果并进入备课。",
+    },
+  ),
+  page(
+    "school-lesson-observation",
+    "听评课管理",
+    "/ai-teacher-development/cross-school-research/lesson-observation",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/LessonObservationView.vue"),
+    {
+      description: "管理跨校听评课记录，支持按老师、联盟、学校和评课方式检索并查看评价报告。",
+    },
+  ),
+  page(
+    "school-lesson-observation-detail",
+    "听评课详情",
+    "/ai-teacher-development/cross-school-research/lesson-observation/:id",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/LessonObservationDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-lesson-observation",
+      description: "查看跨校听评课摘要、课程评价报告、评课明细与档案文件。",
+    },
+  ),
+  page(
+    "school-achievement-sharing",
+    "成果共享",
+    "/ai-teacher-development/cross-school-research/achievement-sharing",
+    school,
+    () => import("@/views/bureau/ai-teacher-development/AchievementSharingView.vue"),
+    {
+      description: "按教材目录浏览跨校教研成果，支持按类型检索、预览与下载。",
+    },
+  ),
+
   // 学校 · AI教师发展 · 教学监测与研修管理 · 我的成果
   page(
     "school-my-training-achievements",
@@ -396,6 +496,26 @@ export const pageRegistry: PageRegistryItem[] = [
     },
   ),
   page(
+    "bureau-achievement-sharing",
+    "成果共享",
+    "/bureau/ai-teacher-development/cross-school-research/achievement-sharing",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/AchievementSharingView.vue"),
+    {
+      description: "按教材目录浏览跨校教研成果，支持按类型检索、预览与下载。",
+    },
+  ),
+  page(
+    "bureau-effect-evaluation",
+    "效果评估",
+    "/bureau/ai-teacher-development/cross-school-research/effect-evaluation",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/EffectEvaluationView.vue"),
+    {
+      description: "对比参与与未参与跨校教研学校的核心指标，并导出效果评估报告。",
+    },
+  ),
+  page(
     "bureau-training-standard-config",
     "研修标准配置",
     "/bureau/ai-teacher-development/teaching-monitoring/standards",
@@ -403,6 +523,48 @@ export const pageRegistry: PageRegistryItem[] = [
     () => import("@/views/bureau/ai-teacher-development/TrainingStandardConfigView.vue"),
     {
       description: "区级配置研修类型、等级分值与年度学分预警阈值，支持按学期维护。",
+    },
+  ),
+  page(
+    "bureau-training-achievement-review",
+    "成果终审",
+    "/bureau/ai-teacher-development/teaching-monitoring/achievement-review",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/AchievementReviewView.vue"),
+    {
+      description: "区级终审教师研修成果，支持通过、驳回与加精推荐。",
+    },
+  ),
+  page(
+    "bureau-training-warning",
+    "预警管理",
+    "/bureau/ai-teacher-development/teaching-monitoring/warnings",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/TrainingWarningView.vue"),
+    {
+      description: "按学校汇总教师学分达标情况，并下钻查看未达标教师明细。",
+    },
+  ),
+  page(
+    "bureau-training-warning-school-detail",
+    "教师学分详情",
+    "/bureau/ai-teacher-development/teaching-monitoring/warnings/:schoolId",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/TrainingWarningSchoolDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-training-warning",
+      description: "查看指定学校教师学分达标明细与个人学分记录。",
+    },
+  ),
+  page(
+    "bureau-training-statistics",
+    "研修统计",
+    "/bureau/ai-teacher-development/teaching-monitoring/statistics",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/TrainingStatisticsView.vue"),
+    {
+      description: "按学期统计全区研修成果与学校学分达标情况，支持导出明细。",
     },
   ),
 

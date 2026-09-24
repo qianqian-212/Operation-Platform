@@ -71,6 +71,11 @@ const bureauModuleIcons: Record<string, MenuIconKey> = {
 };
 
 const schoolPageKeysByOutlinePath: Readonly<Record<string, string>> = {
+  "AI教师发展/教研与科研/跨校协同教研/跨校团队": "school-cross-school-team",
+  "AI教师发展/教研与科研/跨校协同教研/活动管理": "school-cross-school-activity",
+  "AI教师发展/教研与科研/跨校协同教研/集体备课管理": "school-collective-lesson-prep",
+  "AI教师发展/教研与科研/跨校协同教研/听评课管理": "school-lesson-observation",
+  "AI教师发展/教研与科研/跨校协同教研/成果共享": "school-achievement-sharing",
   "AI教师发展/教研与科研/教学监测与研修管理/我的成果": "school-my-training-achievements",
 };
 
@@ -83,7 +88,12 @@ const bureauPageKeysByOutlinePath: Readonly<Record<string, string>> = {
   "AI教师发展/教研与科研/跨校协同教研/活动管理": "bureau-cross-school-activity",
   "AI教师发展/教研与科研/跨校协同教研/集体备课管理": "bureau-collective-lesson-prep",
   "AI教师发展/教研与科研/跨校协同教研/听评课管理": "bureau-lesson-observation",
+  "AI教师发展/教研与科研/跨校协同教研/成果共享": "bureau-achievement-sharing",
+  "AI教师发展/教研与科研/跨校协同教研/效果评估": "bureau-effect-evaluation",
   "AI教师发展/教研与科研/教学监测与研修管理/研修标准配置": "bureau-training-standard-config",
+  "AI教师发展/教研与科研/教学监测与研修管理/成果终审": "bureau-training-achievement-review",
+  "AI教师发展/教研与科研/教学监测与研修管理/预警管理": "bureau-training-warning",
+  "AI教师发展/教研与科研/教学监测与研修管理/研修统计": "bureau-training-statistics",
 };
 
 interface FlattenedOutlinePage {

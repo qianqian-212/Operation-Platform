@@ -115,12 +115,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { Plus, Search } from "@element-plus/icons-vue";
 import PageFilterBar from "@/components/PageFilterBar.vue";
 import StatusTag from "@/components/StatusTag.vue";
+import { crossSchoolActivityListPath } from "@/features/cross-school-activity/cross-school-paths";
 import {
   ACTIVITY_STATUS_MAP,
   ACTIVITY_TYPE_MAP,
@@ -130,8 +131,10 @@ import { useCrossSchoolActivityStore } from "@/stores/cross-school-activity";
 
 defineOptions({ name: "CrossSchoolActivityView" });
 
-const listCreatePath = "/bureau/ai-teacher-development/cross-school-research/activities/create";
+const route = useRoute();
 const router = useRouter();
+const listBasePath = computed(() => crossSchoolActivityListPath(route.path));
+const listCreatePath = computed(() => `${listBasePath.value}/create`);
 const activityStore = useCrossSchoolActivityStore();
 const {
   loading,
@@ -165,13 +168,11 @@ function handlePageChange(page: number) {
 }
 
 function handleCreate() {
-  void router.push(listCreatePath);
+  void router.push(listCreatePath.value);
 }
 
 function handleViewDetail(row: CrossSchoolActivityRow) {
-  void router.push(
-    `/bureau/ai-teacher-development/cross-school-research/activities/${row.id}`,
-  );
+  void router.push(`${listBasePath.value}/${row.id}`);
 }
 </script>
 

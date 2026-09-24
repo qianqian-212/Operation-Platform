@@ -14,7 +14,11 @@ export interface TrainingStandardLevel {
 export interface TrainingStandardType {
   id: string;
   name: string;
+  /** 类型说明 */
+  description: string;
   attachmentName: string;
+  /** 附件大小展示文案 */
+  attachmentSizeLabel: string;
   levels: TrainingStandardLevel[];
 }
 

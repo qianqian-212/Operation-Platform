@@ -49,7 +49,7 @@ describe("navigation store", () => {
 
     store.loadTenant(schoolA);
 
-    expect(store.moduleNodes).toHaveLength(7);
+    expect(store.moduleNodes).toHaveLength(8);
     expect(store.moduleNodes.map((node) => node.name)).toContain("平安校园");
     expect(store.topLevelNavItems[0]).toMatchObject({
       kind: "workbench",
