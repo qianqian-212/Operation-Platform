@@ -15,18 +15,34 @@
     </div>
     <div class="card-body">
       <h2 class="card-title">{{ item.title }}</h2>
-      <div class="card-meta">
-        <span class="author">
+      <div class="info-block">
+        <span class="info-row">
           <el-icon :size="14"><User /></el-icon>
-          {{ item.teacherName }} · {{ item.schoolName }}
+          {{ item.teacherName }}
         </span>
-        <span class="likes">
-          <svg class="heart-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M12 21s-6.7-4.35-9.33-7.4C.7 11.3 1.1 7.8 3.8 6.1c2-1.3 4.5-.7 5.9 1.1L12 9.7l2.3-2.5c1.4-1.8 3.9-2.4 5.9-1.1 2.7 1.7 3.1 5.2 1.13 7.5C18.7 16.65 12 21 12 21z"
-            />
-          </svg>
-          {{ item.likeCount }}
+        <span class="info-row">
+          <el-icon :size="14"><OfficeBuilding /></el-icon>
+          {{ item.schoolName }}
+        </span>
+      </div>
+      <div class="card-footer">
+        <span class="published">
+          <el-icon :size="14"><Clock /></el-icon>
+          {{ item.publishedAt }}
+        </span>
+        <span class="stats">
+          <span class="views">
+            <el-icon :size="14"><View /></el-icon>
+            {{ item.viewCount.toLocaleString("zh-CN") }}
+          </span>
+          <span class="likes">
+            <svg class="heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21s-6.7-4.35-9.33-7.4C.7 11.3 1.1 7.8 3.8 6.1c2-1.3 4.5-.7 5.9 1.1L12 9.7l2.3-2.5c1.4-1.8 3.9-2.4 5.9-1.1 2.7 1.7 3.1 5.2 1.13 7.5C18.7 16.65 12 21 12 21z"
+              />
+            </svg>
+            {{ item.likeCount }}
+          </span>
         </span>
       </div>
     </div>
@@ -36,15 +52,18 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import {
+  Clock,
   Collection,
   Document,
   Medal,
+  OfficeBuilding,
   Opportunity,
   Reading,
   School,
   StarFilled,
   Trophy,
   User,
+  View,
 } from "@element-plus/icons-vue";
 import {
   EXCELLENT_ACHIEVEMENT_COVER_ICON,
@@ -174,44 +193,61 @@ const coverIcon = computed(() => {
 
 .card-title {
   margin: 0;
-  min-height: 44px;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-title);
   line-height: 22px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-8);
-  color: var(--color-secondary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-md);
-}
-
-.author,
-.likes {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.author {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.info-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.info-row,
+.published,
+.stats,
+.views,
+.likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+.info-row {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  padding-top: var(--spacing-12);
+  border-top: 1px solid var(--color-border);
+}
+
+.published {
+  flex-shrink: 0;
+}
+
+.stats {
+  flex-shrink: 0;
+  gap: var(--spacing-12);
+}
+
 .likes {
   color: var(--color-error);
-  flex-shrink: 0;
 }
 
 .heart-icon {

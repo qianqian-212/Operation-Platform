@@ -33,6 +33,7 @@ export interface ExcellentAchievementCard {
   subject: string;
   featured: boolean;
   likeCount: number;
+  viewCount: number;
   publishedAt: string;
   coverTheme: ExcellentAchievementCoverTheme;
 }
@@ -40,7 +41,6 @@ export interface ExcellentAchievementCard {
 export interface ExcellentAchievementDetail extends ExcellentAchievementCard {
   honorLabel: string;
   abstract: string;
-  viewCount: number;
   liked: boolean;
   attachments: ExcellentAchievementAttachment[];
 }

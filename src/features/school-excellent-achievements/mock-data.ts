@@ -65,6 +65,7 @@ function buildCard(index: number): ExcellentAchievementCard {
     subject: SUBJECTS[index % SUBJECTS.length]!,
     featured: index % 3 === 0,
     likeCount: 180 - (index % 40) * 3,
+    viewCount: 1256 + (index % 40) * 17,
     publishedAt: `2026-09-${day}`,
     coverTheme: COVER_THEMES[index % COVER_THEMES.length]!,
   };
@@ -108,7 +109,6 @@ export function getExcellentAchievementDetail(id: string): ExcellentAchievementD
     liked,
     honorLabel: "区级优秀",
     abstract: ABSTRACT,
-    viewCount: 1256 + Number(id.replace(/\D/g, "")) % 300,
     attachments: [
       {
         id: `${id}-file-1`,
