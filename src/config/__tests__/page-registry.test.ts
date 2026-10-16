@@ -279,6 +279,73 @@ describe("page registry", () => {
     });
   });
 
+  it("registers the bureau layered training supervision pages", () => {
+    expect(pageRegistryByKey.get("bureau-layered-training-overview")).toMatchObject({
+      title: "数据概览",
+      path: "/bureau/ai-teacher-development/layered-training/overview",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-supervision")).toMatchObject({
+      title: "督学标准设置",
+      path: "/bureau/ai-teacher-development/layered-training/supervision-standards",
+      tenantTypes: ["bureau"],
+      status: "available",
+      surface: "shell",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-notices")).toMatchObject({
+      title: "通知流水",
+      path: "/bureau/ai-teacher-development/layered-training/notices",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-course-manage")).toMatchObject({
+      title: "课程管理",
+      path: "/bureau/ai-teacher-development/layered-training/courses",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-course-manage-create")).toMatchObject({
+      title: "上传课程",
+      path: "/bureau/ai-teacher-development/layered-training/courses/create",
+      tenantTypes: ["bureau"],
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-manage",
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-course-manage-editor")).toMatchObject({
+      title: "课程编辑",
+      path: "/bureau/ai-teacher-development/layered-training/courses/:id",
+      tenantTypes: ["bureau"],
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-manage",
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-course-review")).toMatchObject({
+      title: "课程审核",
+      path: "/bureau/ai-teacher-development/layered-training/course-review",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-groups")).toMatchObject({
+      title: "自定义分组",
+      path: "/bureau/ai-teacher-development/layered-training/groups",
+      tenantTypes: ["bureau"],
+      status: "available",
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("bureau-layered-training-course-review-detail")).toMatchObject({
+      title: "课程审核详情",
+      path: "/bureau/ai-teacher-development/layered-training/course-review/:id",
+      tenantTypes: ["bureau"],
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-review",
+    });
+  });
+
   it("registers the bureau training standard config page", () => {
     expect(pageRegistryByKey.get("bureau-training-standard-config")).toMatchObject({
       title: "研修标准配置",
@@ -373,6 +440,8 @@ describe("page registry", () => {
       title: "研修统计",
       path: "/ai-teacher-development/teaching-monitoring/statistics",
       tenantTypes: ["school"],
+      status: "available",
+      surface: "shell",
       selectable: true,
     });
     expect(pageRegistryByKey.get("school-excellent-achievements")).toMatchObject({

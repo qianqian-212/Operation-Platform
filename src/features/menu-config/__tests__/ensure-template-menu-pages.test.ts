@@ -242,6 +242,42 @@ describe("ensureTemplateMenuPages", () => {
     expect(child(ensured, directory.id, "效果评估")?.pageKey).toBe("bureau-effect-evaluation");
   });
 
+  it("converts a leftover AI分层研修 leaf and inserts notice and course review pages", () => {
+    const template = cloneTenantTemplate(bureau);
+    const teacherDevelopment = template.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
+    const layered = child(template, teachingResearch.id, "AI分层研修")!;
+    const stored = template
+      .filter((record) => record.parentId !== layered.id)
+      .map((record) =>
+        record.id === layered.id
+          ? { ...record, type: "page" as const, pageKey: DEVELOPING_PAGE_KEY }
+          : record,
+      );
+
+    const ensured = normalizeLoadedMenuRecords(bureau, stored);
+    const directory = child(ensured, teachingResearch.id, "AI分层研修")!;
+    expect(directory.type).toBe("directory");
+    expect(child(ensured, directory.id, "通知流水")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-layered-training-notices",
+    });
+    expect(child(ensured, directory.id, "课程管理")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-layered-training-course-manage",
+    });
+    expect(child(ensured, directory.id, "课程审核")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-layered-training-course-review",
+    });
+    expect(child(ensured, directory.id, "自定义分组")).toMatchObject({
+      type: "page",
+      pageKey: "bureau-layered-training-groups",
+    });
+  });
+
   it("grants new leaves only to roles that already had a sibling page", () => {
     const stored = cloneTenantTemplate(bureau).filter(
       (record) => record.pageKey !== "bureau-collective-lesson-prep",
@@ -262,6 +298,64 @@ describe("ensureTemplateMenuPages", () => {
 
     expect(granted.find((role) => role.id === STAFF_ROLE_ID)?.menuIds).toContain(prep.id);
     expect(granted.find((role) => role.id === "custom-role")?.menuIds).not.toContain(prep.id);
+  });
+
+  it("converts leftover AI分层研修 leaf and inserts supervision pages", () => {
+    const template = cloneTenantTemplate(bureau);
+    const teacherDevelopment = template.find(
+      (record) => record.parentId === null && record.name === "AI教师发展",
+    )!;
+    const teachingResearch = child(template, teacherDevelopment.id, "教研与科研")!;
+    const layered = child(template, teachingResearch.id, "AI分层研修")!;
+    const layeredPageKeys = new Set([
+      "bureau-layered-training-overview",
+      "bureau-layered-training-supervision",
+      "bureau-layered-training-notices",
+      "bureau-layered-training-course-manage",
+      "bureau-layered-training-course-review",
+      "bureau-layered-training-groups",
+    ]);
+    const stored = template
+      .filter((record) => record.parentId !== layered.id)
+      .map((record) =>
+        record.id === layered.id
+          ? {
+              ...record,
+              type: "page" as const,
+              pageKey: DEVELOPING_PAGE_KEY,
+            }
+          : record,
+      )
+      .filter((record) => !layeredPageKeys.has(record.pageKey ?? ""));
+
+    const roles = createDefaultRoles(bureau, stored);
+    const next = ensureTemplateMenuPages(bureau, stored);
+    const granted = grantMissingTemplateMenuIds(roles, stored, next);
+    const directory = child(next, teachingResearch.id, "AI分层研修")!;
+    const supervision = next.find(
+      (record) => record.pageKey === "bureau-layered-training-supervision",
+    )!;
+    const leafIds = new Set(
+      next
+        .filter((record) => record.type === "page" || record.type === "external")
+        .map((record) => record.id),
+    );
+
+    expect(directory.type).toBe("directory");
+    expect(child(next, directory.id, "数据概览")?.pageKey).toBe("bureau-layered-training-overview");
+    expect(child(next, directory.id, "督学标准设置")?.pageKey).toBe(
+      "bureau-layered-training-supervision",
+    );
+    expect(child(next, directory.id, "通知流水")?.pageKey).toBe("bureau-layered-training-notices");
+    expect(child(next, directory.id, "课程审核")?.pageKey).toBe(
+      "bureau-layered-training-course-review",
+    );
+    expect(child(next, directory.id, "自定义分组")?.pageKey).toBe("bureau-layered-training-groups");
+    for (const role of granted) {
+      expect(role.menuIds.every((id) => leafIds.has(id))).toBe(true);
+      expect(role.menuIds).not.toContain(layered.id);
+      expect(role.menuIds).toContain(supervision.id);
+    }
   });
 
   it("drops converted directory ids from roles so normalized config stays persistable", () => {

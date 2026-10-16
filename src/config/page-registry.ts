@@ -580,6 +580,102 @@ export const pageRegistry: PageRegistryItem[] = [
     },
   ),
   page(
+    "bureau-layered-training-overview",
+    "数据概览",
+    "/bureau/ai-teacher-development/layered-training/overview",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingOverviewView.vue"),
+    {
+      description: "查看区域 AI 分层研修进度与学分达标概况。",
+    },
+  ),
+  page(
+    "bureau-layered-training-supervision",
+    "督学标准设置",
+    "/bureau/ai-teacher-development/layered-training/supervision-standards",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/SupervisionStandardView.vue"),
+    {
+      description: "配置进度缓慢判定天数、通知周期和学分达标预警标准。",
+    },
+  ),
+  page(
+    "bureau-layered-training-notices",
+    "通知流水",
+    "/bureau/ai-teacher-development/layered-training/notices",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingNoticeView.vue"),
+    {
+      description: "查看分层研修进度通知流水，支持按学校和通知类型检索自动复查记录。",
+    },
+  ),
+  page(
+    "bureau-layered-training-course-manage",
+    "课程管理",
+    "/bureau/ai-teacher-development/layered-training/courses",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingCourseManageView.vue"),
+    {
+      description: "维护教育局分层研修课程，支持草稿、提交审核和上下架。",
+    },
+  ),
+  page(
+    "bureau-layered-training-course-manage-create",
+    "上传课程",
+    "/bureau/ai-teacher-development/layered-training/courses/create",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingCourseFormView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-manage",
+      description: "上传教育局分层研修课程并保存草稿或提交审核。",
+    },
+  ),
+  page(
+    "bureau-layered-training-course-manage-editor",
+    "课程编辑",
+    "/bureau/ai-teacher-development/layered-training/courses/:id",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingCourseFormView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-manage",
+      description: "查看或编辑教育局分层研修课程。",
+    },
+  ),
+  page(
+    "bureau-layered-training-course-review",
+    "课程审核",
+    "/bureau/ai-teacher-development/layered-training/course-review",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingCourseReviewView.vue"),
+    {
+      description: "审核学校上报的分层研修课程，支持按状态、学校和课程类型检索。",
+    },
+  ),
+  page(
+    "bureau-layered-training-groups",
+    "自定义分组",
+    "/bureau/ai-teacher-development/layered-training/groups",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingGroupView.vue"),
+    {
+      description: "维护分层研修自定义分组和成员名单，已关联课程的分组不可删除。",
+    },
+  ),
+  page(
+    "bureau-layered-training-course-review-detail",
+    "课程审核详情",
+    "/bureau/ai-teacher-development/layered-training/course-review/:id",
+    bureau,
+    () => import("@/views/bureau/ai-teacher-development/LayeredTrainingCourseReviewDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "bureau-layered-training-course-review",
+      description: "查看分层研修课程课时并完成通过或驳回。",
+    },
+  ),
+  page(
     "bureau-training-standard-config",
     "研修标准配置",
     "/bureau/ai-teacher-development/teaching-monitoring/standards",
