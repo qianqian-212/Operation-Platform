@@ -71,6 +71,9 @@ const bureauModuleIcons: Record<string, MenuIconKey> = {
 };
 
 const schoolPageKeysByOutlinePath: Readonly<Record<string, string>> = {
+  "AI教师发展/教研与科研/AI分层研修/课程管理": "school-layered-training-course-manage",
+  "AI教师发展/教研与科研/AI分层研修/精品课程": "school-layered-training-featured",
+  "AI教师发展/教研与科研/AI分层研修/研修档案": "school-layered-training-archive",
   "AI教师发展/教研与科研/跨校协同教研/跨校团队": "school-cross-school-team",
   "AI教师发展/教研与科研/跨校协同教研/活动管理": "school-cross-school-activity",
   "AI教师发展/教研与科研/跨校协同教研/集体备课管理": "school-collective-lesson-prep",

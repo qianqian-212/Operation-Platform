@@ -194,6 +194,20 @@ describe("tenant menu templates", () => {
       (record) => record.parentId === null && record.name === "AI教师发展",
     )!;
     const teachingResearch = child(teacherDevelopment.id, "教研与科研");
+    const layeredTraining = child(teachingResearch.id, "AI分层研修");
+    expect(layeredTraining).toMatchObject({ type: "directory" });
+    expect(child(layeredTraining.id, "课程管理")).toMatchObject({
+      type: "page",
+      pageKey: "school-layered-training-course-manage",
+    });
+    expect(child(layeredTraining.id, "精品课程")).toMatchObject({
+      type: "page",
+      pageKey: "school-layered-training-featured",
+    });
+    expect(child(layeredTraining.id, "研修档案")).toMatchObject({
+      type: "page",
+      pageKey: "school-layered-training-archive",
+    });
     const crossSchool = child(teachingResearch.id, "跨校协同教研");
     expect(crossSchool).toMatchObject({ type: "directory" });
     expect(child(crossSchool.id, "跨校团队")).toMatchObject({

@@ -335,6 +335,72 @@ export const pageRegistry: PageRegistryItem[] = [
     },
   ),
   page(
+    "school-layered-training-course-manage",
+    "课程管理",
+    "/ai-teacher-development/layered-training/courses",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingCourseManageView.vue"),
+    {
+      description: "维护学校分层研修课程，支持草稿、提交审核和删除。",
+    },
+  ),
+  page(
+    "school-layered-training-course-manage-create",
+    "上传课程",
+    "/ai-teacher-development/layered-training/courses/create",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingCourseFormView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-layered-training-course-manage",
+      description: "上传学校分层研修课程并保存草稿或提交审核。",
+    },
+  ),
+  page(
+    "school-layered-training-course-manage-editor",
+    "课程编辑",
+    "/ai-teacher-development/layered-training/courses/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingCourseFormView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-layered-training-course-manage",
+      description: "查看或编辑学校分层研修课程。",
+    },
+  ),
+  page(
+    "school-layered-training-featured",
+    "精品课程",
+    "/ai-teacher-development/layered-training/featured",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingFeaturedView.vue"),
+    {
+      description: "浏览分层研修精品课程、在修进度，并按发展阶段筛选可修课程。",
+    },
+  ),
+  page(
+    "school-layered-training-featured-detail",
+    "精品课程详情",
+    "/ai-teacher-development/layered-training/featured/:id",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingFeaturedDetailView.vue"),
+    {
+      selectable: false,
+      menuOwnerKey: "school-layered-training-featured",
+      description: "查看精品课程介绍、课时和教师评价。",
+    },
+  ),
+  page(
+    "school-layered-training-archive",
+    "研修档案",
+    "/ai-teacher-development/layered-training/archive",
+    school,
+    () => import("@/views/school/ai-teacher-development/SchoolLayeredTrainingArchiveView.vue"),
+    {
+      description: "查看教师分层研修完成课程、在学进度和学分认定记录。",
+    },
+  ),
+  page(
     "school-excellent-achievements",
     "优秀成果展示",
     "/ai-teacher-development/teaching-monitoring/excellent-achievements",

@@ -444,6 +444,34 @@ describe("page registry", () => {
       surface: "shell",
       selectable: true,
     });
+    expect(pageRegistryByKey.get("school-layered-training-course-manage")).toMatchObject({
+      title: "课程管理",
+      path: "/ai-teacher-development/layered-training/courses",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-layered-training-course-manage-create")).toMatchObject({
+      path: "/ai-teacher-development/layered-training/courses/create",
+      selectable: false,
+      menuOwnerKey: "school-layered-training-course-manage",
+    });
+    expect(pageRegistryByKey.get("school-layered-training-featured")).toMatchObject({
+      title: "精品课程",
+      path: "/ai-teacher-development/layered-training/featured",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
+    expect(pageRegistryByKey.get("school-layered-training-featured-detail")).toMatchObject({
+      path: "/ai-teacher-development/layered-training/featured/:id",
+      selectable: false,
+      menuOwnerKey: "school-layered-training-featured",
+    });
+    expect(pageRegistryByKey.get("school-layered-training-archive")).toMatchObject({
+      title: "研修档案",
+      path: "/ai-teacher-development/layered-training/archive",
+      tenantTypes: ["school"],
+      selectable: true,
+    });
     expect(pageRegistryByKey.get("school-excellent-achievements")).toMatchObject({
       title: "优秀成果展示",
       path: "/ai-teacher-development/teaching-monitoring/excellent-achievements",

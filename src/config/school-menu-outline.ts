@@ -76,6 +76,10 @@ const rawSchoolMenuOutline = `
     我的分享
 AI教师发展
   教研与科研
+    AI分层研修
+      课程管理
+      精品课程
+      研修档案
     跨校协同教研
       跨校团队
       活动管理
