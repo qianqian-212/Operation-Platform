@@ -159,11 +159,12 @@ function baseDetail(course: FeaturedCourse): FeaturedDetailModel {
 }
 
 function detailTags(course: FeaturedCourse): FeaturedDetailTag[] {
-  return [
+  const tags: FeaturedDetailTag[] = [
     { label: `${course.subject}学科`, tone: "violet" },
     { label: course.fitStage, tone: "green" },
     { label: course.source, tone: "pink" },
-  ].filter((item) => item.label);
+  ];
+  return tags.filter((item) => item.label !== "");
 }
 
 function clockSeconds(value: string) {
